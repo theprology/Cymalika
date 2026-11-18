@@ -76,6 +76,7 @@ public static class CipherWindow {
             $rows = New-Object System.Collections.Generic.List[object]
             $queue = New-Object System.Collections.Generic.Queue[object]
             $queue.Enqueue(@{node=$root; depth=0}); $visited = 0
+            $warnings=New-Object System.Collections.Generic.List[string]
             while ($queue.Count -gt 0 -and $visited -lt 350 -and $rows.Count -lt 120) {
                 $item = $queue.Dequeue(); $node=$item.node; $visited++
                 try {
@@ -95,9 +96,9 @@ public static class CipherWindow {
                         $child=$walker.GetFirstChild($node)
                         while ($null -ne $child -and $queue.Count -lt 350) { $queue.Enqueue(@{node=$child;depth=($item.depth+1)});$child=$walker.GetNextSibling($child) }
                     }
-                } catch { }
+                } catch { if ($warnings.Count -lt 5) { $warnings.Add($_.Exception.Message) } }
             }
-            $result=@{app=$request.app;elements=@($rows.ToArray());truncated=($visited -ge 350 -or $rows.Count -ge 120)}
+            $result=@{app=$request.app;warnings=@($warnings.ToArray());elements=@($rows.ToArray());truncated=($visited -ge 350 -or $rows.Count -ge 120)}
         } elseif ($operation -eq 'window') { $result=@{window=[string]$app.handle} }
         elseif ($operation -in @('press','set_text')) {
             $element = Find-Element $request.locator

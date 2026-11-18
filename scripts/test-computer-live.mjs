@@ -36,6 +36,7 @@ try {
       e.editable &&
       (e.value === "before" || e.label === "Cipher fixture entry"),
   );
+  if (!field) console.log(JSON.stringify(snapshot));
   assert.ok(field, "Find actual editable fixture field.");
   await computer.action({
     app: app.id,
@@ -45,6 +46,7 @@ try {
     text: "Cipher",
   });
   snapshot = await computer.read({ app: app.id });
+  console.log(JSON.stringify(snapshot));
   assert.ok(
     snapshot.elements.some((e) => e.value === "Cipher"),
     "Read actual replacement text.",
@@ -60,6 +62,7 @@ try {
     element: button.id,
   });
   snapshot = await computer.read({ app: app.id });
+  console.log(JSON.stringify(snapshot));
   assert.ok(
     snapshot.elements.some(
       (e) => e.label === "Applied Cipher" || e.value === "Applied Cipher",
