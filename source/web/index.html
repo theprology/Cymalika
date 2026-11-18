@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self' file:; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; frame-src 'none'"
+    />
+    <title>Cipher</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body data-theme="dark">
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brandmark">⌘</div>
+          <div>
+            <strong>Cipher<span class="brand-dot">.</span></strong
+            ><small>YOUR MODELS. YOUR WORKSPACE.</small>
+          </div>
+        </div>
+        <button id="openProject" class="button primary wide">
+          <span>＋</span> Open project <kbd>⌘O</kbd>
+        </button>
+        <div class="section-label">
+          WORKSPACE
+          <button
+            id="revealProject"
+            class="icon-button"
+            title="Show project folder"
+          >
+            ↗
+          </button>
+        </div>
+        <div id="projectCard" class="project-card">
+          <span class="folder-icon">▱</span>
+          <div>
+            <strong>No project open</strong
+            ><small>Choose a folder to get started</small>
+          </div>
+        </div>
+        <div class="section-label">RECENT PROJECTS</div>
+        <div id="projects" class="recent-list"></div>
+        <div class="section-label">
+          FILES
+          <button
+            id="refreshFiles"
+            class="icon-button"
+            title="Refresh project files"
+          >
+            ↻
+          </button>
+        </div>
+        <input
+          id="fileFilter"
+          class="filter"
+          placeholder="Find a file…"
+          aria-label="Find a file"
+        />
+        <div id="files" class="file-list"></div>
+        <div class="sidebar-bottom">
+          <button id="workbenchButton" class="button wide">✦ Workbench</button
+          ><button id="activeGoalButton" class="settings-link">
+            ◎ Goals, plans & resources</button
+          ><button id="settingsButton" class="settings-link">
+            ⚙ Settings & connections <kbd>⌘,</kbd>
+          </button>
+          <div class="local-label">
+            <span class="status-dot"></span
+            ><span id="privacyLabel">Local Ollama connection</span>
+          </div>
+        </div>
+      </aside>
+      <main class="workspace">
+        <header class="topbar">
+          <div class="breadcrumb">
+            <span id="projectName">Your workspace</span><span>/</span
+            ><strong id="chatTitle">New conversation</strong>
+          </div>
+          <div class="top-actions">
+            <button
+              id="toggleInspector"
+              class="button subtle"
+              aria-expanded="true"
+              title="Show or hide workspace activity"
+            >
+              ☷ Activity</button
+            ><button id="historyButton" class="button subtle">◷ Chats</button
+            ><button id="newChat" class="button subtle" title="New chat">
+              ＋ New chat</button
+            ><button
+              id="themeToggle"
+              class="icon-button theme-trigger"
+              title="Cycle light, dark, hacker themes"
+            >
+              ◐
+            </button>
+          </div>
+        </header>
+        <div class="workspace-toolbar">
+          <div class="mode-tabs" role="tablist" aria-label="Task mode">
+            <button data-mode="ask" role="tab" aria-selected="false">Ask</button
+            ><button data-mode="plan" role="tab" aria-selected="false">
+              Plan</button
+            ><button
+              data-mode="build"
+              role="tab"
+              aria-selected="true"
+              class="active"
+            >
+              Build<span class="tiny-dot"></span>
+            </button>
+          </div>
+          <div class="model-picker">
+            <span class="model-symbol">◇</span
+            ><select id="modelSelect" aria-label="AI model">
+              <option value="">Connect a model</option></select
+            ><button
+              id="refreshModels"
+              class="icon-button"
+              title="Refresh installed models"
+            >
+              ↻
+            </button>
+          </div>
+          <span id="connectionStatus" class="connection-status"
+            >Not connected</span
+          >
+        </div>
+        <section
+          id="conversation"
+          class="conversation"
+          aria-label="Conversation"
+          aria-live="polite"
+        >
+          <div id="welcome" class="welcome">
+            <div class="hero-symbol">⌘<span>✦</span></div>
+            <div class="eyebrow">A LITTLE LESS FRICTION. A LOT MORE FLOW.</div>
+            <h1>Your next idea,<br /><span>one conversation away.</span></h1>
+            <p>
+              Bring your own model. Open a project.<br />Build something that
+              feels like you.
+            </p>
+            <div class="starter-grid">
+              <button
+                data-starter="Explore this project and explain its structure and how to run it. Use read-only tools."
+              >
+                <span>⌕</span><strong>Explore a project</strong
+                ><small>Find your way around the code</small><b>↗</b></button
+              ><button
+                data-starter="Help me plan a small feature. First ask me what I want to build."
+              >
+                <span>✧</span><strong>Plan something new</strong
+                ><small>Turn an idea into a clear next step</small
+                ><b>↗</b></button
+              ><button
+                data-starter="Help me investigate a bug. Ask me for the symptoms, then find the relevant files."
+              >
+                <span>⌁</span><strong>Work through a bug</strong
+                ><small>Read, reason, and verify a fix</small><b>↗</b></button
+              ><button id="testModel">
+                <span>◇</span><strong>Check your model</strong
+                ><small>Test tool compatibility first</small><b>↗</b>
+              </button>
+            </div>
+            <div class="welcome-foot">
+              <span class="status-dot"></span> Your project stays in your
+              control. Every edit gets your approval.
+            </div>
+          </div>
+          <div id="messages"></div>
+        </section>
+        <div id="busyBar" class="busy-bar hidden">
+          <span class="spinner"></span><span id="busyText">Thinking…</span
+          ><span id="elapsed"></span><button id="stopButton">■ Stop</button>
+        </div>
+        <footer class="composer-wrap">
+          <div id="contextStrip" class="context-strip">
+            <span>▱ No project selected</span
+            ><span>Approval required for edits & commands</span>
+          </div>
+          <div class="composer">
+            <div id="attachmentBar" class="attachment-bar"></div>
+            <textarea
+              id="prompt"
+              rows="3"
+              placeholder="What would you like to build?"
+              aria-label="Your coding task"
+            ></textarea>
+            <div class="composer-bottom">
+              <div class="composer-tools">
+                <span id="modeHint">Explore, edit, and verify</span
+                ><span class="separator">·</span
+                ><button
+                  id="attachImage"
+                  class="icon-button"
+                  title="Attach an image for a vision-capable model"
+                >
+                  ▧</button
+                ><button id="attachFile">＋ Add file context</button>
+              </div>
+              <button
+                id="sendButton"
+                class="send-button"
+                title="Send task (Command+Enter)"
+              >
+                ↑
+              </button>
+            </div>
+          </div>
+          <div class="composer-caption">
+            <span id="capabilityHint"
+              >Model capabilities vary. Verify important changes.</span
+            ><span>⌘ ↵ to send</span>
+          </div>
+        </footer>
+      </main>
+      <aside class="inspector">
+        <div class="inspector-head">
+          <strong>Workspace activity</strong><span id="activityCount">0</span>
+        </div>
+        <div class="inspector-tabs">
+          <button class="active" data-panel="activity">Activity</button
+          ><button data-panel="changes">
+            Changes <span id="changeCount">0</span></button
+          ><button data-panel="terminal">Terminal</button>
+        </div>
+        <div id="activityPanel" class="inspector-panel">
+          <div class="quiet-state">
+            <div>⌁</div>
+            <strong>Room for your next move</strong>
+            <p>
+              Tool calls, approvals, and results<br />will appear here as you
+              work.
+            </p>
+          </div>
+        </div>
+        <div id="changesPanel" class="inspector-panel hidden"></div>
+        <div id="terminalPanel" class="inspector-panel hidden">
+          <div class="terminal-heading">
+            <span>PROJECT TERMINAL</span
+            ><button
+              id="manualCommand"
+              class="icon-button"
+              title="Run a command"
+            >
+              ＋
+            </button>
+          </div>
+          <pre id="terminalOutput">
+Commands run in the selected project after your approval. Output appears here.</pre
+          >
+          <p class="terminal-note">
+            60-second command limit. Stop ends generation and requests process
+            termination; child processes may need to be stopped separately.
+          </p>
+        </div>
+        <div class="inspector-footer">
+          <span class="shield">◇</span>
+          <div>
+            <strong>You stay in control</strong
+            ><small>Review edits. Approve commands. Undo saves.</small>
+          </div>
+        </div>
+      </aside>
+    </div>
+    <dialog id="workbenchDialog" class="workbench-modal">
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow">YOUR WORKSPACE, EXPANDED</span>
+          <h2 id="workbenchTitle">Workbench</h2>
+        </div>
+        <button
+          data-close="workbenchDialog"
+          class="icon-button"
+          aria-label="Close Workbench"
+        >
+          ✕
+        </button>
+      </div>
+      <div class="workbench-layout">
+        <nav id="workbenchNav" class="settings-nav"></nav>
+        <div id="workbenchBody" class="workbench-body"></div>
+      </div>
+    </dialog>
+    <dialog id="settingsDialog">
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow">MAKE IT YOURS</span>
+          <h2>Settings & connections</h2>
+        </div>
+        <button
+          data-close="settingsDialog"
+          class="icon-button"
+          aria-label="Close dialog"
+        >
+          ✕
+        </button>
+      </div>
+      <div class="settings-layout">
+        <nav class="settings-nav">
+          <button class="active" data-settings="connection">
+            Model connection</button
+          ><button data-settings="behavior">Agent controls</button
+          ><button data-settings="appearance">Appearance</button>
+        </nav>
+        <form id="settingsForm">
+          <section data-settings-panel="connection">
+            <h3>Bring your own intelligence.</h3>
+            <p class="muted">
+              Use an installed local model or connect a compatible API. Cipher
+              never downloads models.
+            </p>
+            <label
+              >Connection type<select id="provider">
+                <option value="ollama">Ollama · local models</option>
+                <option value="openai">OpenAI-compatible API</option>
+                <option value="anthropic">Anthropic API</option>
+              </select></label
+            ><label
+              >API base URL<input
+                id="endpoint"
+                placeholder="http://localhost:11434" /></label
+            ><label
+              >API key
+              <span class="muted">optional for local Ollama · session only</span
+              ><input
+                id="apiKey"
+                type="password"
+                autocomplete="off"
+                placeholder="Never saved to disk" /></label
+            ><label
+              >Model ID<input
+                id="modelId"
+                placeholder="Choose an installed model or enter an API model ID"
+            /></label>
+            <div class="notice">
+              Only send a task once you trust this endpoint. Project context is
+              sent to the model API you select.
+            </div>
+          </section>
+          <section data-settings-panel="behavior" class="hidden">
+            <h3>A thoughtful pace. Clear boundaries.</h3>
+            <label
+              >Tool protocol<select id="protocol">
+                <option value="auto">Auto · native, with text fallback</option>
+                <option value="native">Native tool calling</option>
+                <option value="text">Text actions · compatibility mode</option>
+              </select></label
+            >
+            <div class="field-row">
+              <label
+                >Context budget<select id="context">
+                  <option>8192</option>
+                  <option>16384</option>
+                  <option>32768</option>
+                  <option>65536</option>
+                </select></label
+              ><label
+                >Response token limit<input
+                  id="maxTokens"
+                  type="number"
+                  min="256"
+                  max="16384"
+                  step="256"
+              /></label>
+            </div>
+            <div class="field-row">
+              <label
+                >Temperature<input
+                  id="temperature"
+                  type="number"
+                  min="0"
+                  max="2"
+                  step="0.1" /></label
+              ><label
+                >Maximum tool rounds<input
+                  id="rounds"
+                  type="number"
+                  min="1"
+                  max="30"
+              /></label>
+            </div>
+            <label
+              >Ollama thinking<select id="thinking">
+                <option value="default">Model default</option>
+                <option value="off">Off (if supported)</option>
+              </select></label
+            ><label
+              >Additional excluded folder names<input
+                id="excludes"
+                placeholder="coverage, generated, archives" /></label
+            ><label
+              >App-wide instructions<textarea
+                id="instructions"
+                rows="4"
+                placeholder="Coding conventions and project-specific guidance…"
+              ></textarea>
+            </label>
+            <div class="notice">
+              File edits and terminal commands always require approval. Files
+              outside the project, symlink escapes, and common credential files
+              are blocked.
+            </div>
+          </section>
+          <section data-settings-panel="appearance" class="hidden">
+            <h3>Find your atmosphere.</h3>
+            <p class="muted">Choose the atmosphere that helps you focus.</p>
+            <div class="theme-grid">
+              <button type="button" data-theme-choice="light">
+                <div class="swatch light-swatch"><i></i><i></i></div>
+                <strong>Daylight</strong
+                ><small>Clear, calm, and bright</small></button
+              ><button type="button" data-theme-choice="dark">
+                <div class="swatch dark-swatch"><i></i><i></i></div>
+                <strong>After hours</strong
+                ><small>Soft contrast. Deep focus.</small></button
+              ><button type="button" data-theme-choice="hacker">
+                <div class="swatch hacker-swatch"><i></i><i></i></div>
+                <strong>Hacker</strong
+                ><small>Phosphor green. Terminal soul.</small>
+              </button>
+            </div>
+            <label
+              >Interface text size<select id="fontSize">
+                <option value="13">Compact</option>
+                <option value="14">Comfortable</option>
+                <option value="16">Large</option>
+              </select></label
+            >
+          </section>
+          <div class="modal-footer">
+            <span class="muted"
+              >Saved on this device. API keys stay in memory.</span
+            ><button type="submit" class="button primary">Save settings</button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+    <dialog id="fileDialog" class="large-modal">
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow">PROJECT FILE</span>
+          <h2 id="fileTitle">File preview</h2>
+        </div>
+        <button
+          data-close="fileDialog"
+          class="icon-button"
+          aria-label="Close dialog"
+        >
+          ✕
+        </button>
+      </div>
+      <div class="preview-actions">
+        <button id="includeFile" class="button primary">
+          Add to next message</button
+        ><button id="saveFileEdits" class="button">Review my edits</button
+        ><span class="muted">Edit here · saves require approval</span>
+      </div>
+      <textarea
+        id="fileContent"
+        class="code-preview"
+        spellcheck="false"
+        aria-label="File contents editor"
+      ></textarea>
+    </dialog>
+    <dialog id="historyDialog">
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow">PICK UP WHERE YOU LEFT OFF</span>
+          <h2>Conversations</h2>
+        </div>
+        <button
+          data-close="historyDialog"
+          class="icon-button"
+          aria-label="Close dialog"
+        >
+          ✕
+        </button>
+      </div>
+      <div id="chatList" class="chat-list"></div>
+    </dialog>
+    <dialog id="commandDialog">
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow">YOUR PROJECT TERMINAL</span>
+          <h2>Run a command</h2>
+        </div>
+        <button
+          data-close="commandDialog"
+          class="icon-button"
+          aria-label="Close dialog"
+        >
+          ✕
+        </button>
+      </div>
+      <form id="commandForm" class="chat-list">
+        <label
+          >Command<input
+            id="commandInput"
+            placeholder="python3 -m unittest"
+            required
+        /></label>
+        <p class="muted">
+          You will review the exact command and working directory before it
+          runs.
+        </p>
+        <div class="modal-footer">
+          <button class="button primary" type="submit">Review command</button>
+        </div>
+      </form>
+    </dialog>
+    <div id="toast" class="toast hidden" role="status"></div>
+    <script type="module" src="app.mjs"></script>
+  </body>
+</html>
