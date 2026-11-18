@@ -137,7 +137,7 @@ You can use the same checkpoint recovery as a model-proposed edit.
 - **Project memory:** save conventions and decisions for the selected project.
 - **Model profiles:** save connection settings. API keys remain session-only.
 - **Browser:** enable exact website origins in Access, then review browser actions. A website origin is its scheme, host, and port, such as http://localhost:3000.
-- **Computer:** in the native Mac app, grant the required Mac permissions, then select allowed running apps inside Cipher. Control of other desktop apps is not yet available on Windows/Linux.
+- **Computer:** enable app access and select running apps. Mac needs Accessibility/Screen Recording. Windows uses UI Automation; Linux uses AT-SPI, with X11 required for pointer, key and capture tools.
 - **Git:** inspect changes and review a new branch or selected-file commit. Git must be installed. Cipher does not push automatically.
 - **Connections:** connect supported HTTP MCP tools. MCP is a way for apps to offer tools and resources to a model. Only connect services you trust.
 - **Activity log:** review a local record and export your conversation.

@@ -537,7 +537,10 @@ function renderHub(tab, body) {
             (s.accessibility ? "Granted" : "Not granted") +
             " · Screen Recording: " +
             (s.screenRecording ? "Available" : "Not available") +
-            (s.detail ? " · " + s.detail : "")),
+            (s.detail ? " · " + s.detail : "") +
+            (s.emergencyShortcut === null
+              ? " · Global stop shortcut unavailable; use Cipher’s Stop button."
+              : "")),
       )
       .catch(failure);
     const computerActions = actions(body);
@@ -611,7 +614,10 @@ function renderHub(tab, body) {
       elem(
         "p",
         "muted",
-        "Emergency stop: Ctrl/Command + Shift + Escape. Cipher’s Stop button is always available while a task runs. Linux accessibility requires AT-SPI; X11 pointer/key tools require wmctrl and xdotool. Wayland supports app-exposed accessibility actions; capture/input depend on compositor permissions.",
+        (desktopPlatform === "darwin"
+          ? "Emergency stop: Command + Shift + Escape. "
+          : "Emergency stop: Ctrl + Alt + Shift + F12 when available. ") +
+          "Cipher’s Stop button is always available while a task runs. Linux accessibility requires AT-SPI; X11 pointer/key tools require wmctrl and xdotool. Wayland supports app-exposed accessibility actions; capture/input depend on compositor permissions.",
       ),
     );
     return;

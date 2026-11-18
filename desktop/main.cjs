@@ -18,6 +18,11 @@ const { Workspace, request } = require("./core.cjs");
 const { Browser } = require("./browser.cjs");
 const { Computer } = require("./computer.cjs");
 let win, workspace, browser, computer;
+let stopShortcutRegistered = false;
+const stopShortcut =
+  process.platform === "darwin"
+    ? "Command+Shift+Escape"
+    : "Control+Alt+Shift+F12";
 const smokeTest = process.argv.includes("--smoke-test");
 if (smokeTest) {
   if (!process.env.CIPHER_SMOKE_DATA)
@@ -168,7 +173,10 @@ async function handle(action, a, id) {
       return computer.status();
     }
     case "accessStatus":
-      return computer.status();
+      return {
+        ...(await computer.status()),
+        emergencyShortcut: stopShortcutRegistered ? stopShortcut : null,
+      };
     case "runningApps":
       return computer.runningApps();
     case "requestAccessibility":
@@ -359,7 +367,7 @@ async function createWindow() {
     ]),
   );
   await win.loadFile(page);
-  globalShortcut.register("CommandOrControl+Shift+Escape", () => {
+  stopShortcutRegistered = globalShortcut.register(stopShortcut, () => {
     cancel();
     win.webContents.send("cipher:stop");
   });

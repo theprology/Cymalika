@@ -12,6 +12,8 @@ The 0.4 development source adds Windows and Linux computer tools. The published 
 6. Open **Workbench → Computer** and inspect the selected app.
 7. Ask the model for one concrete task. Review the proposed action, then inspect its actual result.
 
+Use Cipher’s Stop button while a task runs. The global stop shortcut is Command + Shift + Escape on the native Mac app and Ctrl + Alt + Shift + F12 on Windows/Linux when the desktop allows registration. If the global shortcut is unavailable, Computer status says so.
+
 Computer access resets when Cipher quits. Restarted applications must be selected again on Windows/Linux. An inspection creates short-lived element references; each approved action consumes that snapshot. Inspect again before the next action. Secure accessibility fields are redacted; screenshots can still contain sensitive information.
 
 ## Mac

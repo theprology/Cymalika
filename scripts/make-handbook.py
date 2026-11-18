@@ -18,7 +18,7 @@ def markup(s):
 
 def footer(c,doc):
  w,h=doc.pagesize;c.setFillColor(colors.HexColor('#fbfcf9'));c.rect(0,0,w,h,fill=1,stroke=0)
- c.setStrokeColor(LINE);c.line(52,h-38,w-52,h-38);c.setFont('Helvetica-Bold',8);c.setFillColor(ACCENT);c.drawString(52,h-27,'CIPHER / GETTING STARTED');c.setFont('Helvetica',8);c.setFillColor(MUTED);c.drawString(52,28,'Version 0.3.0  |  Your models. Your workspace.');c.drawRightString(w-52,28,str(doc.page))
+ c.setStrokeColor(LINE);c.line(52,h-38,w-52,h-38);c.setFont('Helvetica-Bold',8);c.setFillColor(ACCENT);c.drawString(52,h-27,'CIPHER / GETTING STARTED');c.setFont('Helvetica',8);c.setFillColor(MUTED);c.drawString(52,28,'Version 0.4.0  |  Your models. Your workspace.');c.drawRightString(w-52,28,str(doc.page))
 
 def parse(lines):
  result=[];i=0
