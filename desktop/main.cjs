@@ -369,11 +369,20 @@ app
     await createWindow();
     if (smokeTest) {
       await verifyStartup();
+      await fs.writeFile(
+        path.join(app.getPath("userData"), "startup-result.json"),
+        JSON.stringify({ ok: true }),
+      );
       app.exit(0);
     }
   })
-  .catch((error) => {
+  .catch(async (error) => {
     console.error(error);
+    if (smokeTest)
+      await fs.writeFile(
+        path.join(app.getPath("userData"), "startup-result.json"),
+        JSON.stringify({ ok: false, error: error.stack || String(error) }),
+      );
     app.exit(1);
   });
 app.on("window-all-closed", () => app.quit());
