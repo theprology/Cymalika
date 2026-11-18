@@ -147,12 +147,12 @@ jobs:
           if [ -f node_modules/electron/dist/chrome-sandbox ]; then sudo chown root:root node_modules/electron/dist/chrome-sandbox; sudo chmod 4755 node_modules/electron/dist/chrome-sandbox; fi
       - name: Verify live computer control
         timeout-minutes: 3
-        run: dbus-run-session -- xvfb-run -a sh -c 'openbox >/tmp/cipher-wm.log 2>&1 & wm=$!; trap "kill $wm 2>/dev/null || true" EXIT; node scripts/test-computer-live.mjs'
+        run: scripts/with-linux-desktop.sh node scripts/test-computer-live.mjs
       - run: npm run dist:linux
       - name: Verify installed package
         run: |
           node scripts/test-unix-install.mjs dist/Cipher-0.4.0-amd64.deb
-          dbus-run-session -- xvfb-run -a node scripts/smoke.mjs /opt/Cipher/cipher-workspace
+          scripts/with-linux-desktop.sh node scripts/smoke.mjs /opt/Cipher/cipher-workspace
       - uses: actions/attest-build-provenance@v3
         with:
           subject-path: |
