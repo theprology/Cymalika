@@ -38,3 +38,7 @@ The nine-step in-app tour was exercised from its first-run dialog through comple
 These checks establish startup and the tested core paths on real target OS runners. They do not replace extended interactive testing on different desktop configurations. Earlier Mac-hosted live tests covered project saves/undo, the existing Ollama model, and browser actions.
 
 Terminal installer checks cover Bash syntax, dry-run selection, checksum verification, corruption rejection, invalid versions, and Windows PowerShell parsing/WhatIf behavior. The installers do not download models or grant OS privacy permissions.
+
+The Mac terminal installer was also exercised with the actual release disk image: checksum verification, disk-image mounting, app signature verification, installation to the user Applications folder, launcher creation, and the installed native self-test all passed. The test copy was removed afterward; the existing installed app and model were preserved.
+
+The Linux runner also exercised the terminal script against the actual Debian package, including checksum verification, apt installation and packaged UI startup. The Windows runner exercised the terminal script against its actual setup executable, including checksum verification, silent installation and installed UI startup. Portable Windows startup is tracked separately from setup validation.

@@ -11,7 +11,8 @@ const {
 const fs = require("node:fs/promises");
 const { randomUUID } = require("node:crypto");
 const path = require("node:path");
-const { pathToFileURL } = require("node:url");
+const { fileURLToPath } = require("node:url");
+const { realpathSync } = require("node:fs");
 const { Workspace, request } = require("./core.cjs");
 const { Browser } = require("./browser.cjs");
 let win, workspace, browser;
@@ -23,6 +24,20 @@ if (smokeTest) {
 }
 const tasks = new Map();
 const page = path.resolve(__dirname, "../web/index.html");
+function isWorkspacePage(url) {
+  try {
+    const target = new URL(url);
+    if (target.protocol !== "file:" || target.search || target.hash)
+      return false;
+    const canonical = (file) => {
+      const resolved = realpathSync(file);
+      return process.platform === "win32" ? resolved.toLowerCase() : resolved;
+    };
+    return canonical(fileURLToPath(target)) === canonical(page);
+  } catch {
+    return false;
+  }
+}
 const reply = (id, result = null, error = null) => {
   if (win && !win.isDestroyed())
     win.webContents.send("cipher:reply", { id, result, error });
@@ -282,7 +297,7 @@ async function createWindow() {
     if (
       event.sender !== win.webContents ||
       event.senderFrame !== win.webContents.mainFrame ||
-      event.senderFrame.url !== pathToFileURL(page).href
+      !isWorkspacePage(event.senderFrame.url)
     )
       return;
     if (
@@ -339,7 +354,12 @@ async function verifyStartup() {
       'Boolean(window.cipherDesktop && document.getElementById("tourDialog")?.open)',
     );
     if (ready) break;
-    if (attempt === 99) throw Error("First-run tour did not open.");
+    if (attempt === 99) {
+      const state = await win.webContents.executeJavaScript(
+        "({url:location.href,bridge:Boolean(window.cipherDesktop),text:document.body.innerText.slice(-3500)})",
+      );
+      throw Error("First-run tour did not open: " + JSON.stringify(state));
+    }
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
   const status = await win.webContents.executeJavaScript(
