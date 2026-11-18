@@ -28,3 +28,13 @@ Desktop automation on Windows/Linux is not implemented. The UI does not offer it
 ## Beginner guidance
 
 The nine-step in-app tour was exercised from its first-run dialog through completion in the installed native Mac app. The same navigation, completion persistence, and absence of model/file actions have regression checks. The eight-page PDF handbook was rendered and visually reviewed, including the dense recovery page. Fresh installs no longer receive automatic starter resources or a formatting demo. Known local test projects and validation chats were removed from the installed app state after a reversible backup. No user application state is distributed.
+
+## Cross-platform runner evidence
+
+- [Native Mac build and checks](https://github.com/theprology/cipher/actions/runs/44348577436/job/134957621691): shared tests, native self-test, native streaming and installer verification passed. The later desktop startup helper changed only Electron/CI files; native Mac inputs remained unchanged.
+- [Windows package and startup](https://github.com/theprology/cipher/actions/runs/44349593183/job/134961252368): shared tests, both executable packages, packaged renderer, first-run tour and native IPC checks passed. The first Windows run exposed incorrect command quoting; the corrected run verifies output capture and quoted arguments.
+- [Installed Linux package and startup](https://github.com/theprology/cipher/actions/runs/44349593183/job/134961252786): shared tests, AppImage/Debian builds, apt installation, packaged UI under a virtual display, first-run tour and native IPC passed. The test retained the Chromium sandbox.
+
+These checks establish startup and the tested core paths on real target OS runners. They do not replace extended interactive testing on different desktop configurations. Earlier Mac-hosted live tests covered project saves/undo, the existing Ollama model, and browser actions.
+
+Terminal installer checks cover Bash syntax, dry-run selection, checksum verification, corruption rejection, invalid versions, and Windows PowerShell parsing/WhatIf behavior. The installers do not download models or grant OS privacy permissions.

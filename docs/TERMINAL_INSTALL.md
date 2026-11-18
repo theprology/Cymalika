@@ -7,7 +7,7 @@ You do not need a GitHub account to download a public release. These commands in
 Open Terminal, paste this command, then press Enter:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/theprology/cipher/main/install.sh | bash
+curl -fsSL https://github.com/theprology/cipher/releases/latest/download/install.sh | bash
 ```
 
 - **Apple Silicon Mac:** installs `Cipher.app` in your personal `~/Applications` folder. Quit an already-running Cipher before installing.
@@ -20,7 +20,7 @@ The Mac download currently supports Apple Silicon. Linux downloads currently sup
 To inspect the script before running it:
 
 ```sh
-curl -fsSL -o cipher-install.sh https://raw.githubusercontent.com/theprology/cipher/main/install.sh
+curl -fsSL -o cipher-install.sh https://github.com/theprology/cipher/releases/latest/download/install.sh
 less cipher-install.sh
 bash cipher-install.sh
 ```
@@ -40,7 +40,7 @@ bash cipher-install.sh --appimage
 Open **PowerShell**, paste this command, then press Enter:
 
 ```powershell
-irm https://raw.githubusercontent.com/theprology/cipher/main/install.ps1 | iex
+irm https://github.com/theprology/cipher/releases/latest/download/install.ps1 | iex
 ```
 
 The script downloads the Windows x64 setup program, checks its SHA-256 checksum, and runs its per-user installer. Open Cipher from the Start menu afterward. Quit a running Cipher before installing. It does not change your PowerShell execution policy or security settings.
@@ -48,7 +48,7 @@ The script downloads the Windows x64 setup program, checks its SHA-256 checksum,
 To inspect the script and see what it would do first:
 
 ```powershell
-Invoke-WebRequest https://raw.githubusercontent.com/theprology/cipher/main/install.ps1 -OutFile cipher-install.ps1
+Invoke-WebRequest https://github.com/theprology/cipher/releases/latest/download/install.ps1 -OutFile cipher-install.ps1
 Get-Content .\cipher-install.ps1
 .\cipher-install.ps1 -Version 0.3.0 -WhatIf
 ```

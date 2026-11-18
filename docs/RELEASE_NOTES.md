@@ -5,6 +5,7 @@ A free desktop coding workspace for your own models.
 - Refined typography, layouts, themes, and Workbench controls.
 - Fresh installs start without demo resources or sample conversations.
 - Nine-step guided tour, a beginner walkthrough, and an eight-page printable handbook.
+- Mac/Linux and Windows terminal installers with checksum verification.
 - Native Mac app plus Windows/Linux coding and browser backends.
 - Reviewed edits, checkpoints, commands, Git, streaming, plans, goals, resources, and HTTP MCP tools.
 - Desktop control remains Mac-only. Windows/Linux do not control other applications.

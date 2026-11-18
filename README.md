@@ -38,13 +38,13 @@ Need a slower introduction? Click **Getting started** inside the app for the nin
 **Mac / Linux**
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/theprology/cipher/main/install.sh | bash
+curl -fsSL https://github.com/theprology/cipher/releases/latest/download/install.sh | bash
 ```
 
 **Windows PowerShell**
 
 ```powershell
-irm https://raw.githubusercontent.com/theprology/cipher/main/install.ps1 | iex
+irm https://github.com/theprology/cipher/releases/latest/download/install.ps1 | iex
 ```
 
 The scripts download Cipher from Releases and verify its SHA-256 checksum. They do not download models or change OS security settings. See [terminal installation](docs/TERMINAL_INSTALL.md) for supported platforms, install locations, script review, and verification-only options.
@@ -70,11 +70,11 @@ The scripts download Cipher from Releases and verify its SHA-256 checksum. They 
 
 ## Platform support
 
-| Platform                | App                                        | Status                                 |
-| ----------------------- | ------------------------------------------ | -------------------------------------- |
-| macOS 13+ Apple Silicon | Native Swift / WebKit app                  | Installed and tested locally           |
-| Windows x64             | Electron `.exe` installer and portable app | Build pipeline; see release validation |
-| Linux x64               | Electron AppImage and Debian package       | Build pipeline; see release validation |
+| Platform                | App                                        | Status                                                                     |
+| ----------------------- | ------------------------------------------ | -------------------------------------------------------------------------- |
+| macOS 13+ Apple Silicon | Native Swift / WebKit app                  | Installed and tested locally                                               |
+| Windows x64             | Electron `.exe` installer and portable app | Built and tested on Windows CI, including packaged startup and tool bridge |
+| Linux x64               | Electron AppImage and Debian package       | Installed and started on Linux CI, with backend and bridge checks          |
 
 The Windows and Linux versions share the interface, model adapters, and agent loop. Their backend provides coding, Git, streaming, and browser tools. **Control of other desktop applications is currently Mac-only.** Do not assume desktop automation parity between platforms. Windows/Linux installers are unsigned unless a release explicitly says otherwise. Mac builds are locally signed and not Apple-notarized.
 
