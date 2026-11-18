@@ -27,14 +27,16 @@ jobs:
       - run: npm ci
       - run: npm test
       - name: Test Windows app control
+        timeout-minutes: 3
         if: matrix.target == 'win'
         run: node scripts/test-computer-live.mjs
       - name: Test Linux app control
+        timeout-minutes: 3
         if: matrix.target == 'linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y python3-gi gir1.2-atspi-2.0 gir1.2-gtk-3.0 at-spi2-core dbus-x11 xvfb openbox wmctrl xdotool
-          dbus-run-session -- xvfb-run -a sh -c 'openbox >/tmp/cipher-wm.log 2>&1 & node scripts/test-computer-live.mjs'
+          dbus-run-session -- xvfb-run -a sh -c 'openbox >/tmp/cipher-wm.log 2>&1 & wm=$!; trap "kill $wm 2>/dev/null || true" EXIT; node scripts/test-computer-live.mjs'
       - run: npm run dist:${{ matrix.target }}
       - name: Install and check Windows terminal packages
         if: matrix.target == 'win'

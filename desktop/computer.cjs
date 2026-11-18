@@ -12,10 +12,17 @@ class Computer {
     this.children = new Set();
     this.epoch = 0;
   }
+  kill(child) {
+    try {
+      if (this.platform === "linux" && child.pid)
+        process.kill(-child.pid, "SIGTERM");
+      else child.kill();
+    } catch {}
+  }
   cancel() {
     this.epoch++;
     this.snapshot = null;
-    for (const c of this.children) c.kill();
+    for (const c of this.children) this.kill(c);
     this.children.clear();
   }
   configure(apps) {
@@ -49,6 +56,7 @@ class Computer {
     return new Promise((resolve, reject) => {
       const child = spawn(executable, args, {
         windowsHide: true,
+        detached: this.platform === "linux",
         stdio: ["pipe", "pipe", "pipe"],
       });
       this.children.add(child);
@@ -63,7 +71,7 @@ class Computer {
         e ? reject(e) : resolve(value);
       };
       const timer = setTimeout(() => {
-        child.kill();
+        this.kill(child);
         finish(
           Error("Computer tool timed out. No further input will be sent."),
         );
@@ -71,7 +79,7 @@ class Computer {
       child.stdout.on("data", (b) => {
         data += b;
         if (Buffer.byteLength(data) > 1e6) {
-          child.kill();
+          this.kill(child);
           finish(Error("Computer snapshot exceeds its limit."));
         }
       });

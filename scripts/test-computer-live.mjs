@@ -16,6 +16,12 @@ const fixture = spawn(
   { stdio: "inherit", env: { ...process.env, NO_AT_BRIDGE: "0" } },
 );
 const computer = new Computer({ require: () => {} }, () => {});
+const deadline = setTimeout(() => {
+  console.error("Live computer test exceeded 75 seconds.");
+  computer.cancel();
+  fixture.kill();
+  process.exit(1);
+}, 75000);
 try {
   let app;
   for (let i = 0; i < 25; i++) {
@@ -125,6 +131,7 @@ try {
     "PASS: live target-OS app discovery, password redaction, text edit, button invocation, pointer click, key input and independent read-back.",
   );
 } finally {
+  clearTimeout(deadline);
   computer.cancel();
   fixture.kill();
 }
