@@ -16,7 +16,7 @@ The CI matrix runs shared tests on Windows, Linux, and macOS and produces instal
 
 ## Outstanding validation
 
-- Interactive testing of Windows and Linux installers on actual target desktops.
+- Extended interactive testing of Windows and Linux on diverse target desktops; automated install/startup checks are recorded below.
 - Live authenticated cloud providers and cloud vision inference.
 - Arbitrary third-party MCP servers and unsupported MCP features.
 - Generic Mac pointer/keyboard operations across different applications.
@@ -41,4 +41,6 @@ Terminal installer checks cover Bash syntax, dry-run selection, checksum verific
 
 The Mac terminal installer was also exercised with the actual release disk image: checksum verification, disk-image mounting, app signature verification, installation to the user Applications folder, launcher creation, and the installed native self-test all passed. The test copy was removed afterward; the existing installed app and model were preserved.
 
-The Linux runner also exercised the terminal script against the actual Debian package, including checksum verification, apt installation and packaged UI startup. The Windows runner exercised the terminal script against its actual setup executable, including checksum verification, silent installation and installed UI startup. Portable Windows startup is tracked separately from setup validation.
+The Linux runner also exercised the terminal script against the actual Debian package, including checksum verification, apt installation and packaged UI startup. The Windows runner exercised the terminal script against its actual setup executable, including checksum verification, silent installation and installed UI startup. Portable Windows installation and UI startup also passed. Its first test exposed a difference between Windows short temporary paths and their canonical paths; the corrected IPC check still requires the trusted main frame and the exact canonical workspace file.
+
+The final [cross-platform run](https://github.com/theprology/cipher/actions/runs/44355147649) passed on all three platforms, including actual terminal installation and installed startup. Windows setup and portable launchers both produced explicit successful startup evidence. The shared tests cover core tools; this does not imply every graphical flow or external integration was manually exercised on each OS.
