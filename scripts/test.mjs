@@ -6,6 +6,7 @@ for (const file of [
   "source/test-workbench.mjs",
   "source/test-mcp.mjs",
   "desktop/test-core.cjs",
+  "scripts/test-installers.mjs",
 ]) {
   const r = spawnSync(process.execPath, [file], { stdio: "inherit" });
   if (r.status !== 0) process.exit(r.status || 1);

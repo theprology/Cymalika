@@ -33,6 +33,22 @@ You do not need to attach each file. The model can list and search the project a
 
 Need a slower introduction? Click **Getting started** inside the app for the nine-step tour, or follow [the beginner walkthrough](docs/WALKTHROUGH.md). A printable [eight-page handbook](docs/Cipher-Beginners-Handbook.pdf) is also included.
 
+## Install from your terminal
+
+**Mac / Linux**
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/theprology/cipher/main/install.sh | bash
+```
+
+**Windows PowerShell**
+
+```powershell
+irm https://raw.githubusercontent.com/theprology/cipher/main/install.ps1 | iex
+```
+
+The scripts download Cipher from Releases and verify its SHA-256 checksum. They do not download models or change OS security settings. See [terminal installation](docs/TERMINAL_INSTALL.md) for supported platforms, install locations, script review, and verification-only options.
+
 ## A workspace that does more
 
 | Capability         | What you can do                                                        |
