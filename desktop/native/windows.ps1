@@ -7,6 +7,7 @@ try {
 using System;
 using System.Runtime.InteropServices;
 public static class CipherWindow {
+  [DllImport("user32.dll")] public static extern bool SetProcessDpiAwarenessContext(IntPtr context);
   public delegate bool EnumProc(IntPtr hwnd, IntPtr parameter);
   [DllImport("user32.dll")] public static extern bool EnumWindows(EnumProc callback, IntPtr parameter);
   [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hwnd);
@@ -22,6 +23,7 @@ public static class CipherWindow {
   public struct Rect { public int Left, Top, Right, Bottom; }
 }
 '@
+    [void][CipherWindow]::SetProcessDpiAwarenessContext([IntPtr](-4))
     function App-Identity($process) { return "$($process.Id):$($process.StartTime.ToUniversalTime().Ticks)" }
     function Running-Apps {
         $result = New-Object System.Collections.Generic.List[object]
@@ -89,8 +91,10 @@ public static class CipherWindow {
                     } elseif ($node.TryGetCurrentPattern([System.Windows.Automation.TextPattern]::Pattern,[ref]$pattern)) { $value=$pattern.DocumentRange.GetText(1200) }
                     if ($node.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern,[ref]$pattern)) { $actions=@('press') }
                     $name=$node.Current.Name
+                    $rect=$node.Current.BoundingRectangle
+                    $bounds=@{x=$rect.X;y=$rect.Y;width=$rect.Width;height=$rect.Height}
                     if ($name -or $value -or $editable -or $actions.Count) {
-                        $rows.Add(@{id=[string]$rows.Count; role=$role;label=([string]$name).Substring(0,[Math]::Min(220,([string]$name).Length));value=([string]$value).Substring(0,[Math]::Min(1200,([string]$value).Length));editable=$editable;actions=$actions;depth=$item.depth;locator=(Element-Locator $node)})
+                        $rows.Add(@{id=[string]$rows.Count; role=$role;label=([string]$name).Substring(0,[Math]::Min(220,([string]$name).Length));value=([string]$value).Substring(0,[Math]::Min(1200,([string]$value).Length));editable=$editable;actions=$actions;depth=$item.depth;bounds=$bounds;locator=(Element-Locator $node)})
                     }
                     if ($item.depth -lt 14) {
                         $child=$walker.GetFirstChild($node)
@@ -99,14 +103,18 @@ public static class CipherWindow {
                 } catch { if ($warnings.Count -lt 5) { $warnings.Add($_.Exception.Message) } }
             }
             $result=@{app=$request.app;warnings=@($warnings.ToArray());elements=@($rows.ToArray());truncated=($visited -ge 350 -or $rows.Count -ge 120)}
-        } elseif ($operation -eq 'window') { $result=@{window=[string]$app.handle} }
+        } elseif ($operation -eq 'window') {
+            $rect=New-Object CipherWindow+Rect
+            [void][CipherWindow]::GetWindowRect($handle,[ref]$rect)
+            $result=@{window=[string]$app.handle;bounds=@{x=$rect.Left;y=$rect.Top;width=$rect.Right-$rect.Left;height=$rect.Bottom-$rect.Top}}
+        }
         elseif ($operation -in @('press','set_text')) {
             $element = Find-Element $request.locator
             if ($operation -eq 'press') { $element.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke() }
             else { $element.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue([string]$request.text) }
             $result=@{status='performed';operation=$operation;app=$request.app}
         } else {
-            if (-not [CipherWindow]::SetForegroundWindow($handle)) { throw 'Windows did not focus the allowed window. Activate it manually.' }
+            if ([CipherWindow]::GetForegroundWindow() -ne $handle) { [void][CipherWindow]::SetForegroundWindow($handle) }
             Start-Sleep -Milliseconds 120
             if ([CipherWindow]::GetForegroundWindow() -ne $handle) { throw 'Another window is active. No input was sent.' }
             if ($operation -eq 'click') {
@@ -131,7 +139,9 @@ public static class CipherWindow {
             } elseif ($operation -eq 'scroll') {
                 $amount=[Math]::Max(-20,[Math]::Min(20,[int]$request.amount))
                 $rect=New-Object CipherWindow+Rect;[void][CipherWindow]::GetWindowRect($handle,[ref]$rect)
-                [void][CipherWindow]::SetCursorPos($rect.Left+30,$rect.Top+30)
+                $point=New-Object CipherWindow+Point;$point.X=$rect.Left+30;$point.Y=$rect.Top+30
+                if ([CipherWindow]::GetAncestor([CipherWindow]::WindowFromPoint($point),2) -ne $handle) { throw 'Another window covers this point. No scroll was sent.' }
+                [void][CipherWindow]::SetCursorPos($point.X,$point.Y)
                 [CipherWindow]::mouse_event(0x800,0,0,$amount*120,[UIntPtr]::Zero)
             } elseif ($operation -ne 'activate') { throw 'Use set_text on an inspected editable field for Windows text entry.' }
             $result=@{status='performed';operation=$operation;app=$request.app}

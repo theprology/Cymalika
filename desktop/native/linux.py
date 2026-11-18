@@ -63,13 +63,21 @@ def main(a):
                 if action: actions=[action.get_action_name(i) for i in range(action.get_n_actions())]
             except Exception: pass
             if name or value or editable or actions:
-                rows.append({'id':str(len(rows)),'label':name[:220],'role':role,'value':value,'editable':editable,'actions':actions,'depth':depth,'locator':{'path':path,'role':role,'name':name}})
+                bounds=None
+                try:
+                    rect=Atspi.Component.get_extents(e.get_component_iface(),Atspi.CoordType.SCREEN)
+                    bounds={'x':rect.x,'y':rect.y,'width':rect.width,'height':rect.height}
+                except Exception: pass
+                rows.append({'id':str(len(rows)),'label':name[:220],'role':role,'value':value,'editable':editable,'actions':actions,'depth':depth,'bounds':bounds,'locator':{'path':path,'role':role,'name':name}})
             for i in range(min(e.get_child_count(),350)):
                 try: visit(e.get_child_at_index(i),path+[i],depth+1)
                 except Exception: pass
         visit(app,[],0)
         return {'app':a['app'],'elements':rows,'warnings':warnings,'truncated':visited>=350 or len(rows)>=120}
-    if op=='window': return {'window':str(window())}
+    if op=='window':
+        wid=window()
+        geometry=dict(line.split('=',1) for line in command(['xdotool','getwindowgeometry','--shell',str(wid)]).splitlines() if '=' in line)
+        return {'window':str(wid),'bounds':{'x':int(geometry['X']),'y':int(geometry['Y']),'width':int(geometry['WIDTH']),'height':int(geometry['HEIGHT'])}}
     if op in ('press','set_text'):
         e=resolve(a['locator'])
         if op=='set_text':
@@ -94,7 +102,10 @@ def main(a):
             x,y=a.get('x'),a.get('y')
             if not isinstance(x,(int,float)) or not isinstance(y,(int,float)) or not (int(g['X'])<=x<int(g['X'])+int(g['WIDTH']) and int(g['Y'])<=y<int(g['Y'])+int(g['HEIGHT'])): fail('Click must be inside the allowed window.')
             if int(command(['xdotool','getwindowpid',str(wid)]))!=pid: fail('Window ownership changed.')
-            command(['xdotool','mousemove','--sync',str(int(x)),str(int(y)),'click','1'])
+            command(['xdotool','mousemove','--sync',str(int(x)),str(int(y))])
+            pointer=dict(line.split('=',1) for line in command(['xdotool','getmouselocation','--shell']).splitlines() if '=' in line)
+            if int(command(['xdotool','getwindowpid',pointer['WINDOW']]))!=pid: fail('Another app covers this point. No click was sent.')
+            command(['xdotool','click','1'])
         elif op=='key':
             keys={'return':'Return','tab':'Tab','escape':'Escape','backspace':'BackSpace','left':'Left','right':'Right','up':'Up','down':'Down',**{k:k for k in 'acvszlw'}}
             mods={'control':'ctrl','shift':'shift','option':'alt','alt':'alt','command':'super','super':'super'}
@@ -102,7 +113,10 @@ def main(a):
             command(['xdotool','key','--clearmodifiers','+'.join([mods[m] for m in a.get('modifiers',[]) or []]+[keys[a['key'].lower()]])])
         elif op=='scroll':
             amount=max(-20,min(20,int(a.get('amount') or 0)))
-            command(['xdotool','mousemove','--window',str(wid),'30','30','click','--repeat',str(abs(amount)),'4' if amount>0 else '5'])
+            command(['xdotool','mousemove','--window',str(wid),'30','30'])
+            pointer=dict(line.split('=',1) for line in command(['xdotool','getmouselocation','--shell']).splitlines() if '=' in line)
+            if int(command(['xdotool','getwindowpid',pointer['WINDOW']]))!=pid: fail('Another app covers this point. No scroll was sent.')
+            if amount: command(['xdotool','click','--repeat',str(abs(amount)),'4' if amount>0 else '5'])
         else: fail('Use set_text on an inspected editable field for Linux text entry.')
     return {'status':'performed','app':a['app'],'operation':op,'next':'Inspect a fresh snapshot before another action.'}
 try:

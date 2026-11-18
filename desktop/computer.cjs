@@ -209,7 +209,10 @@ class Computer {
       );
     const result = await this.capture(target);
     if (epoch !== this.epoch) throw Error("Capture cancelled.");
-    return { ...result, app: a.app };
+    const current = await this.call({ operation: "window", app: a.app });
+    if (epoch !== this.epoch || current.window !== target.window)
+      throw Error("The allowed window changed during capture.");
+    return { ...result, app: a.app, bounds: target.bounds };
   }
 }
 module.exports = { Computer };

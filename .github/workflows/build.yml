@@ -33,8 +33,8 @@ jobs:
         if: matrix.target == 'linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-gi gir1.2-atspi-2.0 gir1.2-gtk-3.0 at-spi2-core dbus-x11 xvfb
-          dbus-run-session -- xvfb-run -a node scripts/test-computer-live.mjs
+          sudo apt-get install -y python3-gi gir1.2-atspi-2.0 gir1.2-gtk-3.0 at-spi2-core dbus-x11 xvfb openbox wmctrl xdotool
+          dbus-run-session -- xvfb-run -a sh -c 'openbox >/tmp/cipher-wm.log 2>&1 & node scripts/test-computer-live.mjs'
       - run: npm run dist:${{ matrix.target }}
       - name: Install and check Windows terminal packages
         if: matrix.target == 'win'

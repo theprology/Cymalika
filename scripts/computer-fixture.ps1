@@ -5,6 +5,7 @@ Add-Type -AssemblyName PresentationFramework
     <TextBox x:Name="Entry" Text="before" AutomationProperties.Name="Cipher fixture entry"/>
     <Button x:Name="Apply" Content="Apply fixture" Margin="0,20,0,0"/>
     <TextBlock x:Name="Result" Text="not applied"/>
+    <PasswordBox Password="fixture-secret-never-read"/>
   </StackPanel>
 </Window>
 '@

@@ -540,19 +540,28 @@ function renderHub(tab, body) {
             (s.detail ? " · " + s.detail : "")),
       )
       .catch(failure);
-    actions(body).append(
+    const computerActions = actions(body);
+    computerActions.append(
       button("Manage access", "button primary", () => hub("access")),
-      button(
-        "Accessibility settings",
-        "button",
-        safeClick(() => native("requestAccessibility")),
-      ),
-      button(
-        "Screen Recording permission",
-        "button",
-        safeClick(() => native("requestScreenRecording")),
-      ),
     );
+    if (desktopPlatform === "darwin") {
+      computerActions.append(
+        button(
+          "Accessibility settings",
+          "button",
+          safeClick(() => native("requestAccessibility")),
+        ),
+        button(
+          "Screen Recording permission",
+          "button",
+          safeClick(() => native("requestScreenRecording")),
+        ),
+      );
+    } else {
+      computerActions.append(
+        button("Refresh status", "button", () => hub("computer")),
+      );
+    }
     const app = pick(
       body,
       "Allowed app",
@@ -1219,6 +1228,16 @@ async function renderAccess(body) {
             ? [...new Set([...access.apps, app.id])]
             : access.apps.filter((x) => x !== app.id);
         },
+      );
+    if (apps.length)
+      appbox.append(
+        button("Select all listed apps", "button", () => {
+          idle();
+          access.apps = apps.map((app) => app.id);
+          for (const input of appbox.querySelectorAll('input[type="checkbox"]'))
+            input.checked = true;
+          toast("Apps selected. Apply session access to enable them.");
+        }),
       );
   } catch (e) {
     appbox.append(elem("p", "muted", e.message));

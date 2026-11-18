@@ -76,7 +76,7 @@ The scripts download Cipher from Releases and verify its SHA-256 checksum. They 
 | Windows x64             | Electron `.exe` installer and portable app | Built and tested on Windows CI, including packaged startup and tool bridge |
 | Linux x64               | Electron AppImage and Debian package       | Installed and started on Linux CI, with backend and bridge checks          |
 
-The Windows and Linux versions share the interface, model adapters, and agent loop. Their backend provides coding, Git, streaming, and browser tools. **Control of other desktop applications is currently Mac-only.** Do not assume desktop automation parity between platforms. Windows/Linux installers are unsigned unless a release explicitly says otherwise. Mac builds are locally signed and not Apple-notarized.
+The Windows and Linux versions share the interface, model adapters, and agent loop. Their backend provides coding, Git, streaming, and browser tools. **The published 0.3.0 downloads have Mac-only desktop control.** The 0.4 development source adds Windows UI Automation and Linux AT-SPI backends; see [computer use](docs/COMPUTER_USE.md) and [signing](docs/SIGNING.md) for current setup and limits. Do not assume desktop automation parity between platforms. Windows/Linux installers are unsigned unless a release explicitly says otherwise. Mac builds are locally signed and not Apple-notarized.
 
 ## Bring your own model
 
