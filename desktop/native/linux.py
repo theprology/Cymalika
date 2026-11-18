@@ -53,7 +53,7 @@ def main(a):
             name=e.get_name() or ''; role=e.get_role_name(); value=''; editable=False; actions=[]
             try:
                 text=e.get_text_iface()
-                if text: value=(text.get_text(0,1200) or '')[:1200]
+                if text: value=(Atspi.Text.get_text(text,0,min(1200,Atspi.Text.get_character_count(text))) or '')[:1200]
             except Exception as error:
                 if len(warnings)<3: warnings.append('Text: '+str(error))
             try: editable=e.get_editable_text_iface() is not None
