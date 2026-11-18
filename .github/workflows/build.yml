@@ -27,14 +27,15 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run dist:${{ matrix.target }}
-      - name: Check packaged Windows startup
+      - name: Install and check Windows terminal packages
         if: matrix.target == 'win'
-        run: node scripts/smoke.mjs dist/win-unpacked/Cipher.exe
+        run: ./scripts/test-windows-install.ps1
       - name: Install and check the Linux package
         if: matrix.target == 'linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y ./dist/*.deb xvfb
+          sudo apt-get install -y xvfb
+          node scripts/test-unix-install.mjs dist/Cipher-0.3.0-amd64.deb
           xvfb-run -a node scripts/smoke.mjs /opt/Cipher/cipher-workspace
       - uses: actions/upload-artifact@v4
         with:
@@ -63,6 +64,8 @@ jobs:
           ln -s /Applications staging/Applications
           hdiutil create -volname Cipher -srcfolder staging -ov -format UDZO dist-cipher-mac-$(uname -m).dmg
           hdiutil verify dist-cipher-mac-$(uname -m).dmg
+          node scripts/test-unix-install.mjs dist-cipher-mac-$(uname -m).dmg
+          if [ "$(uname -m)" = arm64 ]; then "$HOME/Applications/Cipher.app/Contents/MacOS/Cipher" --self-test; fi
       - uses: actions/upload-artifact@v4
         with:
           name: cipher-mac
