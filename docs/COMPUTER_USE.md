@@ -1,6 +1,6 @@
 # Computer use
 
-The 0.4 development source adds Windows and Linux computer tools. The published 0.3.0 downloads retain their original Mac-only desktop support until a new release is published. Signing status is recorded per release; a workflow file alone does not mean a download is signed.
+Cipher 0.4 adds Windows and Linux computer tools. Mac downloads are Developer ID signed and Apple-notarized. Windows publisher signing is pending an external provider review. Linux packages have GitHub build-provenance attestations. Signing status is recorded per release; a workflow file alone does not mean a download is signed.
 
 ## Start here
 

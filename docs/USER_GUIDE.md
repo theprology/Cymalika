@@ -20,7 +20,7 @@ In Workbench → Access, enable Browser and add exact origins such as `http://lo
 
 In the native Mac app, grant Accessibility in System Settings, then enable computer tools and choose allowed running apps inside Cipher. Screen Recording is needed for window captures. Approve one action at a time. Passwords, payments, OS permission dialogs, security warnings, and irreversible confirmations should be handled by you. Some apps expose limited accessibility information. Updates to locally signed builds can require refreshing macOS permissions.
 
-The 0.4 development source adds Windows UI Automation and Linux AT-SPI app control; the published 0.3.0 downloads still have the original platform limits. See [computer use](COMPUTER_USE.md) for setup, supported operations, and X11/Wayland differences. Signing status is recorded per release.
+Cipher 0.4 adds Windows UI Automation and Linux AT-SPI app control. See [computer use](COMPUTER_USE.md) for setup, supported operations, and X11/Wayland differences. Signing status is recorded per release.
 
 ## Git and connections
 

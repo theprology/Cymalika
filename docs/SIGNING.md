@@ -1,6 +1,6 @@
 # Publisher signing
 
-A successful build is not a publisher signature. Cipher's public 0.3.0 downloads remain development builds. The signed-release workflow refuses to produce a signed candidate when credentials are absent; it does not silently fall back to ad-hoc or unsigned signing.
+A successful build is not a publisher signature. Cipher 0.4 Mac downloads are Developer ID signed and Apple-notarized. Linux packages have GitHub provenance attestations. Windows publisher signing is pending an external provider review; the previously published 0.3.0 downloads remain development builds. The signed-release workflow refuses to produce a signed candidate when credentials are absent; it does not silently fall back to ad-hoc or unsigned signing.
 
 ## Mac
 

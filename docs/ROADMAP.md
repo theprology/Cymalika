@@ -4,7 +4,7 @@ The following are proposals, not claims about shipped functionality.
 
 ## Highest value next
 
-1. **Native Windows and Linux app control:** Windows UI Automation and Linux accessibility/desktop portals, with per-app grants and the same action review workflow. Linux support must account for Wayland and X11 differences.
+1. **Broader desktop coverage:** add Wayland portal sessions for pointer/keyboard/capture operations, expand Windows legacy-control support, and test more apps. Windows UI Automation and Linux AT-SPI/X11 tools are implemented in 0.4.
 2. **Git worktrees per task:** isolated branches, clean review, and explicit merge or discard so agent tasks do not collide with your current work.
 3. **Language-aware project map:** symbol references, dependency navigation, and incremental indexing so models find relevant code with less context.
 4. **Grouped change review:** approve a coherent patch with file-level decisions and safe rollback, rather than reviewing a long sequence of full-file proposals.
@@ -24,7 +24,7 @@ The following are proposals, not claims about shipped functionality.
 
 ## Distribution and trust
 
-- Signed Windows installers, Apple notarization, and verified checksums.
+- Finish trusted Windows publisher signing after provider approval. Mac Developer ID signing/notarization and release checksums are implemented.
 - Explicit opt-in updates with release notes and rollback.
 - Cross-platform accessibility audits and actual device testing.
 - Optional encrypted local history and OS keychain integration.

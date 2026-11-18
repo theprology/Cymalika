@@ -51,22 +51,22 @@ The scripts download Cipher from Releases and verify its SHA-256 checksum. They 
 
 ## A workspace that does more
 
-| Capability         | What you can do                                                        |
-| ------------------ | ---------------------------------------------------------------------- |
-| Conversations      | Read formatted Markdown, tables, and code; copy replies or code blocks |
-| Project tools      | Find files, search source, read content, and review changes            |
-| Checkpoints        | Undo an approved save when it will not overwrite newer work            |
-| Ask / Plan / Build | Understand code, review structured plans, then implement               |
-| Goals              | Track milestones, evidence, pause/resume, and reviewed completion      |
-| Resources          | Add your own instructions, references, and reusable text materials     |
-| Project memory     | Keep conventions and decisions with each project                       |
-| Model profiles     | Save connection and generation settings without saving API keys        |
-| Streaming          | Watch replies arrive from supported providers                          |
-| Browser            | Inspect and interact with websites you explicitly allow                |
-| Git                | Inspect changes, create branches, and review selected-file commits     |
-| MCP                | Connect supported HTTP tools and text resources                        |
-| Appearance         | Daylight, After hours, and Hacker themes; adjustable text size         |
-| Mac computer tools | Inspect allowed apps, approve actions, and request window capture      |
+| Capability         | What you can do                                                             |
+| ------------------ | --------------------------------------------------------------------------- |
+| Conversations      | Read formatted Markdown, tables, and code; copy replies or code blocks      |
+| Project tools      | Find files, search source, read content, and review changes                 |
+| Checkpoints        | Undo an approved save when it will not overwrite newer work                 |
+| Ask / Plan / Build | Understand code, review structured plans, then implement                    |
+| Goals              | Track milestones, evidence, pause/resume, and reviewed completion           |
+| Resources          | Add your own instructions, references, and reusable text materials          |
+| Project memory     | Keep conventions and decisions with each project                            |
+| Model profiles     | Save connection and generation settings without saving API keys             |
+| Streaming          | Watch replies arrive from supported providers                               |
+| Browser            | Inspect and interact with websites you explicitly allow                     |
+| Git                | Inspect changes, create branches, and review selected-file commits          |
+| MCP                | Connect supported HTTP tools and text resources                             |
+| Appearance         | Daylight, After hours, and Hacker themes; adjustable text size              |
+| Computer tools     | Inspect allowed apps, approve actions, and request supported window capture |
 
 ## Platform support
 
@@ -76,7 +76,7 @@ The scripts download Cipher from Releases and verify its SHA-256 checksum. They 
 | Windows x64             | Electron `.exe` installer and portable app | Built and tested on Windows CI, including packaged startup and tool bridge |
 | Linux x64               | Electron AppImage and Debian package       | Installed and started on Linux CI, with backend and bridge checks          |
 
-The Windows and Linux versions share the interface, model adapters, and agent loop. Their backend provides coding, Git, streaming, and browser tools. **The published 0.3.0 downloads have Mac-only desktop control.** The 0.4 development source adds Windows UI Automation and Linux AT-SPI backends; see [computer use](docs/COMPUTER_USE.md) and [signing](docs/SIGNING.md) for current setup and limits. Do not assume desktop automation parity between platforms. Windows/Linux installers are unsigned unless a release explicitly says otherwise. Mac builds are locally signed and not Apple-notarized.
+The Windows and Linux versions share the interface, model adapters, and agent loop. Their backend provides coding, Git, streaming, and browser tools. **Cipher 0.4 adds desktop tools on Windows and Linux.** The backends use Windows UI Automation and Linux AT-SPI; see [computer use](docs/COMPUTER_USE.md) and [signing](docs/SIGNING.md) for current setup and limits. Do not assume desktop automation parity between platforms. Mac 0.4 downloads are Developer ID signed and Apple-notarized. Windows 0.4 downloads remain unsigned pending a Windows signing-provider review. Linux packages have GitHub provenance attestations. Linux Wayland does not yet support pointer/key/capture sessions; use X11 for those tools.
 
 ## Bring your own model
 

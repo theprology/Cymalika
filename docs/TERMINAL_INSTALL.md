@@ -69,4 +69,4 @@ For a portable copy or verification only:
 3. Follow **Getting started**, near the bottom-left.
 4. Open your project and begin with **Ask**.
 
-Downloads come from [Cipher's GitHub Releases](https://github.com/theprology/cipher/releases). Checksums detect a mismatched download; they are not a substitute for publisher signing. Current builds are not publicly signed/notarized, so your operating system may show a publisher notice. Review that notice yourself. Cipher does not change OS protections or approve permissions for you.
+Downloads come from [Cipher's GitHub Releases](https://github.com/theprology/cipher/releases). Checksums detect a mismatched download; they are not a substitute for publisher signing. Cipher 0.4 Mac downloads are Developer ID signed and Apple-notarized. Windows publisher signing is pending an external provider review, so Windows may show an unknown-publisher notice. Linux packages have GitHub build-provenance attestations. Review that notice yourself. Cipher does not change OS protections or approve permissions for you.

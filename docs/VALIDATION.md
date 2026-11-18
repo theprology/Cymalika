@@ -44,3 +44,15 @@ The Mac terminal installer was also exercised with the actual release disk image
 The Linux runner also exercised the terminal script against the actual Debian package, including checksum verification, apt installation and packaged UI startup. The Windows runner exercised the terminal script against its actual setup executable, including checksum verification, silent installation and installed UI startup. Portable Windows installation and UI startup also passed. Its first test exposed a difference between Windows short temporary paths and their canonical paths; the corrected IPC check still requires the trusted main frame and the exact canonical workspace file.
 
 The final [cross-platform run](https://github.com/theprology/cipher/actions/runs/44355147649) passed on all three platforms, including actual terminal installation and installed startup. Windows setup and portable launchers both produced explicit successful startup evidence. The shared tests cover core tools; this does not imply every graphical flow or external integration was manually exercised on each OS.
+
+## 0.4 desktop control and publisher evidence
+
+The Windows backend uses an MTA UI Automation client. The Linux backend uses AT-SPI and X11 window identities. Live disposable-app checks cover discovery, secure-field redaction, text replacement, button invocation, actual pointer clicks, supported key input, window bounds and actual Electron window capture with decoded, nonuniform pixels. Each action is followed by a new inspection. These tests use actual target-OS desktop sessions, rather than a mocked accessibility tree.
+
+- [Windows live control, capture, packages and installed startup](https://github.com/theprology/cipher/actions/runs/44373806258/job/135047431667) passed.
+- [Linux live control, capture, installed startup and provenance](https://github.com/theprology/cipher/actions/runs/44374246897/job/135049004027) passed. The Chromium sandbox was retained. A separate matrix attempt exposed an X11 window-manager startup race in the test harness; the harness now waits for readiness before launching the fixture.
+- The native Mac 0.4 app passed its self-test, Developer ID signature verification, Apple notarization, ticket stapling/validation and Gatekeeper assessment. It was installed, reopened with the existing Ollama model, and its existing Accessibility and Screen Recording grants were refreshed and independently observed as granted/available in the app.
+
+The Mac publisher certificate was created under the user's approved Apple developer team. Its private key remains in the local login Keychain; the temporary plaintext key copy was removed after successful signing. No private signing material is included in the repository or release.
+
+Windows Authenticode signing is not complete: the free signing inquiry was sent, but the external provider has not approved or issued credentials. Linux attestations are distinct from Windows/macOS publisher signatures. Wayland compositor-mediated pointer/keyboard/capture support remains outstanding. Extended interactive testing across different apps and desktop configurations is still needed.
