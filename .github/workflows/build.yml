@@ -34,6 +34,7 @@ jobs:
         timeout-minutes: 10
         if: matrix.target == 'linux'
         run: |
+          if [ -f /etc/apt/apt-mirrors.txt ]; then printf '%s\n' 'https://azure.archive.ubuntu.com/ubuntu' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null; fi
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends python3-gi gir1.2-atspi-2.0 gir1.2-gtk-3.0 at-spi2-core dbus-x11 xvfb openbox wmctrl xdotool
       - name: Test Linux app control
@@ -47,6 +48,7 @@ jobs:
       - name: Install and check the Linux package
         if: matrix.target == 'linux'
         run: |
+          if [ -f /etc/apt/apt-mirrors.txt ]; then printf '%s\n' 'https://azure.archive.ubuntu.com/ubuntu' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null; fi
           sudo apt-get update
           sudo apt-get install -y xvfb
           node scripts/test-unix-install.mjs dist/Cipher-0.4.0-amd64.deb

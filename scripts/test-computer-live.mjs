@@ -1,5 +1,7 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import path from "node:path";
+import { createRequire } from "node:module";
+const require = createRequire(import.meta.url);
 import assert from "node:assert/strict";
 import { Computer } from "../desktop/computer.cjs";
 const windows = process.platform === "win32";
@@ -126,6 +128,22 @@ try {
   assert.ok(
     target.window && target.bounds.width > 0,
     "Allowed capture window has a native identity and bounds.",
+  );
+  assert.equal(
+    Number(app.id.split(":")[0]),
+    fixture.pid,
+    "Only capture the disposable fixture process.",
+  );
+  const captured = spawnSync(
+    require("electron"),
+    ["scripts/test-computer-capture.cjs", app.id],
+    { stdio: "inherit", timeout: 35000 },
+  );
+  if (captured.error) throw captured.error;
+  assert.equal(
+    captured.status,
+    0,
+    "Actual native window capture must succeed.",
   );
   console.log(
     "PASS: live target-OS app discovery, password redaction, text edit, button invocation, pointer click, key input and independent read-back.",

@@ -7,7 +7,6 @@ const {
   shell,
   Menu,
   globalShortcut,
-  desktopCapturer,
 } = require("electron");
 const fs = require("node:fs/promises");
 const { randomUUID } = require("node:crypto");
@@ -17,6 +16,7 @@ const { realpathSync } = require("node:fs");
 const { Workspace, request } = require("./core.cjs");
 const { Browser } = require("./browser.cjs");
 const { Computer } = require("./computer.cjs");
+const captureAllowedWindow = require("./capture.cjs");
 let win, workspace, browser, computer;
 let stopShortcutRegistered = false;
 const stopShortcut =
@@ -290,26 +290,7 @@ async function createWindow() {
     },
   });
   browser = new Browser(workspace, win);
-  computer = new Computer(workspace, async (target) => {
-    const sources = await desktopCapturer.getSources({
-      types: ["window"],
-      thumbnailSize: { width: 1600, height: 1200 },
-      fetchWindowIcons: false,
-    });
-    const source = sources.find((s) => s.id.split(":")[1] === target.window);
-    if (!source || source.thumbnail.isEmpty())
-      throw Error(
-        "The allowed window could not be captured. Check desktop capture permissions.",
-      );
-    const data = source.thumbnail.toJPEG(70);
-    if (data.length > 8e6)
-      throw Error("Window capture exceeds the image limit.");
-    return {
-      data: data.toString("base64"),
-      mime: "image/jpeg",
-      ...source.thumbnail.getSize(),
-    };
-  });
+  computer = new Computer(workspace, captureAllowedWindow);
   win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   win.webContents.on("will-navigate", (e) => e.preventDefault());
   win.webContents.on("will-attach-webview", (e) => e.preventDefault());
