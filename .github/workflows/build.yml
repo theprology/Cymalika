@@ -27,6 +27,15 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run dist:${{ matrix.target }}
+      - name: Check packaged Windows startup
+        if: matrix.target == 'win'
+        run: node scripts/smoke.mjs dist/win-unpacked/Cipher.exe
+      - name: Install and check the Linux package
+        if: matrix.target == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ./dist/*.deb xvfb
+          xvfb-run -a node scripts/smoke.mjs /opt/Cipher/cipher-workspace
       - uses: actions/upload-artifact@v4
         with:
           name: cipher-${{ matrix.target }}

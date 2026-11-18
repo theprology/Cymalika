@@ -15,6 +15,12 @@ const { pathToFileURL } = require("node:url");
 const { Workspace, request } = require("./core.cjs");
 const { Browser } = require("./browser.cjs");
 let win, workspace, browser;
+const smokeTest = process.argv.includes("--smoke-test");
+if (smokeTest) {
+  if (!process.env.CIPHER_SMOKE_DATA)
+    throw Error("Set an isolated smoke-test data directory.");
+  app.setPath("userData", path.resolve(process.env.CIPHER_SMOKE_DATA));
+}
 const tasks = new Map();
 const page = path.resolve(__dirname, "../web/index.html");
 const reply = (id, result = null, error = null) => {
@@ -327,7 +333,49 @@ async function createWindow() {
     win.webContents.send("cipher:stop");
   });
 }
-app.whenReady().then(createWindow);
+async function verifyStartup() {
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const ready = await win.webContents.executeJavaScript(
+      'Boolean(window.cipherDesktop && document.getElementById("tourDialog")?.open)',
+    );
+    if (ready) break;
+    if (attempt === 99) throw Error("First-run tour did not open.");
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  const status = await win.webContents.executeJavaScript(
+    'native("accessStatus")',
+  );
+  if (
+    status.platform !== process.platform ||
+    status.computerSupported !== false
+  )
+    throw Error("Desktop bridge returned an unexpected platform.");
+  const controls = await win.webContents.executeJavaScript(
+    '({title:document.title,help:document.getElementById("helpButton").textContent,steps:tourSteps.length})',
+  );
+  if (
+    controls.title !== "Cipher" ||
+    !controls.help.includes("Getting started") ||
+    controls.steps !== 9
+  )
+    throw Error("Workspace controls are incomplete.");
+  console.log(
+    "PASS: packaged desktop startup, sandboxed preload, native IPC, workspace controls and first-run tour.",
+  );
+}
+app
+  .whenReady()
+  .then(async () => {
+    await createWindow();
+    if (smokeTest) {
+      await verifyStartup();
+      app.exit(0);
+    }
+  })
+  .catch((error) => {
+    console.error(error);
+    app.exit(1);
+  });
 app.on("window-all-closed", () => app.quit());
 app.on("before-quit", () => {
   if (workspace) cancel();
