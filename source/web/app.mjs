@@ -3,8 +3,9 @@ const $ = (id) => document.getElementById(id),
 const pending = new Map();
 let seq = 0;
 const desktopPlatform = window.cipherDesktop?.platform || "darwin";
-const desktopComputerSupported =
-  desktopPlatform === "darwin" && !window.cipherDesktop;
+const desktopComputerSupported = ["darwin", "win32", "linux"].includes(
+  desktopPlatform,
+);
 if (window.cipherDesktop) {
   window.webkit = {
     messageHandlers: {

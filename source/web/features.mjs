@@ -514,7 +514,7 @@ function renderHub(tab, body) {
       heading(
         body,
         "Computer tools on this platform",
-        "Coding, Git, resources, plans, goals, and browser tools are available here. Native desktop app control is currently available in the Mac app.",
+        "Coding, Git, resources, plans, goals, and browser tools are available here. Desktop control is unavailable on this platform.",
       );
       actions(body).append(
         button("Browser tools", "button primary", () => hub("browser")),
@@ -524,10 +524,10 @@ function renderHub(tab, body) {
 
     heading(
       body,
-      "Your Mac, with clear boundaries.",
-      "Choose allowed apps in Access. Accessibility reads app text and enables actions; Screen Recording captures one allowed window. App content may be sent to the selected model. macOS permissions must be granted by you.",
+      "Your computer, with clear boundaries.",
+      "Choose allowed apps in Access. Accessibility reads app text and enables actions; capture attaches one allowed window. App content may be sent to the selected model. Operating-system permissions still apply.",
     );
-    const status = elem("p", "notice", "Checking macOS permissions…");
+    const status = elem("p", "notice", "Checking computer tools…");
     body.append(status);
     native("accessStatus")
       .then(
@@ -536,7 +536,8 @@ function renderHub(tab, body) {
             "Accessibility: " +
             (s.accessibility ? "Granted" : "Not granted") +
             " · Screen Recording: " +
-            (s.screenRecording ? "Granted" : "Not granted")),
+            (s.screenRecording ? "Available" : "Not available") +
+            (s.detail ? " · " + s.detail : "")),
       )
       .catch(failure);
     actions(body).append(
@@ -601,7 +602,7 @@ function renderHub(tab, body) {
       elem(
         "p",
         "muted",
-        "Emergency stop: Command + Shift + Escape. The global shortcut depends on macOS permission; Cipher’s Stop button is always available while a task runs.",
+        "Emergency stop: Ctrl/Command + Shift + Escape. Cipher’s Stop button is always available while a task runs. Linux accessibility requires AT-SPI; X11 pointer/key tools require wmctrl and xdotool. Wayland supports app-exposed accessibility actions; capture/input depend on compositor permissions.",
       ),
     );
     return;
@@ -1180,7 +1181,7 @@ async function renderAccess(body) {
     ["commands", "Request terminal commands"],
     ["git", "Inspect Git and request branches or commits"],
     ["browser", "Use Cipher Browser on allowed origins"],
-    ["computer", "Inspect and control selected Mac apps"],
+    ["computer", "Inspect and control selected desktop apps"],
     ["extensions", "Call connected MCP tools after approval"],
   ]) {
     if (key === "computer" && !desktopComputerSupported) continue;

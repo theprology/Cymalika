@@ -6,6 +6,7 @@ for (const file of [
   "source/test-workbench.mjs",
   "source/test-mcp.mjs",
   "desktop/test-core.cjs",
+  "desktop/test-computer.cjs",
   "scripts/test-installers.mjs",
 ]) {
   const r = spawnSync(process.execPath, [file], { stdio: "inherit" });

@@ -231,7 +231,7 @@ export const ADVANCED_TOOLS = [
   {
     name: "computer_read",
     description:
-      "Request approval to inspect accessibility text of an explicitly allowed running Mac app. Secure text fields are redacted.",
+      "Request approval to inspect accessibility text of an explicitly allowed running desktop app. Secure text fields are redacted.",
     parameters: {
       type: "object",
       properties: {
@@ -249,7 +249,7 @@ export const ADVANCED_TOOLS = [
   {
     name: "computer_screenshot",
     description:
-      "Request approval to capture one allowed app window. Requires macOS Screen Recording and a vision-capable selected model. Capture is sent to the selected model.",
+      "Request approval to capture one allowed app window. Requires desktop capture permission and a vision-capable selected model. Capture is sent to the selected model.",
     parameters: {
       type: "object",
       properties: { app: { type: "string" }, reason: { type: "string" } },
@@ -259,7 +259,7 @@ export const ADVANCED_TOOLS = [
   {
     name: "computer_action",
     description:
-      "Request approval for ONE action in an allowed app. Coordinates are absolute macOS screen points inside that app window. Inspect the result after each action. Never enter credentials, bypass warnings, grant permissions, or confirm purchases on the user’s behalf.",
+      "Request approval for ONE action in an allowed app. Coordinates are absolute desktop screen coordinates inside that app window. Inspect the result after each action. Never enter credentials, bypass warnings, grant permissions, or confirm purchases on the user’s behalf.",
     parameters: {
       type: "object",
       properties: {

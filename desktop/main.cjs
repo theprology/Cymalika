@@ -7,6 +7,7 @@ const {
   shell,
   Menu,
   globalShortcut,
+  desktopCapturer,
 } = require("electron");
 const fs = require("node:fs/promises");
 const { randomUUID } = require("node:crypto");
@@ -15,7 +16,8 @@ const { fileURLToPath } = require("node:url");
 const { realpathSync } = require("node:fs");
 const { Workspace, request } = require("./core.cjs");
 const { Browser } = require("./browser.cjs");
-let win, workspace, browser;
+const { Computer } = require("./computer.cjs");
+let win, workspace, browser, computer;
 const smokeTest = process.argv.includes("--smoke-test");
 if (smokeTest) {
   if (!process.env.CIPHER_SMOKE_DATA)
@@ -45,6 +47,7 @@ const reply = (id, result = null, error = null) => {
 function cancel() {
   workspace.cancel();
   browser.snapshot = "";
+  computer?.cancel();
   for (const c of tasks.values()) c.abort();
   tasks.clear();
 }
@@ -143,10 +146,6 @@ async function handle(action, a, id) {
       }
     }
     case "configureAccess": {
-      if (a.grants?.includes("computer"))
-        throw Error(
-          "Desktop app control is available in the native Mac build.",
-        );
       cancel();
       workspace.grants = new Set(a.grants || []);
       workspace.origins = new Set(
@@ -165,25 +164,22 @@ async function handle(action, a, id) {
         }),
       );
       if (!workspace.grants.has("browser")) browser.close();
-      return { computerSupported: false, platform: process.platform };
+      computer.configure(a.apps || []);
+      return computer.status();
     }
     case "accessStatus":
-      return {
-        computerSupported: false,
-        platform: process.platform,
-        accessibility: false,
-        screenRecording: false,
-      };
+      return computer.status();
     case "runningApps":
-      return [];
+      return computer.runningApps();
     case "requestAccessibility":
     case "requestScreenRecording":
+      return computer.status();
     case "computerRead":
+      return computer.read(a);
     case "computerAction":
+      return computer.action(a);
     case "computerScreenshot":
-      throw Error(
-        "Desktop app control requires the native Mac build. Coding and browser tools are available on this platform.",
-      );
+      return computer.screenshot(a);
     case "browserOpen":
       return browser.open(a.url);
     case "browserRead":
@@ -286,6 +282,26 @@ async function createWindow() {
     },
   });
   browser = new Browser(workspace, win);
+  computer = new Computer(workspace, async (target) => {
+    const sources = await desktopCapturer.getSources({
+      types: ["window"],
+      thumbnailSize: { width: 1600, height: 1200 },
+      fetchWindowIcons: false,
+    });
+    const source = sources.find((s) => s.id.split(":")[1] === target.window);
+    if (!source || source.thumbnail.isEmpty())
+      throw Error(
+        "The allowed window could not be captured. Check desktop capture permissions.",
+      );
+    const data = source.thumbnail.toJPEG(70);
+    if (data.length > 8e6)
+      throw Error("Window capture exceeds the image limit.");
+    return {
+      data: data.toString("base64"),
+      mime: "image/jpeg",
+      ...source.thumbnail.getSize(),
+    };
+  });
   win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   win.webContents.on("will-navigate", (e) => e.preventDefault());
   win.webContents.on("will-attach-webview", (e) => e.preventDefault());
@@ -365,10 +381,7 @@ async function verifyStartup() {
   const status = await win.webContents.executeJavaScript(
     'native("accessStatus")',
   );
-  if (
-    status.platform !== process.platform ||
-    status.computerSupported !== false
-  )
+  if (status.platform !== process.platform || status.computerSupported !== true)
     throw Error("Desktop bridge returned an unexpected platform.");
   const controls = await win.webContents.executeJavaScript(
     '({title:document.title,help:document.getElementById("helpButton").textContent,steps:tourSteps.length})',

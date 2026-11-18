@@ -18,8 +18,15 @@ index=web/'index.html'
 index.write_text(index.read_text().replace('<script type="module" src="app.mjs"></script>','<script src="app.bundle.js"></script>'))
 PYBUNDLE
 cat > 'build/Cipher.app/Contents/Info.plist' <<'PLIST'
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>CFBundleExecutable</key><string>Cipher</string><key>CFBundleIdentifier</key><string>local.cipher.coding</string><key>CFBundleName</key><string>Cipher</string><key>CFBundleDisplayName</key><string>Cipher</string><key>CFBundleIconFile</key><string>Cipher.icns</string><key>CFBundleVersion</key><string>4</string><key>CFBundleShortVersionString</key><string>0.3.0</string><key>LSMinimumSystemVersion</key><string>13.0</string><key>NSHighResolutionCapable</key><true/><key>NSAppTransportSecurity</key><dict><key>NSAllowsLocalNetworking</key><true/></dict></dict></plist>
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>CFBundleExecutable</key><string>Cipher</string><key>CFBundleIdentifier</key><string>local.cipher.coding</string><key>CFBundleName</key><string>Cipher</string><key>CFBundleDisplayName</key><string>Cipher</string><key>CFBundleIconFile</key><string>Cipher.icns</string><key>CFBundleVersion</key><string>5</string><key>CFBundleShortVersionString</key><string>0.4.0</string><key>LSMinimumSystemVersion</key><string>13.0</string><key>NSHighResolutionCapable</key><true/><key>NSAppTransportSecurity</key><dict><key>NSAllowsLocalNetworking</key><true/></dict></dict></plist>
 PLIST
 cp source/Cipher.icns 'build/Cipher.app/Contents/Resources/Cipher.icns'
-codesign --force --deep --sign - 'build/Cipher.app'
+if [[ -n "${CIPHER_SIGN_IDENTITY:-}" ]]; then
+  [[ "$CIPHER_SIGN_IDENTITY" == "Developer ID Application:"* ]] || { echo 'A Developer ID Application identity is required.' >&2; exit 1; }
+  codesign --force --options runtime --timestamp --sign "$CIPHER_SIGN_IDENTITY" 'build/Cipher.app'
+else
+  [[ "${CIPHER_REQUIRE_SIGNING:-0}" != 1 ]] || { echo 'Release signing identity is missing.' >&2; exit 1; }
+  codesign --force --deep --sign - 'build/Cipher.app'
+fi
+codesign --verify --deep --strict 'build/Cipher.app' 
 'build/Cipher.app/Contents/MacOS/Cipher' --self-test
