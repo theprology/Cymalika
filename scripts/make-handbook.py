@@ -1,10 +1,8 @@
 from pathlib import Path
 import re,html
-from reportlab.pdfgen import canvas
-from reportlab.platypus import SimpleDocTemplate,Paragraph,Spacer,PageBreak,Table,TableStyle,KeepTogether,Image
+from reportlab.platypus import SimpleDocTemplate,Paragraph,Spacer,PageBreak,Table,TableStyle
 from reportlab.lib.styles import getSampleStyleSheet,ParagraphStyle
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_LEFT
 ROOT=Path(__file__).resolve().parent.parent
 OUT=ROOT/'docs/Cipher-Beginners-Handbook.pdf'
 INK=colors.HexColor('#222a23');MUTED=colors.HexColor('#5e685f');ACCENT=colors.HexColor('#35583b');PALE=colors.HexColor('#eaf0e5');LINE=colors.HexColor('#dce2d8')
@@ -31,7 +29,7 @@ def parse(lines):
    rows=[]
    while i<len(lines) and lines[i].strip().startswith('|'):
     cells=[x.strip() for x in lines[i].strip().strip('|').split('|')]
-    if not all(re.fullmatch(r'[-: ]+',x) for x in cells):rows.append([Paragraph(markup(x),'TableCipher' if False else styles['TableCipher']) for x in cells])
+    if not all(re.fullmatch(r'[-: ]+',x) for x in cells):rows.append([Paragraph(markup(x),styles['TableCipher']) for x in cells])
     i+=1
    table=Table(rows,colWidths=[135,340],repeatRows=1,hAlign='LEFT');table.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),PALE),('LINEBELOW',(0,0),(-1,0),1,LINE),('LINEBELOW',(0,1),(-1,-1),.5,LINE),('VALIGN',(0,0),(-1,-1),'TOP'),('LEFTPADDING',(0,0),(-1,-1),10),('RIGHTPADDING',(0,0),(-1,-1),10),('TOPPADDING',(0,0),(-1,-1),8),('BOTTOMPADDING',(0,0),(-1,-1),8)]));result.extend([table,Spacer(1,12)]);continue
   if line.startswith('## '):result.append(Paragraph(markup(line[3:]),styles['H1Cipher']))

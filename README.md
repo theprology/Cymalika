@@ -31,7 +31,7 @@ Try: “Find how sign-in works, explain the relevant files, and propose a plan t
 
 You do not need to attach each file. The model can list and search the project and read relevant source on demand, within the configured limits.
 
-Need a slower introduction? Click **Getting started** inside the app for the nine-step tour, or follow [the beginner walkthrough](docs/WALKTHROUGH.md).
+Need a slower introduction? Click **Getting started** inside the app for the nine-step tour, or follow [the beginner walkthrough](docs/WALKTHROUGH.md). A printable [eight-page handbook](docs/Cipher-Beginners-Handbook.pdf) is also included.
 
 ## A workspace that does more
 

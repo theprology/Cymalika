@@ -24,3 +24,7 @@ The CI matrix runs shared tests on Windows, Linux, and macOS and produces instal
 - Independent security/accessibility review and public release signing.
 
 Desktop automation on Windows/Linux is not implemented. The UI does not offer it. No claim of universal model compatibility or Codex-equivalent reliability is made.
+
+## Beginner guidance
+
+The nine-step in-app tour was exercised from its first-run dialog through completion in the installed native Mac app. The same navigation, completion persistence, and absence of model/file actions have regression checks. The eight-page PDF handbook was rendered and visually reviewed, including the dense recovery page. Fresh installs no longer receive automatic starter resources or a formatting demo. Known local test projects and validation chats were removed from the installed app state after a reversible backup. No user application state is distributed.
