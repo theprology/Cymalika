@@ -1,10 +1,17 @@
 name: Signed release candidate
 on:
   workflow_dispatch:
+    inputs:
+      platform:
+        description: Platform to build and verify
+        type: choice
+        default: all
+        options: [all, mac, windows, linux]
 permissions:
   contents: read
 jobs:
   windows:
+    if: inputs.platform == 'all' || inputs.platform == 'windows'
     runs-on: windows-latest
     environment: release
     permissions:
@@ -40,6 +47,7 @@ jobs:
           name: signed-windows
           path: dist/*.exe
   mac:
+    if: inputs.platform == 'all' || inputs.platform == 'mac'
     runs-on: macos-latest
     environment: release
     permissions:
@@ -114,3 +122,42 @@ jobs:
         run: |
           rm -f "$RUNNER_TEMP/cipher.p12" "$RUNNER_TEMP/AuthKey.p8"
           security delete-keychain "$RUNNER_TEMP/cipher-release.keychain-db" || true
+  linux:
+    if: inputs.platform == 'all' || inputs.platform == 'linux'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Prepare desktop tools
+        timeout-minutes: 10
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends python3-gi gir1.2-atspi-2.0 gir1.2-gtk-3.0 at-spi2-core dbus-x11 xvfb openbox wmctrl xdotool
+      - name: Verify live computer control
+        timeout-minutes: 3
+        run: dbus-run-session -- xvfb-run -a sh -c 'openbox >/tmp/cipher-wm.log 2>&1 & wm=$!; trap "kill $wm 2>/dev/null || true" EXIT; node scripts/test-computer-live.mjs'
+      - run: npm run dist:linux
+      - name: Verify installed package
+        run: |
+          node scripts/test-unix-install.mjs dist/Cipher-0.4.0-amd64.deb
+          dbus-run-session -- xvfb-run -a node scripts/smoke.mjs /opt/Cipher/cipher-workspace
+      - uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: |
+            dist/*.AppImage
+            dist/*.deb
+      - uses: actions/upload-artifact@v4
+        with:
+          name: attested-linux
+          path: |
+            dist/*.AppImage
+            dist/*.deb

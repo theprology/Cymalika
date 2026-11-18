@@ -383,6 +383,10 @@ async function verifyStartup() {
   );
   if (status.platform !== process.platform || status.computerSupported !== true)
     throw Error("Desktop bridge returned an unexpected platform.");
+  if (["win32", "linux"].includes(process.platform) && !status.accessibility)
+    throw Error(
+      "The packaged computer helper is unavailable: " + status.detail,
+    );
   const controls = await win.webContents.executeJavaScript(
     '({title:document.title,help:document.getElementById("helpButton").textContent,steps:tourSteps.length})',
   );
