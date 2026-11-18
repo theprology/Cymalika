@@ -1752,3 +1752,178 @@ document.addEventListener("keydown", (event) => {
     window.cipherEmergencyStop();
   }
 });
+
+const tourSteps = [
+  {
+    title: "Your coding workspace",
+    icon: "⌘",
+    summary: "Cipher helps you work on a project by having a conversation.",
+    details: [
+      "Your model is the part that produces answers. Cipher gives it tools to read files and propose changes.",
+      "You stay in charge. File saves and commands wait for your approval.",
+      "This tour explains the controls. It will not send messages, download models, or change your files.",
+    ],
+  },
+  {
+    title: "Connect your model",
+    icon: "◇",
+    summary: "Keep Ollama running, then choose a model you already installed.",
+    details: [
+      "Open Settings & connections → Model connection. Choose Ollama and keep the address http://localhost:11434 if Ollama runs on this computer.",
+      "Choose your installed model in the model selector. Cipher never downloads a model for you.",
+      "Use Check your model on the welcome screen. A pass means a small tool test worked; it does not guarantee every coding task will succeed.",
+      "If you use a paid API instead, its provider may charge you. Cipher itself is free.",
+    ],
+    action: "Open model settings",
+    run: () => settingsOpen(),
+  },
+  {
+    title: "Open the right folder",
+    icon: "▱",
+    summary: "A project is the folder containing the code you want to work on.",
+    details: [
+      "Click Open project and select that folder. For example, choose the folder containing your website or app source.",
+      "Cipher lists files on the left. You do not need to attach each one: the model can search the project and read the files it needs.",
+      "Start with a copy or a Git branch if you are learning. Keep backups of important work.",
+    ],
+    action: "Choose a project folder",
+    run: () => chooseProject(),
+  },
+  {
+    title: "Choose how to work",
+    icon: "≡",
+    summary: "The three tabs tell Cipher what kind of help you want.",
+    details: [
+      "Ask: understand your project or investigate a problem without saving changes.",
+      "Plan: have the model inspect the code and propose steps. Review the plan before starting Build.",
+      "Build: request code changes. You still approve file saves and commands.",
+      "If you are unsure, begin with Ask.",
+    ],
+  },
+  {
+    title: "Describe the result you want",
+    icon: "↗",
+    summary:
+      "Write in everyday language. You do not need to know the file names.",
+    details: [
+      "Say what you want to happen, what currently goes wrong, and what should stay unchanged. Include the exact error message if you have one.",
+      "For a first task, select Ask and request: “Read this project, explain what it does, and tell me how to run it.”",
+      "Press Command + Enter on Mac, or Ctrl + Enter on Windows/Linux. The model responds in the conversation.",
+      "For a change, describe one clear outcome at a time. Cipher cannot guarantee that a model will find every issue.",
+    ],
+  },
+  {
+    title: "Review before saving",
+    icon: "✓",
+    summary: "A proposed change is a suggestion until you approve it.",
+    details: [
+      "Open Changes in the activity panel. Check the file name, explanation, and Line changes.",
+      "Green lines are additions. Red lines are removals. Read Current contents and Proposed contents if you need more context.",
+      "Approve & save writes the change to your project. Reject leaves that proposal unapplied.",
+      "If you do not understand a proposed change, reject it and ask for an explanation first.",
+    ],
+  },
+  {
+    title: "Check that it works",
+    icon: "⌁",
+    summary:
+      "A test is a command that checks whether the code behaves as expected.",
+    details: [
+      "Ask Cipher to run the project’s existing tests or explain how to check the change.",
+      "Review the exact command and folder before approving it. Commands run as your computer user, so approve only what you understand.",
+      "Terminal shows the real output and exit code. A failed check is a reason to investigate, not to assume the task is finished.",
+      "Stop cancels pending work and requests command termination. It does not reverse actions already completed.",
+    ],
+  },
+  {
+    title: "Undo a saved change",
+    icon: "↶",
+    summary: "Cipher creates a checkpoint when an approved save succeeds.",
+    details: [
+      "The saved change card has an Undo this save button. Use it to restore the previous contents.",
+      "Undo refuses to overwrite a file that has changed again since that save. Use Git or your backup for more complicated recovery.",
+      "You can also click a file on the left, edit it yourself, and choose Review my edits. The same review and checkpoint workflow applies.",
+    ],
+  },
+  {
+    title: "Use the Workbench when you need more",
+    icon: "✦",
+    summary:
+      "Keep your first tasks simple. The advanced tools are there when you need them.",
+    details: [
+      "Plans and Goals organise larger work. Goals have milestones and evidence; they do not secretly run in the background.",
+      "Resources are reference notes you add and enable. Project memory keeps conventions and decisions for the selected project.",
+      "Access controls browser, desktop, and connected-tool permissions. Enable only what the task needs. Other desktop app control is currently Mac-only.",
+      "Daylight, After hours, and Hacker themes are available in Settings → Appearance.",
+      "You are ready: connect a model, open your folder, select Ask, and start a conversation.",
+    ],
+  },
+];
+let tourStep = 0;
+function openTour(step = 0) {
+  idle();
+  tourStep = step;
+  renderTour();
+  if (!$("tourDialog").open) $("tourDialog").showModal();
+}
+function renderTour() {
+  const step = tourSteps[tourStep],
+    body = $("tourBody");
+  body.replaceChildren();
+  $("tourTitle").textContent = step.title;
+  const progress = elem("div", "tour-progress");
+  progress.setAttribute(
+    "aria-label",
+    "Step " + (tourStep + 1) + " of " + tourSteps.length,
+  );
+  for (let i = 0; i < tourSteps.length; i++) {
+    const dot = elem("span", i <= tourStep ? "complete" : "");
+    progress.append(dot);
+  }
+  body.append(
+    progress,
+    elem(
+      "p",
+      "tour-position",
+      "Step " + (tourStep + 1) + " of " + tourSteps.length,
+    ),
+    elem("div", "tour-icon", step.icon),
+    elem("p", "tour-summary", step.summary),
+  );
+  const list = elem("ol", "tour-details");
+  for (const text of step.details) list.append(elem("li", "", text));
+  body.append(list);
+  if (step.action)
+    body.append(
+      button(step.action, "button tour-shortcut", () => {
+        $("tourDialog").close();
+        step.run();
+      }),
+    );
+  const row = actions(body);
+  row.classList.add("tour-navigation");
+  const back = button("Back", "button", () => {
+    tourStep--;
+    renderTour();
+  });
+  back.disabled = tourStep === 0;
+  row.append(
+    back,
+    button(
+      tourStep === tourSteps.length - 1 ? "Start using Cipher" : "Next",
+      "button primary",
+      () => {
+        if (tourStep === tourSteps.length - 1) {
+          settings.tourSeen = true;
+          scheduleSave();
+          $("tourDialog").close();
+          $("prompt").focus();
+        } else {
+          tourStep++;
+          renderTour();
+        }
+      },
+    ),
+  );
+}
+$("helpButton").onclick = () => openTour();

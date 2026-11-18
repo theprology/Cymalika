@@ -8,7 +8,7 @@ A calm, open-source desktop workspace for reading, writing, and improving code w
 
 **Local Ollama · Compatible APIs · Reviewed actions · Three themes**
 
-[Getting started](#get-started) · [Features](#a-workspace-that-does-more) · [Build](#build-from-source) · [Roadmap](docs/ROADMAP.md) · [MIT license](LICENSE)
+[Beginner walkthrough](docs/WALKTHROUGH.md) · [Getting started](#get-started) · [Features](#a-workspace-that-does-more) · [Build](#build-from-source) · [Roadmap](docs/ROADMAP.md) · [MIT license](LICENSE)
 
 </div>
 
@@ -30,6 +30,8 @@ No Cipher account, subscription, or model download is required. Cloud providers 
 Try: “Find how sign-in works, explain the relevant files, and propose a plan to improve its error messages.” Then review the plan and ask Cipher to build it.
 
 You do not need to attach each file. The model can list and search the project and read relevant source on demand, within the configured limits.
+
+Need a slower introduction? Click **Getting started** inside the app for the nine-step tour, or follow [the beginner walkthrough](docs/WALKTHROUGH.md).
 
 ## A workspace that does more
 

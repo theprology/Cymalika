@@ -110,7 +110,7 @@ for (const file of [
   script += "\n" + text;
 }
 script +=
-  "\nconst actualSendForTest=send;globalThis.api={sendReal:actualSendForTest,queueImage,init:featureInit,tool:advancedTool,persisted,runGoal,getDesk:()=>desk,getCurrent:()=>current,setCurrent:c=>current=c,setProject:p=>project=p,setSettings:s=>settings={...settings,...s},setReview:fn=>reviewAction=fn,setSend:fn=>send=fn,setNative:fn=>native=fn,nextEpoch:()=>taskEpoch++,pendingImages:()=>pendingComputerImages,extraSystem,allTools};";
+  "\nconst actualSendForTest=send;globalThis.api={sendReal:actualSendForTest,queueImage,init:featureInit,tool:advancedTool,persisted,runGoal,getDesk:()=>desk,getCurrent:()=>current,setCurrent:c=>current=c,setProject:p=>project=p,setSettings:s=>settings={...settings,...s},setReview:fn=>reviewAction=fn,setSend:fn=>send=fn,setNative:fn=>native=fn,nextEpoch:()=>taskEpoch++,pendingImages:()=>pendingComputerImages,extraSystem,allTools,openTour,getTourStep:()=>tourStep,tourCount:()=>tourSteps.length};";
 vm.runInContext(script, context);
 const api = context.api;
 api.init({});
@@ -260,4 +260,21 @@ assert.equal(posted.length, beforeSend);
 assert(nodes.get("toast").textContent.includes("image support"));
 console.log(
   "PASS: actual Workbench logic, plan binding, scoped resource retrieval/search, approval-gated milestone evidence, goal resume, project context, and persisted secret/image exclusion.",
+);
+
+const beforeTour = posted.length;
+api.openTour();
+assert.equal(api.tourCount(), 9);
+assert.equal(nodes.get("tourDialog").open, true);
+assert.equal(nodes.get("tourTitle").textContent, "Your coding workspace");
+const tourRow = nodes.get("tourBody").children.at(-1);
+await tourRow.children.at(-1).onclick();
+assert.equal(api.getTourStep(), 1);
+assert.equal(posted.length, beforeTour);
+api.openTour(8);
+await nodes.get("tourBody").children.at(-1).children.at(-1).onclick();
+assert.equal(nodes.get("tourDialog").open, false);
+assert.equal(api.persisted().settings.tourSeen, true);
+console.log(
+  "PASS: nine-step beginner tour, progress navigation, completion persistence and no model/file actions.",
 );

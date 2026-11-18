@@ -37,7 +37,9 @@
         "nsis",
         "portable"
       ],
-      "artifactName": "Cipher-${version}-${arch}-setup.${ext}"
+      "artifactName": "Cipher-${version}-${arch}-setup.${ext}",
+      "icon": "source/Cipher.ico",
+      "signExecutable": false
     },
     "nsis": {
       "oneClick": false,
@@ -51,10 +53,21 @@
       ],
       "category": "Development",
       "maintainer": "theprology",
-      "artifactName": "Cipher-${version}-${arch}.${ext}"
+      "artifactName": "Cipher-${version}-${arch}.${ext}",
+      "icon": "source/Icon.png",
+      "syncDesktopName": true
     },
     "portable": {
       "artifactName": "Cipher-${version}-${arch}-portable.${ext}"
+    },
+    "deb": {
+      "compression": "gz"
     }
-  }
+  },
+  "homepage": "https://github.com/theprology/cipher",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/theprology/cipher.git"
+  },
+  "desktopName": "cipher-workspace.desktop"
 }

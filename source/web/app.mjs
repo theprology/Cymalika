@@ -1331,7 +1331,8 @@ async function init() {
     newChat();
     updateContext();
     await refreshModels();
-    if (!settings.model) settingsOpen();
+    if (!settings.tourSeen) openTour();
+    else if (!settings.model) settingsOpen();
   } catch (e) {
     failure(e);
   }

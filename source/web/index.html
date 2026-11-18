@@ -66,6 +66,9 @@
           ><button id="settingsButton" class="settings-link">
             ⚙ Settings & connections <kbd>⌘,</kbd>
           </button>
+          <button id="helpButton" class="settings-link">
+            ? Getting started
+          </button>
           <div class="local-label">
             <span class="status-dot"></span
             ><span id="privacyLabel">Local Ollama connection</span>
@@ -510,6 +513,22 @@ Commands run in the selected project after your approval. Output appears here.</
           <button class="button primary" type="submit">Review command</button>
         </div>
       </form>
+    </dialog>
+    <dialog id="tourDialog" class="tour-modal" aria-labelledby="tourTitle">
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow">WELCOME TO CIPHER</span>
+          <h2 id="tourTitle">Getting started</h2>
+        </div>
+        <button
+          data-close="tourDialog"
+          class="icon-button"
+          aria-label="Close getting started"
+        >
+          ✕
+        </button>
+      </div>
+      <div id="tourBody" class="tour-body"></div>
     </dialog>
     <div id="toast" class="toast hidden" role="status"></div>
     <script type="module" src="app.mjs"></script>
