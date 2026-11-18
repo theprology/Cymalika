@@ -34,11 +34,11 @@ In the GitHub `release` environment configure either:
 - Secrets `WINDOWS_CERTIFICATE_P12` (base64 PFX/P12) and `WINDOWS_CERTIFICATE_PASSWORD`; or
 - Variables `AZURE_SIGNING_ENDPOINT`, `AZURE_SIGNING_ACCOUNT`, `AZURE_SIGNING_PROFILE`, plus secrets `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET` for the authorized service identity.
 
-The signed build requires signing, then independently checks Authenticode on the application, setup, and portable executables. Windows may still display reputation or administrator prompts. Signing does not grant access to protected desktops or remove Windows security boundaries.
+The signed build requires signing, then independently checks Authenticode on the application, setup, portable executable, and the bundled PowerShell helper. Windows may still display reputation or administrator prompts. Signing does not grant access to protected desktops or remove Windows security boundaries.
 
 ## Linux
 
-Linux has no Apple-style notarization service. GitHub provenance attestations identify the workflow and repository that produced an artifact; they are separate from Windows/macOS publisher signatures. Linux desktop permissions still apply, especially under Wayland. Distribution repository signing can be added when Cipher maintains its own apt repository.
+Choose `linux` in the signed-candidate workflow to build, test and attest Linux packages without Apple or Windows credentials. Linux has no Apple-style notarization service. GitHub provenance attestations identify the workflow and repository that produced an artifact; they are separate from Windows/macOS publisher signatures. Linux desktop permissions still apply, especially under Wayland. Distribution repository signing can be added when Cipher maintains its own apt repository.
 
 The signed-candidate workflow produces reviewable build artifacts, not an automatic public release. Publishing must use the verified candidates and matching checksums; do not replace an existing version's assets with different binaries.
 

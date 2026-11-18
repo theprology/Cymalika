@@ -8,7 +8,7 @@ const base = JSON.parse(await readFile("package.json", "utf8")).build;
 const config = {
   ...base,
   forceCodeSigning: true,
-  win: { ...base.win, signExecutable: true },
+  win: { ...base.win, signExecutable: true, signExts: [".ps1"] },
 };
 const azure = process.env.CIPHER_AZURE_ENDPOINT;
 if (azure) {
@@ -55,7 +55,7 @@ try {
       "-NoProfile",
       "-NonInteractive",
       "-Command",
-      "$ErrorActionPreference='Stop';$files=@(Get-ChildItem dist -Filter *.exe);$files+=Get-Item dist/win-unpacked/Cipher.exe;foreach($file in $files){$signature=Get-AuthenticodeSignature $file.FullName;if($signature.Status -ne 'Valid'){throw ('Invalid Authenticode signature: '+$file.Name)};Write-Output ('Verified publisher signature: '+$file.Name)}",
+      "$ErrorActionPreference='Stop';$files=@(Get-ChildItem dist -Filter *.exe);$files+=Get-Item dist/win-unpacked/Cipher.exe;$files+=Get-Item dist/win-unpacked/resources/app.asar.unpacked/desktop/native/windows.ps1;foreach($file in $files){$signature=Get-AuthenticodeSignature $file.FullName;if($signature.Status -ne 'Valid'){throw ('Invalid Authenticode signature: '+$file.Name)};Write-Output ('Verified publisher signature: '+$file.Name)}",
     ],
     { stdio: "inherit" },
   );
