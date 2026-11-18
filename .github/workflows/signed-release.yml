@@ -143,6 +143,7 @@ jobs:
           if [ -f /etc/apt/apt-mirrors.txt ]; then printf '%s\n' 'https://azure.archive.ubuntu.com/ubuntu' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null; fi
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends python3-gi gir1.2-atspi-2.0 gir1.2-gtk-3.0 at-spi2-core dbus-x11 xvfb openbox wmctrl xdotool
+          if [ -f node_modules/electron/dist/chrome-sandbox ]; then sudo chown root:root node_modules/electron/dist/chrome-sandbox; sudo chmod 4755 node_modules/electron/dist/chrome-sandbox; fi
       - name: Verify live computer control
         timeout-minutes: 3
         run: dbus-run-session -- xvfb-run -a sh -c 'openbox >/tmp/cipher-wm.log 2>&1 & wm=$!; trap "kill $wm 2>/dev/null || true" EXIT; node scripts/test-computer-live.mjs'
