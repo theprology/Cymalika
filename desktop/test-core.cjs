@@ -66,6 +66,13 @@ const { Workspace, apiURL, request } = require("./core.cjs");
     const run = await w.command("approved");
     assert.equal(run.exit_code, 0);
     assert.equal(run.output, "5");
+    w.commands.set("quoted", {
+      root: w.root,
+      command: "node -e \"console.log('hello world')\"",
+    });
+    const quoted = await w.command("quoted");
+    assert.equal(quoted.exit_code, 0, quoted.output);
+    assert.equal(quoted.output.trim(), "hello world");
     await assert.rejects(w.command("approved"));
     w.commands.set("cancelled", { root: w.root, command: cmd });
     w.cancel();

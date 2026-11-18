@@ -295,8 +295,8 @@ class Workspace {
     const win = process.platform === "win32";
     const result = await this.run(
       win ? process.env.COMSPEC || "cmd.exe" : "/bin/sh",
-      win ? ["/d", "/s", "/c", p.command] : ["-lc", p.command],
-      { env },
+      win ? ["/d", "/s", "/c", `"${p.command}"`] : ["-lc", p.command],
+      { env, windowsVerbatimArguments: win },
     );
     return { ...result, command: p.command };
   }
