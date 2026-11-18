@@ -43,7 +43,7 @@ class Computer {
         )
       : "/usr/bin/python3";
     const args = windows
-      ? ["-NoProfile", "-NonInteractive", "-File", helper]
+      ? ["-NoProfile", "-NonInteractive", "-Mta", "-File", helper]
       : [helper];
     const epoch = this.epoch;
     return new Promise((resolve, reject) => {

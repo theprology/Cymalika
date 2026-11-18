@@ -43,7 +43,7 @@ def main(a):
         if secure(e) or e.get_role_name()!=locator['role'] or e.get_name()!=locator['name']: fail('The element changed. Inspect the app again.')
         return e
     if op=='read':
-        rows=[]; visited=0
+        rows=[]; visited=0; warnings=[]
         def visit(e,path,depth):
             nonlocal visited
             if visited>=350 or len(rows)>=120 or depth>=14: return
@@ -53,8 +53,9 @@ def main(a):
             name=e.get_name() or ''; role=e.get_role_name(); value=''; editable=False; actions=[]
             try:
                 text=e.get_text_iface()
-                if text: value=text.get_text(0,min(text.get_character_count(),1200)) or ''
-            except Exception: pass
+                if text: value=(text.get_text(0,1200) or '')[:1200]
+            except Exception as error:
+                if len(warnings)<3: warnings.append('Text: '+str(error))
             try: editable=e.get_editable_text_iface() is not None
             except Exception: pass
             try:
@@ -67,7 +68,7 @@ def main(a):
                 try: visit(e.get_child_at_index(i),path+[i],depth+1)
                 except Exception: pass
         visit(app,[],0)
-        return {'app':a['app'],'elements':rows,'truncated':visited>=350 or len(rows)>=120}
+        return {'app':a['app'],'elements':rows,'warnings':warnings,'truncated':visited>=350 or len(rows)>=120}
     if op=='window': return {'window':str(window())}
     if op in ('press','set_text'):
         e=resolve(a['locator'])
