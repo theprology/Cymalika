@@ -1,10 +1,34 @@
-import json,sys,os,subprocess
+import json,sys,os,subprocess,ctypes,ctypes.util
 
 def fail(message): raise RuntimeError(message)
 def command(args): return subprocess.check_output(args, text=True, timeout=4).strip()
 def identity(pid):
     with open('/proc/%d/stat'%pid) as f:
         return '%d:%s'%(pid,f.read().rsplit(')',1)[1].split()[19])
+def same_window_tree(pointer, target):
+    library=ctypes.util.find_library('X11')
+    if not library: fail('The X11 window library is unavailable.')
+    x=ctypes.CDLL(library)
+    window_type=ctypes.c_ulong
+    x.XOpenDisplay.argtypes=[ctypes.c_char_p];x.XOpenDisplay.restype=ctypes.c_void_p
+    x.XCloseDisplay.argtypes=[ctypes.c_void_p]
+    x.XQueryTree.argtypes=[ctypes.c_void_p,window_type,ctypes.POINTER(window_type),ctypes.POINTER(window_type),ctypes.POINTER(ctypes.POINTER(window_type)),ctypes.POINTER(ctypes.c_uint)]
+    x.XFree.argtypes=[ctypes.c_void_p]
+    display=x.XOpenDisplay(None)
+    if not display: fail('Cannot inspect the X11 pointer window.')
+    def beneath(child, ancestor):
+        for _ in range(20):
+            root=window_type();parent=window_type();children=ctypes.POINTER(window_type)();count=ctypes.c_uint()
+            ok=x.XQueryTree(display,child,ctypes.byref(root),ctypes.byref(parent),ctypes.byref(children),ctypes.byref(count))
+            if children: x.XFree(children)
+            if not ok or child==root.value: return False
+            if child==ancestor: return True
+            child=parent.value
+            if not child: return False
+        return False
+    try: return beneath(pointer,target) or beneath(target,pointer)
+    finally: x.XCloseDisplay(display)
+
 def main(a):
     try:
         import gi
@@ -104,7 +128,7 @@ def main(a):
             if int(command(['xdotool','getwindowpid',str(wid)]))!=pid: fail('Window ownership changed.')
             command(['xdotool','mousemove','--sync',str(int(x)),str(int(y))])
             pointer=dict(line.split('=',1) for line in command(['xdotool','getmouselocation','--shell']).splitlines() if '=' in line)
-            if int(command(['xdotool','getwindowpid',pointer['WINDOW']]))!=pid: fail('Another app covers this point. No click was sent.')
+            if not same_window_tree(int(pointer['WINDOW']),wid): fail('Another app covers this point. No click was sent.')
             command(['xdotool','click','1'])
         elif op=='key':
             keys={'return':'Return','tab':'Tab','escape':'Escape','backspace':'BackSpace','left':'Left','right':'Right','up':'Up','down':'Down',**{k:k for k in 'acvszlw'}}
@@ -115,7 +139,7 @@ def main(a):
             amount=max(-20,min(20,int(a.get('amount') or 0)))
             command(['xdotool','mousemove','--window',str(wid),'30','30'])
             pointer=dict(line.split('=',1) for line in command(['xdotool','getmouselocation','--shell']).splitlines() if '=' in line)
-            if int(command(['xdotool','getwindowpid',pointer['WINDOW']]))!=pid: fail('Another app covers this point. No scroll was sent.')
+            if not same_window_tree(int(pointer['WINDOW']),wid): fail('Another app covers this point. No scroll was sent.')
             if amount: command(['xdotool','click','--repeat',str(abs(amount)),'4' if amount>0 else '5'])
         else: fail('Use set_text on an inspected editable field for Linux text entry.')
     return {'status':'performed','app':a['app'],'operation':op,'next':'Inspect a fresh snapshot before another action.'}

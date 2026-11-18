@@ -16,14 +16,14 @@ cipher_temp=''
 trap '[ -z "$cipher_temp" ] || rm -rf "$cipher_temp"' EXIT
 if [[ "$cipher_target" == *.app ]]; then
   codesign --verify --deep --strict "$cipher_target"
-  codesign -dv "$cipher_target" 2>&1 | grep -q 'Authority=Developer ID Application:' || { echo 'Developer ID Application signing is required.' >&2; exit 1; }
+  cipher_signature=$(codesign -dv --verbose=2 "$cipher_target" 2>&1)
+  [[ "$cipher_signature" == *'Authority=Developer ID Application:'* ]] || { echo 'Developer ID Application signing is required.' >&2; exit 1; }
   cipher_temp=$(mktemp -d)
   cipher_upload="$cipher_temp/Cipher.zip"
   ditto -c -k --keepParent "$cipher_target" "$cipher_upload"
 fi
-cipher_keychain_args=()
-if [ -n "${CIPHER_NOTARY_KEYCHAIN:-}" ]; then cipher_keychain_args=(--keychain "$CIPHER_NOTARY_KEYCHAIN"); fi
-xcrun notarytool submit "$cipher_upload" "${cipher_auth_args[@]}" "${cipher_keychain_args[@]}" --wait --timeout 30m
+if [ -n "${CIPHER_NOTARY_KEYCHAIN:-}" ]; then cipher_auth_args+=(--keychain "$CIPHER_NOTARY_KEYCHAIN"); fi
+xcrun notarytool submit "$cipher_upload" "${cipher_auth_args[@]}" --wait --timeout 30m
 case "$cipher_target" in
   *.app|*.dmg) xcrun stapler staple "$cipher_target"; xcrun stapler validate "$cipher_target" ;;
 esac
