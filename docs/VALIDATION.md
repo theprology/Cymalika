@@ -8,7 +8,7 @@ The model used native Mac accessibility tools to inspect a blank TextEdit docume
 
 0.3.0 local checks cover provider contracts, text fallback, streaming, scoped resources, goals/plans, approval/cancellation, path boundaries, stale writes, checkpoints, real command execution, Git, HTTP errors, redirect rejection, and fragmented UTF-8.
 
-The packaged Electron backend was also launched on the Mac. It discovered the existing Ollama model and passed native tool invocation/result read-back. Through the app UI, a separate scratch project was selected, a file was read in the editor, an added function was reviewed and saved, and checkpoint undo restored the original file. This is a Mac-hosted backend check, not Windows/Linux desktop runtime validation.
+The packaged Electron backend was also launched on the Mac. It discovered the existing Ollama model and passed native tool invocation/result read-back. Through the app UI, a separate scratch project was selected, a file was read in the editor, an added function was reviewed and saved, and checkpoint undo restored the original file. The shared browser backend also opened an allowed local page, read its actual input/button IDs, filled the input after review, and clicked its button after review. Independent inspection showed `Hello, Cipher!`. This is a Mac-hosted backend check, not Windows/Linux desktop runtime validation.
 
 ## What a successful build establishes
 
