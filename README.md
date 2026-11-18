@@ -111,7 +111,7 @@ npm run dist:win
 npm run dist:linux
 ```
 
-Installers appear in `dist/`. GitHub Actions runs tests and produces platform artifacts. Tagged releases publish only after all configured platform jobs succeed.
+Installers appear in `dist/`. GitHub Actions runs tests and produces platform artifacts. Tagged builds prepare a draft release after all configured platform jobs succeed. Existing releases are left unchanged.
 
 ## Contribute
 
