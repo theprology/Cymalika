@@ -166,3 +166,31 @@ assert.throws(() =>
 console.log(
   "PASS: superseded desktop snapshots compact without losing tool-call history or the original task.",
 );
+
+const { visibleModelText } = await import("./web/engine.mjs");
+assert.equal(
+  visibleModelText("<think>private reasoning</think>Done."),
+  "Done.",
+);
+assert.equal(visibleModelText("<think>partial private reasoning"), "");
+assert.equal(
+  visibleModelText("Private draft.</think>Verified.", true),
+  "Verified.",
+);
+assert.equal(
+  visibleModelText("Use the `</think>` delimiter.", true),
+  "Use the `</think>` delimiter.",
+);
+assert.equal(
+  visibleModelText("```html\n<think>example</think>\n```", true),
+  "```html\n<think>example</think>\n```",
+);
+assert.equal(
+  responseFrom("ollama", {
+    message: { content: "Internal draft.</think>Complete." },
+  }).content,
+  "Complete.",
+);
+console.log(
+  "PASS: thinking envelopes and unmatched Ollama thinking prefixes are hidden while literal code examples are preserved.",
+);

@@ -278,3 +278,93 @@ assert.equal(api.persisted().settings.tourSeen, true);
 console.log(
   "PASS: nine-step beginner tour, progress navigation, completion persistence and no model/file actions.",
 );
+
+// The real send loop must recover from chat-only claims, but never retry a rejected action.
+vm.runInContext(
+  `
+  imageAttachments = []; attachments = []; cancelled = false; busy = false;
+  settings = { ...defaults, model: "fixture", streaming: false, rounds: 8 };
+  project = { path: "/fixture", name: "fixture" }; files = ["a.py"];
+  native = async () => ({});
+  globalThis.recoveryCalls = 0;
+  modelRequest = async () => { recoveryCalls++; return { message: { content: "Done, I edited the file." } }; };
+  current = { id: "recovery", mode: "build", messages: [], display: [{ role: "notice", content: "App connected" }], created: Date.now() };
+  $("prompt").value = "Update a.py to fix the bug";
+`,
+  context,
+);
+await api.sendReal();
+assert.equal(context.recoveryCalls, 3);
+assert.equal(api.getCurrent().title, "Update a.py to fix the bug");
+assert(
+  api
+    .getCurrent()
+    .display.some((m) => /stopped without performing/.test(m.content)),
+);
+assert(!api.getCurrent().display.some((m) => /Done, I edited/.test(m.content)));
+vm.runInContext(
+  `
+  globalThis.rejectCalls = 0;
+  modelRequest = async () => { rejectCalls++; return rejectCalls === 1 ? { message: { content: "", tool_calls: [{ function: { name: "request_edit", arguments: { path: "a.py", content: "new" } } }] } } : { message: { content: "Your edit was rejected. No file was changed." } }; };
+  approveEdit = async () => ({ status: "rejected" });
+  current = { id: "reject", mode: "build", messages: [], display: [], created: Date.now() };
+  $("prompt").value = "Edit a.py";
+`,
+  context,
+);
+await api.sendReal();
+assert.equal(context.rejectCalls, 2);
+assert(
+  api
+    .getCurrent()
+    .messages.some((m) => m.role === "tool" && /rejected/.test(m.content)),
+);
+console.log(
+  "PASS: chat-only completion claims trigger bounded recovery; unperformed changes are not presented as success; rejected edits are never retried.",
+);
+
+const previousConsole = context.console;
+context.console = {
+  ...console,
+  error: (error) => assert.match(error.message, /Fixture grant failed/),
+};
+vm.runInContext(
+  `
+  globalThis.connectionBody = elem("div");
+  connectedApp = null; access.computer = false; access.apps = [];
+  native = async (action) => {
+    if (action === "accessStatus") return { accessibility: true, screenRecording: true };
+    if (action === "runningApps") return [{ id: "fixture.editor", name: "Fixture Editor" }];
+    if (action === "configureAccess") throw Error("Fixture grant failed");
+    return {};
+  };
+  renderHub("computer", connectionBody);
+`,
+  context,
+);
+await Promise.resolve();
+const descendants = (node) => [node, ...node.children.flatMap(descendants)];
+const controls = descendants(context.connectionBody);
+const target = controls.find((n) => n.tag === "select");
+target.value = "fixture.editor";
+const connect = controls.find(
+  (n) => n.textContent === "Connect app and start a task",
+);
+await connect.onclick();
+context.console = previousConsole;
+assert.equal(vm.runInContext("access.computer", context), false);
+assert.equal(vm.runInContext("connectedApp", context), null);
+assert.equal(vm.runInContext("access.apps.length", context), 0);
+vm.runInContext("native = async () => ({})", context);
+await connect.onclick();
+assert.equal(vm.runInContext("access.computer", context), true);
+assert.equal(vm.runInContext("connectedApp.name", context), "Fixture Editor");
+assert.equal(
+  vm.runInContext("access.apps.join(',')", context),
+  "fixture.editor",
+);
+assert.equal(nodes.get("workbenchDialog").open, false);
+assert(nodes.get("prompt").placeholder.includes("Fixture Editor"));
+console.log(
+  "PASS: guided app connection applies one explicit app atomically, leaves grants unchanged after native failure, and returns to chat with a named target.",
+);

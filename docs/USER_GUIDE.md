@@ -12,13 +12,13 @@ The index includes up to 5,000 non-hidden files, excludes common build/dependenc
 
 ## Plans, goals, and memory
 
-Workbench contains plans, goals, resources, and project memory. Goals track milestones and evidence between conversations; they do not silently schedule background work. Only you mark a goal complete. Resources start empty: add UTF-8 text references or skills, then enable them for the intended scope. Imports start disabled. Resources have size limits and are loaded on demand; PDF and Word extraction are not included. Project memory is sent with that project's tasks.
+More tools contains plans, goals, resources, and project memory. Goals track milestones and evidence between conversations; they do not silently schedule background work. Only you mark a goal complete. Resources start empty: add UTF-8 text references or skills, then enable them for the intended scope. Imports start disabled. Resources have size limits and are loaded on demand; PDF and Word extraction are not included. Project memory is sent with that project's tasks.
 
 ## Browser and app access
 
-In Workbench → Access, enable Browser and add exact origins such as `http://localhost:3000`. Review opening and interacting with pages. Browser sessions are temporary. Remote pages receive no Cipher application bridge. Normal web subresources still load, so origin limits are not a network firewall.
+In More tools → Access, enable Browser and add exact origins such as `http://localhost:3000`. Review opening and interacting with pages. Browser sessions are temporary. Remote pages receive no Cipher application bridge. Normal web subresources still load, so origin limits are not a network firewall.
 
-In the native Mac app, grant Accessibility in System Settings, then enable computer tools and choose allowed running apps inside Cipher. Screen Recording is needed for window captures. Approve one action at a time. Passwords, payments, OS permission dialogs, security warnings, and irreversible confirmations should be handled by you. Some apps expose limited accessibility information. Updates to locally signed builds can require refreshing macOS permissions.
+Click **Computer use** in the sidebar. Open the app you want to use, choose its name, then click **Connect app and start a task**. This allows reading that app for the current session; describe the task in chat and review each proposed click or text change there. Click Computer use again to change apps or disconnect. On Mac, grant Accessibility in System Settings if requested. Screen Recording is needed only for window captures. Passwords, payments, OS permission dialogs, security warnings, and irreversible confirmations should be handled by you. Some apps expose limited accessibility information. Updates to locally signed builds can require refreshing macOS permissions.
 
 Cipher 0.4 adds Windows UI Automation and Linux AT-SPI app control. See [computer use](COMPUTER_USE.md) for setup, supported operations, and X11/Wayland differences. Signing status is recorded per release.
 
@@ -38,3 +38,9 @@ HTTP MCP supports the revisions shown in Connections and a focused set of tools/
 - **Permission stopped working after update:** remove/re-add the installed Cipher app in the relevant Mac privacy settings, then allow intended apps inside Cipher again.
 
 API keys remain session-only. Export useful conversations from Activity log before clearing history. Keep backups of important projects; checkpoints do not replace version control.
+
+## Task feedback
+
+Edits, commands, and computer actions appear as approval cards directly in the conversation. Review the proposed change, then approve or reject it. Rejected actions are not retried automatically. Activity is an optional detail panel. Files are discovered automatically within your selected project; attaching each file is unnecessary.
+
+Cipher retries a chat-only response up to twice when a task asks for action. If the model still does not use tools, Cipher reports that nothing happened. This improves recovery but does not guarantee the same ability as Codex; task success still depends on the selected model and must be checked against actual edits and test results. No model is downloaded or replaced by this flow.

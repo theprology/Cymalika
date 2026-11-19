@@ -1,3 +1,17 @@
+# Cipher 0.4.1 local candidate
+
+- Chat-first layout with Activity closed by default and clearer mode hints.
+- Direct Computer use setup: select an app, connect it, describe the task in chat.
+- File, command and computer-action reviews appear in the conversation; command output stays with its review card.
+- Smaller context-relevant tool menus, bounded retries for chat-only completion claims, and explicit failure when no action happened. Rejected actions are not retried.
+- Clearer computer tool schemas and validation before showing approval requests.
+- Interface recovery cancels pending work, disconnects advanced access, and preserves saved conversations and the selected model. Native Mac also provides View → Reload Interface and Stop Task.
+- Hidden thinking envelopes and updated in-app guidance. Light, dark and Hacker themes remain available.
+
+This candidate uses existing models. The local Mac build is signed and notarized. See VALIDATION.md for the checks and their limits; the public 0.4.0 downloads remain the previous release.
+
+---
+
 # Cipher 0.4.0
 
 Computer tools now extend beyond the native Mac app.

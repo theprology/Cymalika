@@ -214,6 +214,16 @@ export function requestFor(settings, messages, tools, textMode = false) {
   }
   return { url, method: "POST", headers, body };
 }
+export function visibleModelText(value, allowUnmatchedClose = false) {
+  const text = String(value || "");
+  const start = text.trimStart();
+  const close = text.indexOf("</think>");
+  if (start.startsWith("<think>"))
+    return close < 0 ? "" : text.slice(close + 8).trimStart();
+  if (allowUnmatchedClose && close >= 0 && !text.slice(0, close).includes("`"))
+    return text.slice(close + 8).trimStart();
+  return text;
+}
 export function responseFrom(provider, data, textMode = false) {
   if (textMode) {
     const text =
@@ -225,7 +235,7 @@ export function responseFrom(provider, data, textMode = false) {
               .map((c) => c.text)
               .join("\n")
           : data.choices?.[0]?.message?.content;
-    const p = parseJSON(text || "");
+    const p = parseJSON(visibleModelText(text, provider === "ollama"));
     if (p.action === "finish" && typeof p.message === "string")
       return { content: p.message, toolCalls: [] };
     if (
@@ -273,7 +283,7 @@ export function responseFrom(provider, data, textMode = false) {
     }));
   }
   return {
-    content,
+    content: visibleModelText(content, provider === "ollama"),
     toolCalls,
     usage: data.usage || {
       prompt_tokens: data.prompt_eval_count,

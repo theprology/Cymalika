@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body data-theme="dark">
-    <div class="app">
+    <div class="app chat-focus">
       <aside class="sidebar">
         <div class="brand">
           <div class="brandmark">⌘</div>
@@ -60,11 +60,12 @@
         />
         <div id="files" class="file-list"></div>
         <div class="sidebar-bottom">
-          <button id="workbenchButton" class="button wide">✦ Workbench</button
+          <button id="computerButton" class="button wide">Computer use</button>
+          <button id="workbenchButton" class="button wide">More tools</button
           ><button id="activeGoalButton" class="settings-link">
-            ◎ Goals, plans & resources</button
+            Goals & plans</button
           ><button id="settingsButton" class="settings-link">
-            ⚙ Settings & connections <kbd>⌘,</kbd>
+            Settings & models <kbd>⌘,</kbd>
           </button>
           <button id="helpButton" class="settings-link">
             ? Getting started
@@ -85,7 +86,7 @@
             <button
               id="toggleInspector"
               class="button subtle"
-              aria-expanded="true"
+              aria-expanded="false"
               title="Show or hide workspace activity"
             >
               ☷ Activity</button
@@ -103,11 +104,23 @@
         </header>
         <div class="workspace-toolbar">
           <div class="mode-tabs" role="tablist" aria-label="Task mode">
-            <button data-mode="ask" role="tab" aria-selected="false">Ask</button
-            ><button data-mode="plan" role="tab" aria-selected="false">
+            <button
+              data-mode="ask"
+              title="Read and explain; no edits or commands"
+              role="tab"
+              aria-selected="false"
+            >
+              Ask</button
+            ><button
+              data-mode="plan"
+              title="Explore and propose a plan before changing files"
+              role="tab"
+              aria-selected="false"
+            >
               Plan</button
             ><button
               data-mode="build"
+              title="Find files, propose edits, and run checks with approval"
               role="tab"
               aria-selected="true"
               class="active"
@@ -138,12 +151,11 @@
           aria-live="polite"
         >
           <div id="welcome" class="welcome">
-            <div class="hero-symbol">⌘<span>✦</span></div>
-            <div class="eyebrow">A LITTLE LESS FRICTION. A LOT MORE FLOW.</div>
-            <h1>Your next idea,<br /><span>one conversation away.</span></h1>
+            <div class="eyebrow">YOUR WORKSPACE</div>
+            <h1>What are we working on?</h1>
             <p>
-              Bring your own model. Open a project.<br />Build something that
-              feels like you.
+              Open a project and describe a task. Cipher can find the files,
+              propose edits, and run checks with your approval.
             </p>
             <div class="starter-grid">
               <button
@@ -201,7 +213,7 @@
                   title="Attach an image for a vision-capable model"
                 >
                   ▧</button
-                ><button id="attachFile">＋ Add file context</button>
+                ><button id="attachFile">＋ Attach file (optional)</button>
               </div>
               <button
                 id="sendButton"

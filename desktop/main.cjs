@@ -16,8 +16,11 @@ const { realpathSync } = require("node:fs");
 const { Workspace, request } = require("./core.cjs");
 const { Browser } = require("./browser.cjs");
 const { Computer } = require("./computer.cjs");
+const { resetAfterRendererFailure } = require("./recovery.cjs");
 const captureAllowedWindow = require("./capture.cjs");
 let win, workspace, browser, computer;
+let rendererNotice = "",
+  quitting = false;
 let stopShortcutRegistered = false;
 const stopShortcut =
   process.platform === "darwin"
@@ -58,8 +61,14 @@ function cancel() {
 }
 async function handle(action, a, id) {
   switch (action) {
-    case "loadState":
-      return workspace.readJSON("state.json", {});
+    case "loadState": {
+      const state = await workspace.readJSON("state.json", {});
+      if (rendererNotice) {
+        state.runtimeNotice = rendererNotice;
+        rendererNotice = "";
+      }
+      return state;
+    }
     case "saveState": {
       if (Buffer.byteLength(JSON.stringify(a)) > 8e6)
         throw Error(
@@ -291,6 +300,15 @@ async function createWindow() {
   });
   browser = new Browser(workspace, win);
   computer = new Computer(workspace, captureAllowedWindow);
+  win.webContents.on("render-process-gone", () => {
+    if (quitting || win.isDestroyed()) return;
+    rendererNotice = resetAfterRendererFailure(cancel, workspace, computer);
+    win
+      .loadFile(page)
+      .catch((error) =>
+        dialog.showErrorBox("Cipher could not reload", error.message),
+      );
+  });
   win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   win.webContents.on("will-navigate", (e) => e.preventDefault());
   win.webContents.on("will-attach-webview", (e) => e.preventDefault());
@@ -413,6 +431,7 @@ app
   });
 app.on("window-all-closed", () => app.quit());
 app.on("before-quit", () => {
+  quitting = true;
   if (workspace) cancel();
   globalShortcut.unregisterAll();
 });

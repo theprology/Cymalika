@@ -2,6 +2,7 @@ const $ = (id) => document.getElementById(id),
   all = (s) => [...document.querySelectorAll(s)];
 const pending = new Map();
 let seq = 0;
+const rpcSession = crypto.randomUUID();
 const desktopPlatform = window.cipherDesktop?.platform || "darwin";
 const desktopComputerSupported = ["darwin", "win32", "linux"].includes(
   desktopPlatform,
@@ -26,7 +27,7 @@ window.receiveNative = (message) => {
 };
 function native(action, args = {}) {
   return new Promise((resolve, reject) => {
-    const id = "rpc_" + ++seq;
+    const id = "rpc_" + rpcSession + "_" + ++seq;
     pending.set(id, { resolve, reject });
     if (!window.webkit?.messageHandlers?.cipher) {
       pending.delete(id);
@@ -211,14 +212,18 @@ function updateContext() {
       "",
       project
         ? `▱ ${name} · ${files.length.toLocaleString()} files`
-        : "▱ No project selected",
+        : connectedApp && access.computer
+          ? "Connected app: " + connectedApp.name
+          : "Open a project or connect an app",
     ),
     elem(
       "span",
       "",
       attachments.length
         ? `${attachments.length} file(s) attached`
-        : "Approval required for edits & commands",
+        : connectedApp && access.computer
+          ? "Review computer actions before they run"
+          : "Review edits and commands before they run",
     ),
   );
   $("privacyLabel").textContent =
@@ -227,7 +232,9 @@ function updateContext() {
       ? "Local Ollama connection"
       : "API: " + settings.endpoint.replace(/^https?:\/\//, "");
   $("capabilityHint").textContent =
-    `${capability} · ${Number(settings.context).toLocaleString()} context budget`;
+    connectedApp && access.computer
+      ? "Connected app content is available to the model"
+      : "Project files are discovered automatically";
 }
 async function chooseProject() {
   if (busy) return toast("Stop the current task before changing projects.");
@@ -336,6 +343,7 @@ function richText(box, text) {
   });
 }
 function showMessage(role, content, time = Date.now()) {
+  if (role === "assistant") content = visibleModelText(content, true);
   const row = elem("article", "message " + role),
     meta = elem("div", "message-meta");
   meta.append(
@@ -704,10 +712,12 @@ async function approveEdit(args) {
   const card = changeCard(p, args.reason);
   const actions = elem("div", "approval-actions");
   card.append(actions);
-  $("changesPanel").prepend(card);
-  showPanel("changes");
+  card.classList.add("inline-approval");
+  $("messages").append(card);
+  $("conversation").scrollTop = $("conversation").scrollHeight;
   $("changeCount").textContent =
-    $("changesPanel").querySelectorAll(".change-card").length;
+    $("changesPanel").querySelectorAll(".change-card").length +
+    $("messages").querySelectorAll(".change-card").length;
   $("busyText").textContent = "Waiting for your edit approval";
   addActivity("Edit needs approval", args.path);
   return new Promise((resolve) => {
@@ -759,6 +769,7 @@ async function approveEdit(args) {
         }
       }),
     );
+    card.scrollIntoView?.({ block: "end" });
   });
 }
 async function approveCommand(args) {
@@ -776,8 +787,9 @@ async function approveCommand(args) {
   const actions = elem("div", "approval-actions");
   card.append(actions);
   $("activityPanel").querySelector(".quiet-state")?.remove();
-  $("activityPanel").prepend(card);
-  showPanel("activity");
+  card.classList.add("inline-approval");
+  $("messages").append(card);
+  $("conversation").scrollTop = $("conversation").scrollHeight;
   $("busyText").textContent = "Waiting for your command approval";
   return new Promise((resolve) => {
     let decided = false;
@@ -799,7 +811,6 @@ async function approveCommand(args) {
         if (decided || cancelled || epoch !== taskEpoch) return;
         actions.querySelectorAll("button").forEach((b) => (b.disabled = true));
         $("busyText").textContent = "Running approved command…";
-        showPanel("terminal");
         $("terminalOutput").textContent = "$ " + p.command + "\n\nRunning…";
         try {
           const result = await native("executeCommand", { proposal: p.id });
@@ -812,7 +823,14 @@ async function approveCommand(args) {
             result.output +
             "\n\nExit code: " +
             result.exit_code;
-          card.append(elem("p", "muted", "Exit code: " + result.exit_code));
+          card.append(
+            elem(
+              "pre",
+              "tool-preview",
+              String(result.output || "No output.").slice(0, 12000),
+            ),
+            elem("p", "muted", "Exit code: " + result.exit_code),
+          );
           addActivity(
             "Command finished",
             "Exit " + result.exit_code + " · " + p.command,
@@ -825,6 +843,7 @@ async function approveCommand(args) {
         }
       }),
     );
+    card.scrollIntoView?.({ block: "end" });
   });
 }
 async function tool(t, mode) {
@@ -872,7 +891,7 @@ async function send() {
   if (!settings.model) return settingsOpen();
   if (imageAttachments.length && !settings.vision)
     return toast(
-      "Remove the attached images or enable image support for a compatible model in Workbench → Model profiles.",
+      "Remove the attached images or enable image support for a compatible model in More tools → Model profiles.",
     );
   if (
     current.mode !== "ask" &&
@@ -889,7 +908,7 @@ async function send() {
   taskCommands = 0;
   taskOtherActions = 0;
   const mode = current.mode;
-  if (!current.display.length) {
+  if (!current.display.some((message) => message.role === "user")) {
     current.title = text.slice(0, 48);
     $("chatTitle").textContent = current.title;
   }
@@ -920,6 +939,13 @@ async function send() {
   let textMode = settings.protocol === "text";
   const tools = allTools(mode);
   let completed = false;
+  let actionRecovery = 0;
+  let actionAttempted = false;
+  const needsAction =
+    mode === "build" &&
+    /\b(edit|fix|change|update|rename|refactor|repair|create|implement|write|add|remove|delete|replace|run|test|click|type|open|build)\b/i.test(
+      text,
+    );
   try {
     for (let round = 0; round < Number(settings.rounds); round++) {
       if (cancelled) break;
@@ -935,7 +961,9 @@ async function send() {
       if (settings.instructions)
         system += "\nUser project instructions:\n" + settings.instructions;
       $("busyText").textContent =
-        `Thinking · step ${round + 1} of ${settings.rounds}`;
+        round === 0
+          ? "Understanding your task…"
+          : "Reviewing results and choosing the next step…";
       let raw;
       try {
         raw = await modelRequest(
@@ -972,8 +1000,41 @@ async function send() {
       if (cancelled) break;
       const answer = responseFrom(settings.provider, raw, textMode);
       if (answer.content && answer.toolCalls.length)
-        addActivity("Model update", answer.content.slice(0, 1500));
+        record("assistant", answer.content);
       if (!answer.toolCalls.length) {
+        if (
+          needsAction &&
+          taskEdits + taskCommands + taskOtherActions === 0 &&
+          actionRecovery < 2 &&
+          !actionAttempted &&
+          answer.content &&
+          !/\?\s*$/.test(answer.content.trim())
+        ) {
+          actionRecovery++;
+          current.messages.push({ role: "assistant", content: answer.content });
+          current.messages.push({
+            role: "user",
+            content:
+              "No requested action has been performed yet. Use the available tools to inspect the relevant project files or connected app, then perform the requested task through tools. Do not claim an edit or action without a successful tool result. If you need a specific missing detail, ask one clear question. If a tool fails, explain the actual error.",
+          });
+          $("busyText").textContent = "Asking the model to use its tools…";
+          continue;
+        }
+        if (
+          needsAction &&
+          !actionAttempted &&
+          actionRecovery >= 2 &&
+          taskEdits + taskCommands + taskOtherActions === 0 &&
+          !/\?\s*$/.test(answer.content.trim())
+        ) {
+          current.messages.push({ role: "assistant", content: answer.content });
+          record(
+            "notice",
+            "The model stopped without performing the requested action after two retries. Your files and apps were not changed. Try a more specific task or inspect Activity for tool errors.",
+          );
+          completed = true;
+          break;
+        }
         if (answer.content) record("assistant", answer.content);
         current.messages.push({ role: "assistant", content: answer.content });
         if (!answer.content)
@@ -989,6 +1050,17 @@ async function send() {
         toolCalls: answer.toolCalls,
       });
       for (const t of answer.toolCalls) {
+        if (
+          [
+            "request_edit",
+            "request_command",
+            "computer_action",
+            "browser_action",
+            "browser_open",
+            "git_change",
+          ].includes(t.name)
+        )
+          actionAttempted = true;
         if (cancelled) break;
         let result;
         try {
@@ -1028,7 +1100,7 @@ async function send() {
         "Reached the tool-round limit. Review the activity and send a follow-up to continue.",
       );
     if (
-      mode === "build" &&
+      needsAction &&
       !taskEdits &&
       !taskCommands &&
       !taskOtherActions &&
@@ -1330,6 +1402,7 @@ async function init() {
     renderProjects();
     renderFiles();
     newChat();
+    if (stored.runtimeNotice) record("notice", stored.runtimeNotice);
     updateContext();
     await refreshModels();
     if (!settings.tourSeen) openTour();

@@ -175,6 +175,7 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
   lazy var browser = BrowserController(policy)
   var streams: [String: ModelStream] = [:]
   var tasks: [String: URLSessionDataTask] = [:]
+  var rendererRecoveryPending = false
   var commands: [String: String] = [:]
   var processes: [String: Process] = [:]
   init(storage: URL) { workspace = Workspace(storage: storage) }
@@ -198,7 +199,11 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
       switch action {
       case "loadState":
         let data = try? Data(contentsOf: workspace.storage.appendingPathComponent("state.json"))
-        let state = data.flatMap { try? JSONSerialization.jsonObject(with: $0) } ?? [:]
+        var state = (data.flatMap { try? JSONSerialization.jsonObject(with: $0) }) as? [String: Any] ?? [:]
+        if rendererRecoveryPending {
+          state["runtimeNotice"] = "Cipher recovered after its interface stopped. Pending work was cancelled; app access was disconnected. Saved conversations are in Chats. Reopen your project or reconnect an app before starting a new task."
+          rendererRecoveryPending = false
+        }
         reply(id, state)
       case "saveState":
         let data = try JSONSerialization.data(withJSONObject: args)
@@ -426,19 +431,7 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
           reply(id, false)
         }
       case "cancel":
-        policy.epoch += 1
-        for task in tasks.values { task.cancel() }
-        tasks.removeAll()
-        for stream in streams.values { stream.cancel() }
-        streams.removeAll()
-        commands.removeAll()
-        workspace.proposals.removeAll()
-        computer.elements = [:]
-        computer.snapshotID = ""
-        browser.snapshotID = ""
-        for process in processes.values {
-          if kill(-process.processIdentifier, SIGTERM) != 0 { process.terminate() }
-        }
+        cancelWork()
         reply(id, true)
       case "copyText":
         NSPasteboard.general.clearContents()
@@ -457,6 +450,32 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
       default: throw Failure("Unknown application action.")
       }
     } catch { reply(id, error: error.localizedDescription) }
+  }
+  func cancelWork() {
+    policy.epoch += 1
+    for task in tasks.values { task.cancel() }
+    tasks.removeAll()
+    for stream in streams.values { stream.cancel() }
+    streams.removeAll()
+    commands.removeAll()
+    workspace.proposals.removeAll()
+    computer.elements = [:]
+    computer.snapshotID = ""
+    browser.snapshotID = ""
+    for process in processes.values {
+      if kill(-process.processIdentifier, SIGTERM) != 0 { process.terminate() }
+    }
+  }
+  func prepareRendererRecovery() {
+    cancelWork()
+    policy.grants = ["files", "edits", "commands", "git"]
+    policy.apps = []
+    policy.origins = []
+    rendererRecoveryPending = true
+  }
+  func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+    prepareRendererRecovery()
+    webView.reload()
   }
   func advancedReply(_ id: String, _ result: Result<Any, Error>) {
     switch result {
@@ -758,6 +777,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   var bridge: Bridge!
   var localStopMonitor: Any?
   var globalStopMonitor: Any?
+  @objc func reloadInterface() {
+    bridge.prepareRendererRecovery()
+    bridge.web?.reload()
+  }
   func applicationDidFinishLaunching(_ notification: Notification) {
     let storage = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[
       0
@@ -800,6 +823,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     editMenu.addItem(
       withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
     editItem.submenu = editMenu
+    let viewItem = NSMenuItem()
+    menu.addItem(viewItem)
+    let viewMenu = NSMenu(title: "View")
+    let reloadItem = viewMenu.addItem(withTitle: "Reload Interface and Stop Task", action: #selector(reloadInterface), keyEquivalent: "r")
+    reloadItem.target = self
+    viewItem.submenu = viewMenu
     NSApp.mainMenu = menu
     func emergency(_ event: NSEvent) -> Bool {
       if event.keyCode == 53 && event.modifierFlags.contains([.command, .shift]) {
@@ -882,6 +911,18 @@ func selfTest() throws {
   guard worker.terminationStatus == 0 && workerOutput == "cipher-worker-ok" else {
     throw Failure("Command worker failed: " + (workerOutput ?? ""))
   }
+  let recoveryBridge = Bridge(storage: base.appendingPathComponent("recovery-state"))
+  recoveryBridge.commands["pending"] = "echo should-not-run"
+  recoveryBridge.workspace.proposals["pending"] = [:]
+  recoveryBridge.policy.grants.insert("computer")
+  recoveryBridge.policy.apps.insert("fixture.editor")
+  recoveryBridge.policy.origins.insert("http://localhost:3000")
+  let beforeRecovery = recoveryBridge.policy.epoch
+  recoveryBridge.prepareRendererRecovery()
+  guard recoveryBridge.rendererRecoveryPending, recoveryBridge.commands.isEmpty,
+    recoveryBridge.workspace.proposals.isEmpty, recoveryBridge.policy.apps.isEmpty,
+    recoveryBridge.policy.origins.isEmpty, !recoveryBridge.policy.grants.contains("computer"),
+    recoveryBridge.policy.epoch > beforeRecovery else { throw Failure("Renderer recovery retained pending access or actions") }
   let policy = AccessPolicy()
   var deniedComputer = false
   do { try policy.require("computer") } catch { deniedComputer = true }

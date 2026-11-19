@@ -2283,3 +2283,153 @@ dialog::backdrop {
 .sidebar-bottom #helpButton {
   padding: 8px 4px;
 }
+
+/* Conversation and review surfaces. */
+body:not([data-theme="hacker"]) {
+  --accent: #d9dedb;
+  --accent-text: #18201c;
+}
+body[data-theme="light"] {
+  --accent: #263b32;
+  --accent-text: #ffffff;
+}
+.brand small {
+  font-size: 9px;
+  letter-spacing: 1px;
+}
+.section-label {
+  font-size: 10px;
+}
+.sidebar-bottom .button,
+.settings-link {
+  font-size: 13px;
+}
+.welcome {
+  text-align: left;
+  max-width: 760px;
+  padding-top: 48px;
+}
+.welcome h1 {
+  font-size: clamp(28px, 3vw, 38px);
+  letter-spacing: -1.2px;
+  line-height: 1.2;
+}
+.welcome > p {
+  max-width: 520px;
+  margin: 16px 0 28px;
+  font-size: 15px;
+}
+.welcome .eyebrow {
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+}
+.starter-grid {
+  gap: 12px;
+}
+.starter-grid button {
+  min-height: 96px;
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+.welcome-foot {
+  justify-content: flex-start;
+  margin-top: 24px;
+}
+.message {
+  line-height: 1.75;
+}
+.inline-approval {
+  margin: 22px 0;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--raised);
+  overflow: hidden;
+}
+.inline-approval > strong {
+  font-size: 15px;
+}
+.inline-approval pre {
+  max-height: 320px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.inline-approval .feature-actions,
+.inline-approval .approval-actions {
+  margin-top: 16px;
+}
+.action-summary {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+.action-details {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.action-details summary {
+  cursor: pointer;
+}
+#workbenchBody > .notice {
+  font-size: 14px;
+  padding: 16px;
+  border-radius: 10px;
+}
+#computerButton {
+  text-align: left;
+}
+.composer-caption {
+  font-size: 11px;
+}
+@media (max-width: 850px) {
+  .welcome {
+    padding-top: 12px;
+  }
+  .inline-approval {
+    padding: 14px;
+  }
+}
+
+.brand > div:last-child {
+  min-width: 0;
+}
+.brand small {
+  white-space: normal;
+  line-height: 1.6;
+  font-size: 8px;
+}
+body:not([data-theme="hacker"]) .project-card {
+  background: var(--raised);
+}
+.workbench-modal.computer-setup {
+  width: min(760px, 94vw);
+}
+.computer-setup .workbench-layout {
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
+  max-height: 76vh;
+}
+.computer-setup #workbenchNav {
+  display: none;
+}
+.computer-setup .workbench-body {
+  padding: 26px 32px 32px;
+}
+.computer-setup .workbench-body > h3 {
+  font-size: 26px;
+}
+.computer-setup .workbench-body label,
+.computer-setup .workbench-body select {
+  font-size: 14px;
+}
+.computer-setup .workbench-body > .muted {
+  font-size: 13px;
+  line-height: 1.7;
+}
+.computer-setup .feature-actions {
+  gap: 10px;
+  flex-wrap: wrap;
+}

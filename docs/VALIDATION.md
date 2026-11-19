@@ -1,5 +1,16 @@
 # Validation
 
+## 0.4.1 local candidate — November 19, 2026
+
+- The existing `CyberCrew/notmythos-8b:3.8-27b-uncensored` model completed two independent runs of a disposable project task through the actual shared `send()` loop: discover files, fix the implementation, leave tests unchanged, and run two passing Python tests. The fixture harness approves only its disposable writes and a fixed unittest command. It does not establish general task reliability.
+- In the installed native Mac app, the same model read the existing TextEdit test document, proposed a `set_text` action with its snapshot/element references, performed it after review, and called `computer_read` again. Independent inspection confirmed the exact replacement sentence. Nothing was saved to disk and no other document was opened.
+- The redesigned connection dialog, in-chat action review and model selection were inspected in the running app. An earlier malformed keystroke proposal failed; tool schemas now explain snapshot IDs, editable element references and key modifiers, and missing references fail before review.
+- The native View → Reload Interface and Stop Task command reloaded the interface and displayed the recovery notice while preserving the selected model. Native self-tests and desktop backend tests verify that recovery discards pending proposals, cancels work, clears snapshots and revokes advanced session grants. Automatic recovery after an actual renderer crash has not been deliberately fault-injected.
+- Shared regression checks cover bounded recovery from chat-only completion claims, no automatic retry of rejected edits, atomic app connection after a failed native grant, and hiding model thinking envelopes without damaging literal code examples. Reopening the completed computer-test conversation in the final installed app confirmed its reply no longer displayed the thinking prefix or closing marker.
+- The updated Mac app is Developer ID signed, notarized and installed locally. The Windows/Linux recovery changes pass backend tests; new Windows/Linux installers have not been packaged or manually exercised for 0.4.1.
+
+Run `npm test` for offline checks. `npm run test:live-model` additionally requires that the existing named model is already installed and Ollama is running. It never downloads a model.
+
 ## Local verification
 
 The original Mac release was tested with the user's existing Ollama model. Verified paths include project reads and reviewed writes, checkpoint recovery, streamed tool exchanges, resource retrieval, structured plan creation, persistent goals, browser read/fill/click and capture against a local page, HTTP MCP discovery/resource retrieval, and a selected-file Git commit in an isolated repository.

@@ -5,12 +5,12 @@ Cipher 0.4 adds Windows and Linux computer tools. Mac downloads are Developer ID
 ## Start here
 
 1. Open the application you want Cipher to work with.
-2. Open **Workbench → Access** in Cipher.
-3. Enable **Inspect and control selected desktop apps**.
-4. Tick the apps you want to allow, or choose **Select all listed apps**.
-5. Choose **Apply session access**. Selections alone do not enable access.
-6. Open **Workbench → Computer** and inspect the selected app.
-7. Ask the model for one concrete task. Review the proposed action, then inspect its actual result.
+2. Click **Computer use** in Cipher’s sidebar.
+3. Choose the app by name and click **Connect app and start a task**. This permits reading that app for the current session.
+4. Describe the result you want in chat. Review proposed clicks and text changes directly in the conversation.
+5. Cipher should read the app again to verify the result. Click **Computer use** again to change apps or disconnect.
+
+On Mac, the setup screen links to Accessibility settings when permission is missing. Window images additionally require Screen Recording and an image-capable model. Apps with limited accessibility information may not support a requested action. **More tools → Access** retains the advanced capability controls.
 
 Use Cipher’s Stop button while a task runs. The global stop shortcut is Command + Shift + Escape on the native Mac app and Ctrl + Alt + Shift + F12 on Windows/Linux when the desktop allows registration. If the global shortcut is unavailable, Computer status says so.
 

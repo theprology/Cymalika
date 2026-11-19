@@ -76,3 +76,45 @@ const { Computer } = require("./computer.cjs");
   console.error(e);
   process.exit(1);
 });
+
+// Recovery must invalidate both executable proposals and app grants.
+{
+  const { Workspace } = require("./core.cjs");
+  const { resetAfterRendererFailure } = require("./recovery.cjs");
+  const workspace = new Workspace("unused-fixture-path");
+  workspace.proposals.set("pending", {});
+  workspace.commands.set("pending", {});
+  workspace.grants = new Set(["computer", "browser", "extensions"]);
+  workspace.origins = new Set(["http://localhost:3000"]);
+  const computer = new Computer(
+    workspace,
+    () => {},
+    "win32",
+    async () => ({}),
+  );
+  computer.apps.add("fixture.editor");
+  computer.snapshot = { id: "old" };
+  const notice = resetAfterRendererFailure(
+    () => {
+      workspace.cancel();
+      computer.cancel();
+    },
+    workspace,
+    computer,
+  );
+  assert.equal(workspace.proposals.size, 0);
+  assert.equal(workspace.commands.size, 0);
+  assert.equal(computer.apps.size, 0);
+  assert.equal(computer.snapshot, null);
+  assert.equal(workspace.origins.size, 0);
+  assert.deepEqual([...workspace.grants].sort(), [
+    "commands",
+    "edits",
+    "files",
+    "git",
+  ]);
+  assert.match(notice, /Pending work was cancelled/);
+  console.log(
+    "PASS: renderer recovery discards executable proposals, clears snapshots, revokes app/browser/extension access, and explains the interruption.",
+  );
+}

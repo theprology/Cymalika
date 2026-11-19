@@ -231,7 +231,7 @@ export const ADVANCED_TOOLS = [
   {
     name: "computer_read",
     description:
-      "Request approval to inspect accessibility text of an explicitly allowed running desktop app. Secure text fields are redacted.",
+      "Inspect accessibility text of an explicitly connected running desktop app. Secure text fields are redacted.",
     parameters: {
       type: "object",
       properties: {
@@ -259,7 +259,7 @@ export const ADVANCED_TOOLS = [
   {
     name: "computer_action",
     description:
-      "Request approval for ONE action in an allowed app. Coordinates are absolute desktop screen coordinates inside that app window. Inspect the result after each action. Never enter credentials, bypass warnings, grant permissions, or confirm purchases on the user’s behalf.",
+      "Request approval for ONE action in an allowed app. Always pass snapshot from the latest computer_read response. After every action read again. For replacing text prefer set_text with an editable element ID and text; no select-all is needed. Coordinates are absolute desktop screen coordinates inside that app window. Inspect the result after each action. Never enter credentials, bypass warnings, grant permissions, or confirm purchases on the user’s behalf.",
     parameters: {
       type: "object",
       properties: {
@@ -276,17 +276,36 @@ export const ADVANCED_TOOLS = [
             "scroll",
           ],
         },
-        snapshot: { type: "string" },
-        element: { type: "string" },
+        snapshot: {
+          type: "string",
+          description:
+            "Exact snapshot token from the most recent computer_read result. Single use; read again after each action.",
+        },
+        element: {
+          type: "string",
+          description:
+            "Exact element id from that snapshot, required for press and set_text.",
+        },
         text: { type: "string" },
         x: { type: "number" },
         y: { type: "number" },
-        key: { type: "string" },
-        modifiers: { type: "array", items: { type: "string" } },
+        key: {
+          type: "string",
+          description:
+            "A single key name such as a, return, tab, escape, backspace, left, right, up, down. Put modifiers in the separate modifiers array; never use cmd+a here.",
+        },
+        modifiers: {
+          type: "array",
+          items: {
+            type: "string",
+            enum: ["command", "control", "shift", "option"],
+          },
+          description: "For Select All on Mac: key a with modifiers [command].",
+        },
         amount: { type: "integer" },
         reason: { type: "string" },
       },
-      required: ["app", "operation", "reason"],
+      required: ["app", "operation", "snapshot", "reason"],
     },
   },
   {
