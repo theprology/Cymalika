@@ -1,5 +1,16 @@
 # Validation
 
+## 0.5.0 computer access — November 19, 2026
+
+- The already-installed `CyberCrew/notmythos-8b:3.8-27b-uncensored` model passed a disposable-user-folder task twice through the actual shared agent loop. It discovered the relevant note without a selected project or attached files and saved a correct summary; the second run used the actual review renderer with an automated fixture-only approval.
+- In the installed native Mac app, a single Computer access switch enabled the same model to open/read example.com, discover running apps, find/read the permitted test note, request a report save, and read the saved report back. The reviewed report contained the actual page title, `lantern-6842` from the note, and the running-app count. Independent filesystem inspection confirmed the report and the unchanged original note.
+- macOS displayed a Documents permission prompt during the first attempt. The user handled it manually; no protected system dialog was automated. A separate approval-renderer bug prevented the first save before any write occurred. Both were addressed before the successful retry: file/catalog work now uses a serial background queue with immediate cancellation, and file reviews without app IDs are covered by a real-renderer regression test.
+- Native self-tests simulate blocked file work and verify that cancellation stays responsive, pending operation replies are cancelled, and later stale results cannot commit. Shared checks cover session revocation, protected paths/symlinks, hashes/checkpoints, command directories, capability-aware image tools and browser-session destruction.
+- The switch was turned off after the live test. Cipher displayed that pending work was cancelled, its temporary browser was closed, and broad app/user-file tools were disconnected. The selected model was preserved. The local Mac app is Developer ID signed, Apple-notarized and Gatekeeper-accepted.
+- Cross-platform run [44654779273](https://github.com/theprology/cipher/actions/runs/44654779273) passed at `f9a82aa`: Mac checks, Windows/Linux tests, installed-app catalog discovery, native app-control/capture fixtures, packaging and installer/startup checks. Interactive multi-tool testing with this local model was performed on Mac; the complete workflow was not manually exercised on Windows/Linux.
+
+No model was downloaded or switched. Direct computer-file tools cover ordinary home-folder text files, not protected credential stores or every file format. Existing operating-system permissions still apply. Public release assets remain separate from this local/source candidate.
+
 ## 0.4.1 local candidate — November 19, 2026
 
 - The existing `CyberCrew/notmythos-8b:3.8-27b-uncensored` model completed two independent runs of a disposable project task through the actual shared `send()` loop: discover files, fix the implementation, leave tests unchanged, and run two passing Python tests. The fixture harness approves only its disposable writes and a fixed unittest command. It does not establish general task reliability.

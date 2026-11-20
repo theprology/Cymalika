@@ -218,7 +218,7 @@ function updateContext() {
           ? `▱ ${name} · ${files.length.toLocaleString()} files`
           : connectedApp && access.computer
             ? "Connected app: " + connectedApp.name
-            : "Open a project or connect an app",
+            : "Open a project or turn on Computer access",
     ),
     elem(
       "span",
@@ -909,7 +909,9 @@ async function send() {
     !access.extensions &&
     !currentGoal()
   )
-    return toast("Open a project first.");
+    return toast(
+      "Turn on Computer access for apps, websites and user files, or open a coding project.",
+    );
   cancelled = false;
   pendingComputerImages = [];
   taskEdits = 0;
