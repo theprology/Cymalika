@@ -128,7 +128,10 @@ class Computer {
   }
   require(app) {
     this.workspace.require("computer");
-    if (typeof app !== "string" || !this.apps.has(app))
+    if (
+      typeof app !== "string" ||
+      (!this.workspace.fullComputer && !this.apps.has(app))
+    )
       throw Error("Allow this running app in Access first.");
   }
   async read(a) {

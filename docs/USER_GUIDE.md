@@ -14,13 +14,22 @@ The index includes up to 5,000 non-hidden files, excludes common build/dependenc
 
 More tools contains plans, goals, resources, and project memory. Goals track milestones and evidence between conversations; they do not silently schedule background work. Only you mark a goal complete. Resources start empty: add UTF-8 text references or skills, then enable them for the intended scope. Imports start disabled. Resources have size limits and are loaded on demand; PDF and Word extraction are not included. Project memory is sent with that project's tasks.
 
-## Browser and app access
+## Computer access: one switch
 
-In More tools → Access, enable Browser and add exact origins such as `http://localhost:3000`. Review opening and interacting with pages. Browser sessions are temporary. Remote pages receive no Cipher application bridge. Normal web subresources still load, so origin limits are not a network firewall.
+1. Keep your existing model selected. Turn on **Computer access** at the top of the sidebar.
+2. Describe the result in chat. You do not need to choose every app, configure website origins, select a coding project, or attach each file.
+3. Review proposed saves, commands, app launches, clicks, and typing in the conversation. Reads and browser navigation can happen automatically during the task.
+4. Use **Stop** to interrupt a task. Turn **Computer access off** to cancel pending work, close Cipher Browser, and disconnect app, browser, and user-file tools. Approved changes already made remain in place.
 
-Click **Computer use** in the sidebar. Open the app you want to use, choose its name, then click **Connect app and start a task**. This allows reading that app for the current session; describe the task in chat and review each proposed click or text change there. Click Computer use again to change apps or disconnect. On Mac, grant Accessibility in System Settings if requested. Screen Recording is needed only for window captures. Passwords, payments, OS permission dialogs, security warnings, and irreversible confirmations should be handled by you. Some apps expose limited accessibility information. Updates to locally signed builds can require refreshing macOS permissions.
+For example: “Research a topic online and save a report in Documents,” or “Find my meeting notes in Documents and save a short summary in a new file.” Ask specifies read-only help; Plan explores and proposes steps; Build can request changes.
 
-Cipher 0.4 adds Windows UI Automation and Linux AT-SPI app control. See [computer use](COMPUTER_USE.md) for setup, supported operations, and X11/Wayland differences. Signing status is recorded per release.
+Computer access lasts only for the current session and resets when Cipher quits or reloads. It uses your existing model without downloading or switching models. App/file contents are shared with the selected model, so choose a provider you trust. If Ollama reports image support for your selected model, window-image tools are available in this mode; models without image support can still use accessible text and file/browser tools.
+
+File tools browse ordinary folders inside your home directory, including Documents, Desktop and Downloads. Hidden folders, credential stores, symbolic-link escapes and system locations are excluded. Text reads are bounded; approved terminal commands can handle tasks outside those direct tools and run with your normal account permissions. This is not administrator access or a bypass of macOS, Windows or Linux permissions.
+
+On Mac, app control needs Accessibility permission; captures additionally need Screen Recording. Windows uses UI Automation and Linux uses AT-SPI; X11 provides pointer/key tools and capture, while Wayland support depends on exposed accessibility controls. Some apps do not expose everything a model needs. Passwords, payments, permission prompts, legal agreements, security warnings and irreversible actions need you. See [computer access](COMPUTER_USE.md) for details.
+
+**Access details** explains the switch. Individual capability controls remain in More tools → Access when Computer access is off.
 
 ## Git and connections
 
@@ -35,7 +44,7 @@ HTTP MCP supports the revisions shown in Connections and a focused set of tools/
 - **Context exceeded:** start a new chat or increase the context budget to one your model can support. Desktop/browser snapshots are bounded and older snapshots compact automatically.
 - **Git commit failed:** inspect the output and staging area. Cipher does not silently fix identity, hooks, or repository configuration.
 - **Task stopped:** inspect the actual file/browser/app state. Stop does not reverse completed actions.
-- **Permission stopped working after update:** remove/re-add the installed Cipher app in the relevant Mac privacy settings, then allow intended apps inside Cipher again.
+- **Permission stopped working after update:** remove/re-add the installed Cipher app in the relevant Mac privacy settings, then turn Computer access on again.
 
 API keys remain session-only. Export useful conversations from Activity log before clearing history. Keep backups of important projects; checkpoints do not replace version control.
 

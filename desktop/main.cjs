@@ -16,9 +16,11 @@ const { realpathSync } = require("node:fs");
 const { Workspace, request } = require("./core.cjs");
 const { Browser } = require("./browser.cjs");
 const { Computer } = require("./computer.cjs");
+const { PersonalFiles } = require("./personal-files.cjs");
 const { resetAfterRendererFailure } = require("./recovery.cjs");
 const captureAllowedWindow = require("./capture.cjs");
-let win, workspace, browser, computer;
+let win, workspace, browser, computer, personalFiles;
+let computerBaseGrants = new Set(["files", "edits", "commands", "git"]);
 let rendererNotice = "",
   quitting = false;
 let stopShortcutRegistered = false;
@@ -54,10 +56,14 @@ const reply = (id, result = null, error = null) => {
 };
 function cancel() {
   workspace.cancel();
+  personalFiles?.cancel();
   browser.snapshot = "";
   computer?.cancel();
   for (const c of tasks.values()) c.abort();
   tasks.clear();
+}
+function requireComputerAccess() {
+  if (!workspace.fullComputer) throw Error("Turn on Computer access first.");
 }
 async function handle(action, a, id) {
   switch (action) {
@@ -159,7 +165,73 @@ async function handle(action, a, id) {
         tasks.delete(id);
       }
     }
+    case "setComputerAccess": {
+      if (typeof a.enabled !== "boolean")
+        throw Error("Computer access needs an on/off value.");
+      cancel();
+      if (a.enabled && !workspace.fullComputer)
+        computerBaseGrants = new Set(
+          [...workspace.grants].filter((grant) =>
+            ["files", "edits", "commands", "git"].includes(grant),
+          ),
+        );
+      workspace.fullComputer = a.enabled;
+      workspace.grants = a.enabled
+        ? new Set(["files", "edits", "commands", "git", "browser", "computer"])
+        : new Set(computerBaseGrants);
+      workspace.origins = new Set();
+      computer.configure([]);
+      if (!a.enabled) browser.close();
+      await personalFiles.init();
+      return {
+        enabled: a.enabled,
+        home: personalFiles.home,
+        ...(await computer.status()),
+      };
+    }
+    case "computerApps":
+      requireComputerAccess();
+      return {
+        running: await computer.runningApps(),
+        available: await computer.call({ operation: "installed" }),
+      };
+    case "computerOpenApp":
+      requireComputerAccess();
+      return computer.call({ operation: "launch", app: a.app });
+    case "computerFiles":
+      requireComputerAccess();
+      return personalFiles.inspect(a.operation, a.path);
+    case "prepareComputerWrite":
+      requireComputerAccess();
+      return personalFiles.prepare(a);
+    case "applyComputerWrite":
+      requireComputerAccess();
+      return personalFiles.workspace.apply(a.proposal);
+    case "undoComputerWrite":
+      requireComputerAccess();
+      return personalFiles.workspace.undo(a.revision);
+    case "prepareComputerCommand": {
+      requireComputerAccess();
+      const cwd = await personalFiles.directory(a.cwd);
+      if (
+        typeof a.command !== "string" ||
+        !a.command.trim() ||
+        a.command.length > 5000
+      )
+        throw Error("Invalid command.");
+      const key = randomUUID();
+      personalFiles.workspace.commands.set(key, {
+        command: a.command,
+        root: personalFiles.home,
+        cwd,
+      });
+      return { id: key, command: a.command, cwd };
+    }
+    case "executeComputerCommand":
+      requireComputerAccess();
+      return personalFiles.workspace.command(a.proposal);
     case "configureAccess": {
+      workspace.fullComputer = false;
       cancel();
       workspace.grants = new Set(a.grants || []);
       workspace.origins = new Set(
@@ -298,11 +370,15 @@ async function createWindow() {
       sandbox: true,
     },
   });
+  personalFiles = new PersonalFiles(
+    path.join(app.getPath("userData"), "computer-files"),
+  );
   browser = new Browser(workspace, win);
   computer = new Computer(workspace, captureAllowedWindow);
   win.webContents.on("render-process-gone", () => {
     if (quitting || win.isDestroyed()) return;
     rendererNotice = resetAfterRendererFailure(cancel, workspace, computer);
+    browser.close();
     win
       .loadFile(page)
       .catch((error) =>

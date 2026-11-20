@@ -1,6 +1,6 @@
 {
   "name": "cipher-workspace",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "An open-source coding workspace for local models and compatible APIs",
   "author": "theprology",
   "license": "MIT",
@@ -14,7 +14,8 @@
     "bundle": "node scripts/bundle.mjs",
     "dist:win": "npm run bundle && electron-builder --win --x64 --publish never",
     "dist:linux": "npm run bundle && electron-builder --linux --x64 --publish never",
-    "test:live-model": "node source/test-live-model.mjs"
+    "test:live-model": "node source/test-live-model.mjs",
+    "test:live-computer": "node source/test-live-computer.mjs"
   },
   "devDependencies": {
     "electron": "45.3.4",

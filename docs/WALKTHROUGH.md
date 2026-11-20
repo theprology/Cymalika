@@ -173,3 +173,9 @@ The small theme button in the top-right also cycles through the three themes.
 - You know how to recover using a checkpoint, Git, or a backup.
 
 Cipher helps you do the work. Your model's speed and accuracy vary. Keep important decisions and approvals in your hands.
+
+## Computer access in 0.5
+
+At the top of the sidebar, turn **Computer access** on. Keep your current model selected. Ask for an outcome, such as “Find my notes in Documents and save a summary.” The model can discover relevant apps, browse websites and read user files without you attaching each file or configuring each app. Review proposed actions in chat. Stop interrupts the current task; turning the switch off closes Cipher Browser and disconnects those tools. Access also resets on quit or interface reload.
+
+Passwords, purchases, permission dialogs and irreversible actions need you. Normal operating-system permissions still apply. This mode does not download another model. See [the current computer-access guide](COMPUTER_USE.md) for scope and platform differences; the older PDF handbook describes the earlier release.

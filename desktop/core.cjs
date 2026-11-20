@@ -21,6 +21,7 @@ class Workspace {
     this.epoch = 0;
     this.grants = new Set(["files", "edits", "commands", "git"]);
     this.origins = new Set();
+    this.fullComputer = false;
   }
   require(cap) {
     if (!this.grants.has(cap))
@@ -237,7 +238,7 @@ class Workspace {
     if (!this.root) throw Error("Open a project first.");
     return new Promise((resolve, reject) => {
       const child = spawn(command, args, {
-        cwd: this.root,
+        cwd: options.cwd || this.root,
         windowsHide: true,
         detached: process.platform !== "win32",
         stdio: ["ignore", "pipe", "pipe"],
@@ -296,7 +297,7 @@ class Workspace {
     const result = await this.run(
       win ? process.env.COMSPEC || "cmd.exe" : "/bin/sh",
       win ? ["/d", "/s", "/c", `"${p.command}"`] : ["-lc", p.command],
-      { env, windowsVerbatimArguments: win },
+      { env, windowsVerbatimArguments: win, cwd: p.cwd || this.root },
     );
     return { ...result, command: p.command };
   }

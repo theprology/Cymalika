@@ -20,6 +20,20 @@
             ><small>YOUR MODELS. YOUR WORKSPACE.</small>
           </div>
         </div>
+        <label class="computer-access-toggle" for="computerAccessSwitch">
+          <span
+            ><strong>Computer access</strong
+            ><small id="computerAccessLabel"
+              >Off · This session only</small
+            ></span
+          >
+          <input
+            id="computerAccessSwitch"
+            type="checkbox"
+            role="switch"
+            aria-label="Computer access"
+          />
+        </label>
         <button id="openProject" class="button primary wide">
           <span>＋</span> Open project <kbd>⌘O</kbd>
         </button>
@@ -60,7 +74,9 @@
         />
         <div id="files" class="file-list"></div>
         <div class="sidebar-bottom">
-          <button id="computerButton" class="button wide">Computer use</button>
+          <button id="computerButton" class="settings-link">
+            Access details
+          </button>
           <button id="workbenchButton" class="button wide">More tools</button
           ><button id="activeGoalButton" class="settings-link">
             Goals & plans</button
@@ -152,8 +168,8 @@
         >
           <div id="welcome" class="welcome">
             <div class="eyebrow">YOUR WORKSPACE</div>
-            <h1>What are we working on?</h1>
-            <p>
+            <h1 id="welcomeTitle">What are we working on?</h1>
+            <p id="welcomeDescription">
               Open a project and describe a task. Cipher can find the files,
               propose edits, and run checks with your approval.
             </p>
@@ -180,8 +196,8 @@
               </button>
             </div>
             <div class="welcome-foot">
-              <span class="status-dot"></span> Your project stays in your
-              control. Every edit gets your approval.
+              <span class="status-dot"></span> You review proposed changes and
+              actions before they run.
             </div>
           </div>
           <div id="messages"></div>

@@ -24,6 +24,7 @@ public static class CipherWindow {
 }
 '@
     [void][CipherWindow]::SetProcessDpiAwarenessContext([IntPtr](-4))
+    $ownExecutable = (Get-Process -Id $request.ownPid -ErrorAction Stop).Path
     function App-Identity($process) { return "$($process.Id):$($process.StartTime.ToUniversalTime().Ticks)" }
     function Running-Apps {
         $result = New-Object System.Collections.Generic.List[object]
@@ -36,7 +37,7 @@ public static class CipherWindow {
                         $process = Get-Process -Id $targetPid -ErrorAction Stop
                         $element = [System.Windows.Automation.AutomationElement]::FromHandle($handle)
                         $name = $element.Current.Name
-                        if ($name) { $result.Add([pscustomobject]@{id=(App-Identity $process); name="$($process.ProcessName) - $name"; handle=$handle.ToInt64(); pid=$targetPid}) }
+                        if ($name -and $process.Path -ne $ownExecutable) { $result.Add([pscustomobject]@{id=(App-Identity $process); name="$($process.ProcessName) - $name"; handle=$handle.ToInt64(); pid=$targetPid}) }
                     } catch { }
                 }
             }
@@ -48,6 +49,13 @@ public static class CipherWindow {
     $operation = $request.operation
     if ($operation -eq 'status') {
         $result = @{accessibility=$true; screenRecording=$true; detail='Windows UI Automation. Protected and elevated windows require their normal OS permissions.'}
+    } elseif ($operation -eq 'installed') {
+        $result = @(Get-StartApps | Where-Object { $_.Name -ne 'Cipher' } | Sort-Object Name | Select-Object -First 250 | ForEach-Object { @{id=$_.AppID; name=$_.Name} })
+    } elseif ($operation -eq 'launch') {
+        $known = @(Get-StartApps | Where-Object { $_.AppID -eq $request.app -and $_.Name -ne 'Cipher' }) | Select-Object -First 1
+        if (-not $known) { throw 'Choose an installed app ID from computer_apps.' }
+        Start-Process -FilePath 'explorer.exe' -ArgumentList ('shell:AppsFolder\' + $known.AppID)
+        $result = @{status='opened'; app=$request.app; next='Call computer_apps to discover its running app ID, then computer_read.'}
     } elseif ($operation -eq 'apps') {
         $result = @(Running-Apps | Group-Object id | ForEach-Object { @{id=$_.Group[0].id; name=$_.Group[0].name} })
     } else {

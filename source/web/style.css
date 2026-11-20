@@ -2433,3 +2433,60 @@ body:not([data-theme="hacker"]) .project-card {
   gap: 10px;
   flex-wrap: wrap;
 }
+
+.computer-access-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--raised);
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+.computer-access-toggle strong {
+  display: block;
+  font-size: 13px;
+}
+.computer-access-toggle small {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  margin-top: 3px;
+}
+.computer-access-toggle input {
+  appearance: none;
+  width: 36px;
+  height: 21px;
+  border-radius: 20px;
+  background: var(--hover);
+  border: 1px solid var(--line);
+  position: relative;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.computer-access-toggle input::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform 0.15s;
+}
+.computer-access-toggle input:checked {
+  background: var(--accent);
+}
+.computer-access-toggle input:checked::after {
+  transform: translateX(15px);
+  background: var(--accent-text);
+}
+
+.computer-access-toggle {
+  flex-direction: row;
+  text-align: left;
+}

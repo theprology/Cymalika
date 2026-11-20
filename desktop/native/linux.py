@@ -37,17 +37,26 @@ def main(a):
     except (ImportError,ValueError): fail('Install python3-gi and gir1.2-atspi-2.0 to enable Linux accessibility tools.')
     desktop=Atspi.get_desktop(0)
     if desktop is None: fail('No accessibility desktop is available. Enable accessibility in your desktop session.')
+    own_executable=os.readlink('/proc/%d/exe'%a.get('ownPid',os.getpid()))
     def apps():
         result=[]
         for i in range(desktop.get_child_count()):
             app=desktop.get_child_at_index(i)
             try:
                 pid=app.get_process_id()
-                if pid and pid != a.get('ownPid'): result.append((app,identity(pid),pid))
+                if pid and pid != a.get('ownPid') and os.readlink('/proc/%d/exe'%pid)!=own_executable: result.append((app,identity(pid),pid))
             except Exception: pass
         return result
     op=a['operation']
     if op=='status': return {'accessibility':True,'screenRecording':os.environ.get('XDG_SESSION_TYPE')!='wayland','detail':'AT-SPI accessibility. Pointer/key input and window capture require X11; Wayland supports exposed accessibility actions.'}
+    if op in ('installed','launch'):
+        from gi.repository import Gio
+        known={entry.get_id():entry for entry in Gio.AppInfo.get_all() if entry.get_id() and entry.should_show() and not entry.get_id().startswith('dev.theprology.cipher') and entry.get_display_name()!='Cipher'}
+        if op=='installed': return [{'id':key,'name':entry.get_display_name()} for key,entry in sorted(known.items(),key=lambda item:item[1].get_display_name())][:250]
+        entry=known.get(a.get('app'))
+        if entry is None: fail('Choose an installed app ID from computer_apps.')
+        entry.launch([],None)
+        return {'status':'opened','app':a['app'],'next':'Call computer_apps to discover its running app ID, then computer_read.'}
     if op=='apps': return [{'id':ident,'name':app.get_name() or str(pid)} for app,ident,pid in apps()]
     matches=[(app,pid) for app,ident,pid in apps() if ident==a.get('app')]
     if not matches: fail('The allowed application exited or restarted. Choose it again in Access.')

@@ -25,6 +25,13 @@ const deadline = setTimeout(() => {
   process.exit(1);
 }, 75000);
 try {
+  const available = await computer.call({ operation: "installed" });
+  assert(Array.isArray(available));
+  assert(
+    available.every(
+      (entry) => typeof entry.id === "string" && typeof entry.name === "string",
+    ),
+  );
   let app;
   for (let i = 0; i < 25; i++) {
     const apps = await computer.runningApps();

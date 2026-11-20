@@ -1,3 +1,16 @@
+# Cipher 0.5.0 local candidate
+
+- One Computer access switch enables session app discovery, internet browsing and user-folder file tools, with no per-app or per-origin setup.
+- The same selected model can discover running/installed apps, request opening an app, browse/search websites, find text files, propose saves, and request commands in a chosen user directory.
+- No selected coding project or manual file attachment is needed for computer tasks. Project scope remains separate.
+- Turning access off cancels pending work, closes Cipher Browser and revokes broad access. App quit and interface recovery reset it too.
+- Proposed writes, commands, app launches, clicks and typing remain reviewable. Hidden credential stores, OS permissions and protected human-only actions retain their boundaries.
+- The existing local model passed a real shared-loop test discovering notes and saving a correct summary in a disposable user folder.
+
+The local Mac build is signed and notarized. This does not download or switch models. The public 0.4.0 release remains separate from this local candidate until new release assets are published.
+
+---
+
 # Cipher 0.4.1 local candidate
 
 - Chat-first layout with Activity closed by default and clearer mode hints.

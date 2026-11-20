@@ -9,6 +9,7 @@ final class AccessPolicy {
   var grants: Set<String> = ["files", "edits", "commands", "git"]
   var apps: Set<String> = []
   var origins: Set<String> = []
+  var fullComputer = false
   var epoch = 0
   func require(_ capability: String) throws {
     guard grants.contains(capability) else {
@@ -19,12 +20,12 @@ final class AccessPolicy {
     guard let u = URL(string: raw), ["http", "https"].contains(u.scheme ?? ""), u.user == nil,
       u.password == nil, let host = u.host
     else { throw Failure("Use an HTTP or HTTPS URL without embedded credentials.") }
-    guard u.scheme == "https" || ["localhost", "127.0.0.1", "::1"].contains(host) else {
+    guard fullComputer || u.scheme == "https" || ["localhost", "127.0.0.1", "::1"].contains(host) else {
       throw Failure("HTTP is allowed only on this Mac.")
     }
     let origin =
       "\(u.scheme!)://\(host)\(u.port.flatMap { (u.scheme == "https" && $0 == 443 || u.scheme == "http" && $0 == 80) ? nil : ":\($0)" } ?? "")"
-    guard origins.contains(origin) else {
+    guard fullComputer || origins.contains(origin) else {
       throw Failure("Allow this website origin in Access first: " + origin)
     }
     return u
@@ -50,6 +51,7 @@ final class ComputerController {
   var elements: [String: AXUIElement] = [:]
   var snapshotID = ""
   var lastApp = ""
+  var availableAppIDs: Set<String> = []
   init(_ policy: AccessPolicy) { self.policy = policy }
   func status() -> [String: Any] {
     [
@@ -70,11 +72,35 @@ final class ComputerController {
     guard id != Bundle.main.bundleIdentifier else {
       throw Failure("Cipher cannot control its own approval window.")
     }
-    guard policy.apps.contains(id) else { throw Failure("This app is not allowed in Access.") }
+    guard policy.fullComputer || policy.apps.contains(id) else { throw Failure("This app is not allowed in Access.") }
     guard let app = NSRunningApplication.runningApplications(withBundleIdentifier: id).first else {
       throw Failure("The selected app is not running.")
     }
     return app
+  }
+  func installedApps() -> [[String: String]] {
+    var result: [String: [String: String]] = [:]
+    for folder in ["/Applications", "/Applications/Utilities", "/System/Applications", "/System/Applications/Utilities", NSHomeDirectory() + "/Applications"] {
+      for url in (try? FileManager.default.contentsOfDirectory(at: URL(fileURLWithPath: folder), includingPropertiesForKeys: nil)) ?? [] where url.pathExtension == "app" {
+        guard let bundle = Bundle(url: url), let id = bundle.bundleIdentifier, id != Bundle.main.bundleIdentifier else { continue }
+        result[id] = ["id": id, "name": bundle.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? url.deletingPathExtension().lastPathComponent]
+      }
+    }
+    return Array(result.values).sorted { $0["name"]! < $1["name"]! }
+  }
+  func openApp(_ id: String, completion: @escaping (Result<Any, Error>) -> Void) {
+    do {
+      guard policy.fullComputer else { throw Failure("Turn on Computer access first.") }
+      guard availableAppIDs.contains(id), let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: id) else { throw Failure("Choose an installed app ID from computer_apps.") }
+      let epoch = policy.epoch
+      NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration()) { app, error in
+        DispatchQueue.main.async {
+          guard self.policy.fullComputer, self.policy.epoch == epoch else { completion(.failure(Failure("App launch cancelled."))); return }
+          if let error { completion(.failure(error)); return }
+          completion(.success(["app": id, "status": "opened", "next": "Call computer_read to inspect the app before acting."]))
+        }
+      }
+    } catch { completion(.failure(error)) }
   }
   func attribute(_ e: AXUIElement, _ key: String) -> CFTypeRef? {
     var value: CFTypeRef?
@@ -391,6 +417,15 @@ final class BrowserController: NSObject, WKNavigationDelegate, NSToolbarDelegate
   var elements: [String: String] = [:]
   var snapshotID = ""
   init(_ policy: AccessPolicy) { self.policy = policy }
+  func close() {
+    snapshotID = ""
+    elements.removeAll()
+    view?.stopLoading()
+    window?.contentView = nil
+    window?.close()
+    view = nil
+    window = nil
+  }
   func open(_ raw: String) throws -> [String: Any] {
     try policy.require("browser")
     let u = try policy.checkURL(raw)
@@ -404,7 +439,7 @@ final class BrowserController: NSObject, WKNavigationDelegate, NSToolbarDelegate
         contentRect: NSRect(x: 100, y: 100, width: 1100, height: 760),
         styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered,
         defer: false)
-      win.title = "Cipher Browser · approved websites"
+      win.title = "Cipher Browser"
       win.contentView = w
       win.isReleasedWhenClosed = false
       let toolbar = NSToolbar(identifier: "CipherBrowserToolbar")
@@ -547,5 +582,55 @@ final class BrowserController: NSObject, WKNavigationDelegate, NSToolbarDelegate
         if let error { completion(.failure(error)) } else { completion(.success(result ?? [:])) }
       }
     } catch { completion(.failure(error)) }
+  }
+}
+
+// Separate from the selected coding project: session file access never changes project scope.
+final class PersonalFiles {
+  let workspace: Workspace
+  let home: URL
+  init(storage: URL, home: URL = FileManager.default.homeDirectoryForCurrentUser) {
+    self.home = home.resolvingSymlinksInPath().standardizedFileURL
+    workspace = Workspace(storage: storage)
+    workspace.root = self.home
+  }
+  func relative(_ raw: String) throws -> String {
+    var value = raw
+    if value == "~" { value = "" }
+    if value.hasPrefix("~/") { value = String(value.dropFirst(2)) }
+    if value.hasPrefix("/") {
+      let absolute = URL(fileURLWithPath: value).standardizedFileURL.path
+      guard absolute == home.path || absolute.hasPrefix(home.path + "/") else { throw Failure("Computer file tools stay inside your user folder.") }
+      value = absolute == home.path ? "" : String(absolute.dropFirst(home.path.count + 1))
+    }
+    let protected = Set(["library", "appdata", "keychain", "keychains", "login data", "cookies", "credentials", "id_rsa", "id_ed25519", "wallet.dat"])
+    guard !value.split(separator: "/").contains(where: { $0.hasPrefix(".") || protected.contains($0.lowercased()) }) else { throw Failure("Hidden folders and credential stores are not available to the model.") }
+    return value
+  }
+  func directory(_ path: String) throws -> URL {
+    let rel = try relative(path)
+    let url = rel.isEmpty ? home : try workspace.resolve(rel)
+    var directory: ObjCBool = false
+    guard FileManager.default.fileExists(atPath: url.path, isDirectory: &directory), directory.boolValue else { throw Failure("Choose a directory.") }
+    return url
+  }
+  func inspect(_ operation: String, _ path: String) throws -> [String: Any] {
+    let rel = try relative(path)
+    if operation == "read" {
+      let result = try workspace.read(rel)
+      guard (result["content"] as? String ?? "").count <= 45000 else { throw Failure("File exceeds the 45,000-character read limit. Use a reviewed command to inspect a relevant section instead of replacing unread content.") }
+      return result
+    }
+    guard operation == "list" else { throw Failure("Use list or read.") }
+    let folder = try directory(path)
+    let children = try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey], options: [.skipsHiddenFiles]).sorted { $0.lastPathComponent < $1.lastPathComponent }
+    var entries: [[String: String]] = []
+    for child in children {
+      let item = String(child.path.dropFirst(home.path.count + 1))
+      guard (try? relative(item)) != nil, (try? workspace.resolve(item)) != nil, let info = try? child.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey]), info.isSymbolicLink != true else { continue }
+      entries.append(["path": item, "name": child.lastPathComponent, "kind": info.isDirectory == true ? "folder" : "file"])
+      if entries.count >= 150 { break }
+    }
+    return ["home": home.path, "path": folder.path, "entries": entries, "truncated": entries.count >= 150 && children.count > 150]
   }
 }

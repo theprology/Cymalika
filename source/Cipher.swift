@@ -167,12 +167,23 @@ final class Workspace {
   }
 }
 
+final class ComputerOperationCancellation {
+  private let lock = NSLock()
+  private var stopped = false
+  var cancelled: Bool { lock.lock(); defer { lock.unlock() }; return stopped }
+  func cancel() { lock.lock(); stopped = true; lock.unlock() }
+}
 final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
   weak var web: WKWebView?
   let workspace: Workspace
   let policy = AccessPolicy()
   lazy var computer = ComputerController(policy)
   lazy var browser = BrowserController(policy)
+  lazy var personalFiles = PersonalFiles(storage: workspace.storage.appendingPathComponent("computer-files"))
+  var commandDirectories: [String: URL] = [:]
+  let computerIOQueue = DispatchQueue(label: "CipherComputerFiles", qos: .userInitiated)
+  var computerOperations: [String: ComputerOperationCancellation] = [:]
+  var computerBaseGrants: Set<String> = ["files", "edits", "commands", "git"]
   var streams: [String: ModelStream] = [:]
   var tasks: [String: URLSessionDataTask] = [:]
   var rendererRecoveryPending = false
@@ -305,7 +316,63 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
       case "stream": startStream(id, args)
       case "accessStatus": reply(id, computer.status())
       case "runningApps": reply(id, computer.runningApps())
+      case "setComputerAccess":
+        guard let enabled = args["enabled"] as? Bool else { throw Failure("Computer access needs an on/off value.") }
+        cancelWork()
+        if enabled && !policy.fullComputer { computerBaseGrants = policy.grants.intersection(["files", "edits", "commands", "git"]) }
+        policy.fullComputer = enabled
+        policy.grants = enabled ? ["files", "edits", "commands", "git", "computer", "browser"] : computerBaseGrants
+        policy.apps = []
+        policy.origins = []
+        if !enabled { browser.close() }
+        var status = computer.status()
+        status["enabled"] = enabled
+        status["home"] = personalFiles.home.path
+        reply(id, status)
+      case "computerApps":
+        try requireComputerAccess()
+        let running = computer.runningApps()
+        computerOperation(id, work: { [self] in ["running": running, "available": computer.installedApps()] }, commit: { [self] value in
+          let result = value as? [String: Any] ?? [:]
+          computer.availableAppIDs = Set((result["available"] as? [[String: String]] ?? []).compactMap { $0["id"] })
+          return value
+        })
+      case "computerOpenApp":
+        try requireComputerAccess()
+        computer.openApp(args["app"] as? String ?? "") { result in self.advancedReply(id, result) }
+      case "computerFiles":
+        try requireComputerAccess()
+        let personal = personalFiles
+        computerOperation(id, work: { try personal.inspect(args["operation"] as? String ?? "list", args["path"] as? String ?? "") })
+      case "prepareComputerWrite":
+        try requireComputerAccess()
+        let personal = personalFiles
+        computerOperation(id, work: { try personal.workspace.prepare(try personal.relative(args["path"] as? String ?? ""), args["content"] as? String ?? "", args["expected_hash"] as? String) })
+      case "applyComputerWrite":
+        try requireComputerAccess()
+        let personal = personalFiles
+        computerOperation(id, work: { try personal.workspace.apply(args["proposal"] as? String ?? "") })
+      case "undoComputerWrite":
+        try requireComputerAccess()
+        let personal = personalFiles
+        computerOperation(id, work: { try personal.workspace.undo(args["revision"] as? String ?? "") })
+      case "prepareComputerCommand":
+        try requireComputerAccess()
+        let command = args["command"] as? String ?? ""
+        guard !command.isEmpty, command.count <= 5000 else { throw Failure("Invalid command.") }
+        let personal = personalFiles
+        computerOperation(id, work: { try personal.directory(args["cwd"] as? String ?? "") }, commit: { [self] value in
+          let cwd = value as! URL
+          let key = UUID().uuidString
+          commands[key] = command
+          commandDirectories[key] = cwd
+          return ["id": key, "command": command, "cwd": cwd.path]
+        })
+      case "executeComputerCommand":
+        try requireComputerAccess()
+        executeCommand(id, args)
       case "configureAccess":
+        policy.fullComputer = false
         policy.epoch += 1
         policy.grants = Set(args["grants"] as? [String] ?? [])
         policy.apps = Set(args["apps"] as? [String] ?? [])
@@ -451,6 +518,30 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
       }
     } catch { reply(id, error: error.localizedDescription) }
   }
+  func computerOperation(_ id: String, work: @escaping () throws -> Any, commit: ((Any) -> Any)? = nil) {
+    let epoch = policy.epoch
+    let cancellation = ComputerOperationCancellation()
+    computerOperations[id] = cancellation
+    computerIOQueue.async {
+      guard !cancellation.cancelled else { return }
+      let result = Result { try work() }
+      DispatchQueue.main.async {
+        guard !cancellation.cancelled, self.computerOperations[id] === cancellation else { return }
+        self.computerOperations.removeValue(forKey: id)
+        guard self.policy.fullComputer, self.policy.epoch == epoch else {
+          self.reply(id, error: "Computer operation cancelled.")
+          return
+        }
+        switch result {
+        case .success(let value): self.reply(id, commit?(value) ?? value)
+        case .failure(let error): self.reply(id, error: error.localizedDescription)
+        }
+      }
+    }
+  }
+  func requireComputerAccess() throws {
+    guard policy.fullComputer else { throw Failure("Turn on Computer access first.") }
+  }
   func cancelWork() {
     policy.epoch += 1
     for task in tasks.values { task.cancel() }
@@ -458,6 +549,14 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
     for stream in streams.values { stream.cancel() }
     streams.removeAll()
     commands.removeAll()
+    commandDirectories.removeAll()
+    for (id, cancellation) in computerOperations {
+      cancellation.cancel()
+      reply(id, error: "Computer operation cancelled.")
+    }
+    computerOperations.removeAll()
+    let personal = personalFiles
+    computerIOQueue.async { personal.workspace.proposals.removeAll() }
     workspace.proposals.removeAll()
     computer.elements = [:]
     computer.snapshotID = ""
@@ -468,6 +567,8 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
   }
   func prepareRendererRecovery() {
     cancelWork()
+    policy.fullComputer = false
+    browser.close()
     policy.grants = ["files", "edits", "commands", "git"]
     policy.apps = []
     policy.origins = []
@@ -708,7 +809,7 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
   }
   func executeCommand(_ id: String, _ args: [String: Any]) {
     guard let key = args["proposal"] as? String, let command = commands.removeValue(forKey: key),
-      let root = workspace.root
+      let root = commandDirectories.removeValue(forKey: key) ?? workspace.root
     else {
       reply(id, error: "Command approval expired.")
       return
@@ -914,16 +1015,54 @@ func selfTest() throws {
   let recoveryBridge = Bridge(storage: base.appendingPathComponent("recovery-state"))
   recoveryBridge.commands["pending"] = "echo should-not-run"
   recoveryBridge.workspace.proposals["pending"] = [:]
+  recoveryBridge.policy.fullComputer = true
   recoveryBridge.policy.grants.insert("computer")
   recoveryBridge.policy.apps.insert("fixture.editor")
   recoveryBridge.policy.origins.insert("http://localhost:3000")
   let beforeRecovery = recoveryBridge.policy.epoch
   recoveryBridge.prepareRendererRecovery()
-  guard recoveryBridge.rendererRecoveryPending, recoveryBridge.commands.isEmpty,
+  guard !recoveryBridge.policy.fullComputer, recoveryBridge.rendererRecoveryPending, recoveryBridge.commands.isEmpty,
     recoveryBridge.workspace.proposals.isEmpty, recoveryBridge.policy.apps.isEmpty,
     recoveryBridge.policy.origins.isEmpty, !recoveryBridge.policy.grants.contains("computer"),
     recoveryBridge.policy.epoch > beforeRecovery else { throw Failure("Renderer recovery retained pending access or actions") }
+  recoveryBridge.policy.fullComputer = true
+  let operationStarted = DispatchSemaphore(value: 0)
+  let releaseOperation = DispatchSemaphore(value: 0)
+  recoveryBridge.computerOperation("blocked-fixture", work: {
+    operationStarted.signal()
+    releaseOperation.wait()
+    return ["status": "fixture"]
+  })
+  guard operationStarted.wait(timeout: .now() + 2) == .success else { throw Failure("Computer file work did not start off the UI thread") }
+  let stopStarted = Date()
+  recoveryBridge.cancelWork()
+  guard Date().timeIntervalSince(stopStarted) < 0.25, recoveryBridge.computerOperations.isEmpty else { throw Failure("Blocked file IO prevented immediate cancellation") }
+  releaseOperation.signal()
+  recoveryBridge.computerIOQueue.sync {}
+  recoveryBridge.policy.fullComputer = false
   let policy = AccessPolicy()
+  policy.fullComputer = true
+  _ = try policy.checkURL("https://www.example.com/research")
+  _ = try policy.checkURL("http://example.org/")
+  policy.fullComputer = false
+  var globalWebsiteDenied = false
+  do { _ = try policy.checkURL("https://www.example.com/research") } catch { globalWebsiteDenied = true }
+  guard globalWebsiteDenied else { throw Failure("Internet access survived revocation") }
+  let personalHome = base.appendingPathComponent("personal-home")
+  try FileManager.default.createDirectory(at: personalHome.appendingPathComponent("Documents"), withIntermediateDirectories: true)
+  try FileManager.default.createDirectory(at: personalHome.appendingPathComponent("Library"), withIntermediateDirectories: true)
+  let personal = PersonalFiles(storage: base.appendingPathComponent("personal-state"), home: personalHome)
+  let report = try personal.workspace.prepare("Documents/report.txt", "verified report", nil)
+  _ = try personal.workspace.apply(report["id"] as! String)
+  guard try personal.inspect("read", "Documents/report.txt")["content"] as? String == "verified report" else { throw Failure("Computer report save failed") }
+  for forbidden in ["../outside", "/etc/passwd", "Library/credentials", ".ssh/id_rsa", "Documents/.env"] {
+    var denied = false
+    do { _ = try personal.inspect("read", forbidden) } catch { denied = true }
+    guard denied else { throw Failure("Computer files accepted a protected path") }
+  }
+  var fullGrantDenied = false
+  do { try recoveryBridge.requireComputerAccess() } catch { fullGrantDenied = true }
+  guard fullGrantDenied else { throw Failure("Computer access defaulted on") }
   var deniedComputer = false
   do { try policy.require("computer") } catch { deniedComputer = true }
   guard deniedComputer else { throw Failure("Computer access was not denied by default") }

@@ -2,15 +2,21 @@
 
 Cipher 0.4 adds Windows and Linux computer tools. Mac downloads are Developer ID signed and Apple-notarized. Windows publisher signing is pending an external provider review. Linux packages have GitHub build-provenance attestations. Signing status is recorded per release; a workflow file alone does not mean a download is signed.
 
-## Start here
+## Start here in 0.5
 
-1. Open the application you want Cipher to work with.
-2. Click **Computer use** in Cipher’s sidebar.
-3. Choose the app by name and click **Connect app and start a task**. This permits reading that app for the current session.
-4. Describe the result you want in chat. Review proposed clicks and text changes directly in the conversation.
-5. Cipher should read the app again to verify the result. Click **Computer use** again to change apps or disconnect.
+1. Select your existing model in Cipher. Nothing is downloaded.
+2. Turn on **Computer access** at the top of the sidebar.
+3. Describe your task in chat. The model discovers apps, browses/searches websites, and finds files in your home folder itself.
+4. Review requested changes in chat. You can reject any action or stop a task.
+5. Turn the switch off when finished. It cancels pending work, closes Cipher Browser and revokes the broad access. Existing approved saves are not undone.
 
-On Mac, the setup screen links to Accessibility settings when permission is missing. Window images additionally require Screen Recording and an image-capable model. Apps with limited accessibility information may not support a requested action. **More tools → Access** retains the advanced capability controls.
+You do not have to connect apps individually or enter website allowlists in this mode. For example: “Research a topic online, then write a report in Documents.” Browsing uses Cipher’s separate temporary browser session; signing into an existing Chrome profile is not automatic. The model can also discover running and installed desktop apps and request opening the app it needs.
+
+Ordinary user-folder text files are available through bounded direct tools. Hidden credential stores and system paths are excluded. Existing files require a matching read-back hash before replacement, and reviewed saves keep checkpoints. Commands can use a folder inside home and always require review. Neither models nor tool calls can turn Computer access on themselves.
+
+The switch resets on app quit or interface recovery. It does not grant operating-system permissions. Mac app control needs Accessibility, window capture needs Screen Recording, and Linux/Windows still enforce their normal permissions. Passwords, payments, OS permission changes, binding agreements, security-warning/CAPTCHA bypasses and irreversible confirmations remain human steps.
+
+The 0.5 feature is available in source builds and the updated local Mac app. See release assets for the version of a published installer.
 
 Use Cipher’s Stop button while a task runs. The global stop shortcut is Command + Shift + Escape on the native Mac app and Ctrl + Alt + Shift + F12 on Windows/Linux when the desktop allows registration. If the global shortcut is unavailable, Computer status says so.
 

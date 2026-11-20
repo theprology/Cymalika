@@ -3,6 +3,7 @@ const $ = (id) => document.getElementById(id),
 const pending = new Map();
 let seq = 0;
 const rpcSession = crypto.randomUUID();
+const modelCapabilities = new Map();
 const desktopPlatform = window.cipherDesktop?.platform || "darwin";
 const desktopComputerSupported = ["darwin", "win32", "linux"].includes(
   desktopPlatform,
@@ -197,6 +198,7 @@ function renderFiles() {
     );
 }
 function updateContext() {
+  updateComputerWelcome();
   const name = project?.name || "Your workspace";
   $("projectName").textContent = name;
   $("projectCard").replaceChildren(elem("span", "folder-icon", "▱"));
@@ -210,11 +212,13 @@ function updateContext() {
     elem(
       "span",
       "",
-      project
-        ? `▱ ${name} · ${files.length.toLocaleString()} files`
-        : connectedApp && access.computer
-          ? "Connected app: " + connectedApp.name
-          : "Open a project or connect an app",
+      access.computerAccess
+        ? "Computer access ON · Apps, web & files"
+        : project
+          ? `▱ ${name} · ${files.length.toLocaleString()} files`
+          : connectedApp && access.computer
+            ? "Connected app: " + connectedApp.name
+            : "Open a project or connect an app",
     ),
     elem(
       "span",
@@ -231,8 +235,9 @@ function updateContext() {
     /localhost|127\.0\.0\.1/.test(settings.endpoint)
       ? "Local Ollama connection"
       : "API: " + settings.endpoint.replace(/^https?:\/\//, "");
-  $("capabilityHint").textContent =
-    connectedApp && access.computer
+  $("capabilityHint").textContent = access.computerAccess
+    ? "Computer access stays on until you turn it off or quit Cipher"
+    : connectedApp && access.computer
       ? "Connected app content is available to the model"
       : "Project files are discovered automatically";
 }
@@ -553,6 +558,9 @@ async function refreshModels() {
               : {},
       };
     const data = await native("request", req);
+    if (settings.provider === "ollama")
+      for (const model of data.models || [])
+        modelCapabilities.set(model.name, model.capabilities || []);
     const models =
       settings.provider === "ollama"
         ? (data.models || []).map((m) => m.name)
@@ -889,7 +897,7 @@ async function send() {
   const text = $("prompt").value.trim();
   if (!text || busy) return;
   if (!settings.model) return settingsOpen();
-  if (imageAttachments.length && !settings.vision)
+  if (imageAttachments.length && !visionAvailable())
     return toast(
       "Remove the attached images or enable image support for a compatible model in More tools → Model profiles.",
     );
@@ -1052,6 +1060,9 @@ async function send() {
       for (const t of answer.toolCalls) {
         if (
           [
+            "computer_write_file",
+            "computer_command",
+            "computer_open_app",
             "request_edit",
             "request_command",
             "computer_action",

@@ -6,7 +6,7 @@
 
 A calm, open-source desktop workspace for reading, writing, and improving code with the models you choose.
 
-**Local Ollama · Compatible APIs · Reviewed actions · Three themes**
+**Local Ollama · Compatible APIs · Computer access · Reviewed actions · Three themes**
 
 [Beginner walkthrough](docs/WALKTHROUGH.md) · [Getting started](#get-started) · [Features](#a-workspace-that-does-more) · [Build](#build-from-source) · [Roadmap](docs/ROADMAP.md) · [MIT license](LICENSE)
 
@@ -15,6 +15,8 @@ A calm, open-source desktop workspace for reading, writing, and improving code w
 ---
 
 Cipher brings conversations, project files, plans, and tools into one desktop app. Open your project, choose an installed model, and describe what you want to build. Cipher gives the model tools to find relevant files, propose edits, and request checks. You review actions before they run.
+
+In 0.5 source/local builds, **Computer access** is one session switch for app discovery, web browsing and user-folder files. Turn it on and describe a task; the model chooses the tools it needs. Review proposed actions in chat, use Stop to interrupt, and turn access off to disconnect. [How to use computer access](docs/COMPUTER_USE.md).
 
 No Cipher account, subscription, or model download is required. Cloud providers may charge for their APIs. Cipher never downloads or silently switches models.
 

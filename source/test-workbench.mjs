@@ -110,7 +110,7 @@ for (const file of [
   script += "\n" + text;
 }
 script +=
-  "\nconst actualSendForTest=send;globalThis.api={sendReal:actualSendForTest,queueImage,init:featureInit,tool:advancedTool,persisted,runGoal,getDesk:()=>desk,getCurrent:()=>current,setCurrent:c=>current=c,setProject:p=>project=p,setSettings:s=>settings={...settings,...s},setReview:fn=>reviewAction=fn,setSend:fn=>send=fn,setNative:fn=>native=fn,nextEpoch:()=>taskEpoch++,pendingImages:()=>pendingComputerImages,extraSystem,allTools,openTour,getTourStep:()=>tourStep,tourCount:()=>tourSteps.length};";
+  "\nconst actualSendForTest=send; const actualReviewForTest=reviewAction;globalThis.api={reviewReal:actualReviewForTest,sendReal:actualSendForTest,queueImage,init:featureInit,tool:advancedTool,persisted,runGoal,getDesk:()=>desk,getCurrent:()=>current,setCurrent:c=>current=c,setProject:p=>project=p,setSettings:s=>settings={...settings,...s},setReview:fn=>reviewAction=fn,setSend:fn=>send=fn,setNative:fn=>native=fn,nextEpoch:()=>taskEpoch++,pendingImages:()=>pendingComputerImages,extraSystem,allTools,openTour,getTourStep:()=>tourStep,tourCount:()=>tourSteps.length};";
 vm.runInContext(script, context);
 const api = context.api;
 api.init({});
@@ -323,48 +323,112 @@ console.log(
   "PASS: chat-only completion claims trigger bounded recovery; unperformed changes are not presented as success; rejected edits are never retried.",
 );
 
-const previousConsole = context.console;
-context.console = {
-  ...console,
-  error: (error) => assert.match(error.message, /Fixture grant failed/),
-};
 vm.runInContext(
   `
-  globalThis.connectionBody = elem("div");
-  connectedApp = null; access.computer = false; access.apps = [];
-  native = async (action) => {
-    if (action === "accessStatus") return { accessibility: true, screenRecording: true };
-    if (action === "runningApps") return [{ id: "fixture.editor", name: "Fixture Editor" }];
-    if (action === "configureAccess") throw Error("Fixture grant failed");
-    return {};
-  };
-  renderHub("computer", connectionBody);
+  connectedApp = null; access.computerAccess = false; access.computer = false; access.browser = false; access.apps = [];
+  project = null; busy = false;
+  globalThis.grantRequests = [];
+  native = async (action, args) => { grantRequests.push({ action, args }); throw Error("Fixture grant failed"); };
+  globalThis.changeComputerAccess = setComputerAccess;
 `,
   context,
 );
-await Promise.resolve();
-const descendants = (node) => [node, ...node.children.flatMap(descendants)];
-const controls = descendants(context.connectionBody);
-const target = controls.find((n) => n.tag === "select");
-target.value = "fixture.editor";
-const connect = controls.find(
-  (n) => n.textContent === "Connect app and start a task",
+await assert.rejects(
+  context.changeComputerAccess(true),
+  /Fixture grant failed/,
 );
-await connect.onclick();
-context.console = previousConsole;
-assert.equal(vm.runInContext("access.computer", context), false);
-assert.equal(vm.runInContext("connectedApp", context), null);
-assert.equal(vm.runInContext("access.apps.length", context), 0);
-vm.runInContext("native = async () => ({})", context);
-await connect.onclick();
-assert.equal(vm.runInContext("access.computer", context), true);
-assert.equal(vm.runInContext("connectedApp.name", context), "Fixture Editor");
+assert.equal(vm.runInContext("access.computerAccess", context), false);
+assert.equal(nodes.get("computerAccessSwitch").checked, false);
+assert.equal(nodes.get("computerAccessSwitch").disabled, false);
+vm.runInContext(
+  `native = async (action, args) => { grantRequests.push({ action, args }); return { enabled: args.enabled, home: "/fixture-home", accessibility: true }; }`,
+  context,
+);
+await context.changeComputerAccess(true);
 assert.equal(
-  vm.runInContext("access.apps.join(',')", context),
-  "fixture.editor",
+  vm.runInContext(
+    "access.computerAccess && access.computer && access.browser",
+    context,
+  ),
+  true,
 );
-assert.equal(nodes.get("workbenchDialog").open, false);
-assert(nodes.get("prompt").placeholder.includes("Fixture Editor"));
+assert.equal(nodes.get("computerAccessSwitch").checked, true);
+for (const name of [
+  "computer_apps",
+  "computer_files",
+  "computer_write_file",
+  "computer_command",
+  "browser_search",
+  "browser_open",
+  "computer_read",
+])
+  assert(
+    api.allTools("build").some((tool) => tool.name === name),
+    name,
+  );
+for (const name of [
+  "computer_write_file",
+  "computer_command",
+  "computer_open_app",
+  "computer_action",
+])
+  assert(!api.allTools("ask").some((tool) => tool.name === name), name);
+assert(api.extraSystem().includes("No per-app or per-website setup is needed"));
+assert.equal(api.persisted().access, undefined);
+vm.runInContext(
+  `
+  busy = true; cancelled = false;
+  globalThis.pendingWasCancelled = false;
+  approval = { card: elem("div"), resolve: () => { pendingWasCancelled = true; } };
+`,
+  context,
+);
+await context.changeComputerAccess(false);
+assert.equal(context.pendingWasCancelled, true);
+assert.equal(
+  vm.runInContext(
+    "access.computerAccess || access.computer || access.browser",
+    context,
+  ),
+  false,
+);
+assert.equal(vm.runInContext("cancelled", context), true);
+assert.equal(nodes.get("computerAccessSwitch").checked, false);
+assert(!api.allTools("build").some((tool) => tool.name === "computer_files"));
+vm.runInContext("busy = false", context);
 console.log(
-  "PASS: guided app connection applies one explicit app atomically, leaves grants unchanged after native failure, and returns to chat with a named target.",
+  "PASS: one-switch grant transaction, model tool discovery without a selected project, read-only mode boundaries, no persisted grants and immediate pending-review cancellation on revocation.",
 );
+
+// A file/browser/command review has no app ID: it must still render and wait for a real choice.
+vm.runInContext(
+  "busy = false; cancelled = false; connectedApp = null",
+  context,
+);
+let actionRan = false;
+const approved = api.reviewReal(
+  "Save fixture report",
+  { path: "Documents/report.txt", reason: "Fixture report" },
+  async () => {
+    actionRan = true;
+    return { status: "saved" };
+  },
+);
+const reviewCard = nodes.get("messages").children.at(-1);
+assert.equal(actionRan, false);
+const approveButton = descendantsForReview(reviewCard).find(
+  (node) => node.textContent === "Approve this action",
+);
+assert(
+  approveButton,
+  "A file save without an app ID must render its approval button",
+);
+await approveButton.onclick();
+assert.equal((await approved).status, "saved");
+assert.equal(actionRan, true);
+console.log(
+  "PASS: the actual approval renderer handles file reviews without an app ID and does not execute them before approval.",
+);
+function descendantsForReview(node) {
+  return [node, ...node.children.flatMap(descendantsForReview)];
+}

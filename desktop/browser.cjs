@@ -14,7 +14,7 @@ class Browser {
       !["http:", "https:"].includes(u.protocol) ||
       u.username ||
       u.password ||
-      !this.workspace.origins.has(u.origin)
+      (!this.workspace.fullComputer && !this.workspace.origins.has(u.origin))
     )
       throw Error("Enable this website origin in Access first.");
     return u.href;
@@ -108,7 +108,7 @@ class Browser {
   }
   close() {
     this.snapshot = "";
-    if (this.window && !this.window.isDestroyed()) this.window.close();
+    if (this.window && !this.window.isDestroyed()) this.window.destroy();
     this.window = null;
   }
 }
