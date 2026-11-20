@@ -41,3 +41,19 @@ assert.equal(new Workspace("unused-fresh-session").fullComputer, false);
 console.log(
   "PASS: global app/web scope is session-only, revokes immediately, and still rejects non-web schemes and embedded credentials.",
 );
+
+let browserDestroyed = false;
+browser.window = {
+  isDestroyed: () => false,
+  destroy: () => {
+    browserDestroyed = true;
+  },
+};
+browser.snapshot = "stale";
+browser.close();
+assert.equal(browserDestroyed, true);
+assert.equal(browser.window, null);
+assert.equal(browser.snapshot, "");
+console.log(
+  "PASS: disconnect destroys the isolated browser session instead of letting a page delay shutdown.",
+);

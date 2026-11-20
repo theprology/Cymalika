@@ -353,6 +353,10 @@ assert.equal(
   true,
 );
 assert.equal(nodes.get("computerAccessSwitch").checked, true);
+vm.runInContext('modelCapabilities.set(settings.model, ["vision"])', context);
+assert(
+  api.allTools("build").some((tool) => tool.name === "computer_screenshot"),
+);
 for (const name of [
   "computer_apps",
   "computer_files",

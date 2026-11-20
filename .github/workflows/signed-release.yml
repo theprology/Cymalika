@@ -151,7 +151,7 @@ jobs:
       - run: npm run dist:linux
       - name: Verify installed package
         run: |
-          node scripts/test-unix-install.mjs dist/Cipher-0.4.0-amd64.deb
+          node scripts/test-unix-install.mjs dist/*.deb
           scripts/with-linux-desktop.sh node scripts/smoke.mjs /opt/Cipher/cipher-workspace
       - uses: actions/attest-build-provenance@v3
         with:

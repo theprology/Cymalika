@@ -53,7 +53,7 @@ jobs:
           if [ -f /etc/apt/apt-mirrors.txt ]; then printf '%s\n' 'https://azure.archive.ubuntu.com/ubuntu' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null; fi
           sudo apt-get update
           sudo apt-get install -y xvfb
-          node scripts/test-unix-install.mjs dist/Cipher-0.4.0-amd64.deb
+          node scripts/test-unix-install.mjs dist/*.deb
           scripts/with-linux-desktop.sh node scripts/smoke.mjs /opt/Cipher/cipher-workspace
       - uses: actions/upload-artifact@v4
         with:

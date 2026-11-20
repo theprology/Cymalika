@@ -85,7 +85,10 @@ const { PersonalFiles } = require("./personal-files.cjs");
   });
   const result = await files.workspace.command("cwd");
   assert.equal(result.exit_code, 0, result.output);
-  assert.equal(result.output, await fs.realpath(path.join(home, "Documents")));
+  assert.equal(
+    await fs.realpath(result.output),
+    await fs.realpath(path.join(home, "Documents")),
+  );
   console.log(
     "PASS: user-folder discovery, protected paths, stale-write hashes, reviewed save/undo, chosen command cwd and revocation of prepared operations.",
   );
