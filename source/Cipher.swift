@@ -576,7 +576,8 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
   }
   func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
     prepareRendererRecovery()
-    webView.reload()
+    let base = Bundle.main.resourceURL!.appendingPathComponent("web")
+    webView.loadFileURL(base.appendingPathComponent("index.html"), allowingReadAccessTo: base)
   }
   func advancedReply(_ id: String, _ result: Result<Any, Error>) {
     switch result {
@@ -875,14 +876,18 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
 }
 final class AppDelegate: NSObject, NSApplicationDelegate {
   var window: NSWindow!
+  var workspaceWeb: WKWebView!
   var bridge: Bridge!
   var localStopMonitor: Any?
   var globalStopMonitor: Any?
   @objc func reloadInterface() {
     bridge.prepareRendererRecovery()
-    bridge.web?.reload()
+    window.contentView = workspaceWeb
+    let base = Bundle.main.resourceURL!.appendingPathComponent("web")
+    workspaceWeb.loadFileURL(base.appendingPathComponent("index.html"), allowingReadAccessTo: base)
   }
   func applicationDidFinishLaunching(_ notification: Notification) {
+    NSWindow.allowsAutomaticWindowTabbing = false
     let storage = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[
       0
     ].appendingPathComponent("Cipher")
@@ -890,6 +895,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let config = WKWebViewConfiguration()
     config.userContentController.add(bridge, name: "cipher")
     let web = WKWebView(frame: .zero, configuration: config)
+    workspaceWeb = web
     bridge.web = web
     web.navigationDelegate = bridge
     web.setValue(false, forKey: "drawsBackground")
@@ -897,6 +903,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
       contentRect: NSRect(x: 0, y: 0, width: 1360, height: 900),
       styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false
     )
+    window.tabbingMode = .disallowed
     window.title = "Cipher — Your models. Your workspace."
     window.minSize = NSSize(width: 1024, height: 700)
     window.center()

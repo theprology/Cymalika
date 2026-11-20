@@ -421,7 +421,7 @@ final class BrowserController: NSObject, WKNavigationDelegate, NSToolbarDelegate
     snapshotID = ""
     elements.removeAll()
     view?.stopLoading()
-    window?.contentView = nil
+    view?.removeFromSuperview()
     window?.close()
     view = nil
     window = nil
@@ -439,6 +439,7 @@ final class BrowserController: NSObject, WKNavigationDelegate, NSToolbarDelegate
         contentRect: NSRect(x: 100, y: 100, width: 1100, height: 760),
         styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered,
         defer: false)
+      win.tabbingMode = .disallowed
       win.title = "Cipher Browser"
       win.contentView = w
       win.isReleasedWhenClosed = false
