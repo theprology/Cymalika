@@ -933,7 +933,7 @@ vm.runInContext(
 );
 await vm.runInContext("toggleCoffee()", context);
 assert.equal(vm.runInContext("coffeeSipVisible", context), true);
-assert.equal(context.sipCallbacks.at(-1).ms, 2800);
+assert.equal(context.sipCallbacks.at(-1).ms, 5500);
 context.sipCallbacks.at(-1).fn();
 assert.equal(vm.runInContext("coffeeSipVisible", context), false);
 assert.equal(vm.runInContext("coffeeEnabled", context), true);

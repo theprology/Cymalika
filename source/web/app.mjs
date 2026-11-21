@@ -110,6 +110,7 @@ let coffeePending = false;
 let coffeeSipVisible = false;
 let coffeeSipTimer = null;
 let coffeeSipEpoch = 0;
+let stopCoffeeSplash = () => {};
 function paintCoffee() {
   const index = Number.isInteger(settings.coffeeColour)
     ? ((settings.coffeeColour % coffeeColours.length) + coffeeColours.length) %
@@ -168,7 +169,160 @@ async function toggleCoffee() {
     paintCoffee();
   }
 }
+function startCoffeeSplash(canvas) {
+  const gl = canvas?.getContext?.("webgl", {
+    alpha: true,
+    premultipliedAlpha: false,
+    antialias: false,
+    powerPreference: "low-power",
+  });
+  if (!gl) return () => {};
+  const vertex = `attribute vec2 position; void main(){gl_Position=vec4(position,0.,1.);}`;
+  const fragment = `
+precision highp float;
+uniform vec2 resolution;
+uniform float time;
+float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float noise(vec2 p){vec2 i=floor(p), f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+1.),f.x),f.y);}
+float fbm(vec2 p){return .55*noise(p)+.28*noise(p*2.03)+.12*noise(p*4.07);}
+float line(vec2 p,vec2 a,vec2 b){vec2 q=p-a,v=b-a;return length(q-v*clamp(dot(q,v)/dot(v,v),0.,1.));}
+void main(){
+ vec2 p=(gl_FragCoord.xy-.5*resolution)/min(resolution.x,resolution.y);
+ float t=time;
+ float flood=smoothstep(2.1,3.35,t);
+ float arrive=smoothstep(0.,.35,t);
+ float radius=mix(.235,2.4,flood);
+ vec2 q=p; q.y*=1.18;
+ float r=length(q), a=atan(q.y,q.x);
+ float wave=.022*sin(a*7.+t*3.)+.012*sin(a*13.-t*5.);
+ float edge=r-radius-wave*(.2+flood);
+ float pool=1.-smoothstep(-.003,.004,edge);
+ float streamGate=smoothstep(.12,.4,t)*(1.-smoothstep(1.8,2.4,t));
+ vec2 wobble=p+vec2(.009*sin(p.y*27.+t*8.),0.);
+ float water=(1.-smoothstep(.019,.034,line(wobble,vec2(-.39,.9),vec2(-.055,.04))))*streamGate;
+ float coffee=(1.-smoothstep(.023,.042,line(wobble,vec2(.38,.9),vec2(.055,.04))))*streamGate;
+ float vortex=a+5.5*r-t*2.1;
+ vec2 flow=vec2(cos(vortex),sin(vortex))*r*9.;
+ float n=fbm(flow+vec2(t*.12,-t*.17));
+ float marble=.5+.5*sin(vortex*3.+n*12.+r*30.);
+ float waterRibbon=pow(marble,10.)*(1.-smoothstep(1.25,2.9,t));
+ vec3 dark=vec3(.048,.016,.006), amber=vec3(.49,.21,.066);
+ vec3 col=mix(dark,amber,smoothstep(.22,.82,n));
+ col=mix(col,vec3(.50,.64,.65),waterRibbon*.72);
+ float micro=sin(r*160.+sin(a*9.+t)*2.-t*5.);
+ float foam=pow(max(0.,marble),25.)*.22;
+ col+=vec3(.34,.19,.075)*foam;
+ float gloss=pow(max(0.,sin(vortex*3.+n*12.+r*30.+.35)),38.);
+ col+=vec3(.84,.72,.51)*gloss*.34;
+ float rim=exp(-abs(edge)*260.)*(1.-flood);
+ col+=vec3(.94,.79,.52)*rim*.65;
+ float light=pow(max(0.,1.-length((p-vec2(-.10,.13))*vec2(6.,17.))),4.);
+ col+=vec3(.85,.89,.86)*light*.8;
+ col+=vec3(.032,.022,.012)*micro;
+ float alpha=pool;
+ if(water>alpha){float highlight=pow(max(0.,1.-abs(wobble.x-mix(-.055,-.39,clamp((wobble.y-.04)/.86,0.,1.)))/.025),8.);col=vec3(.38,.52,.57)+highlight*.55;alpha=water*.88;}
+ if(coffee>alpha){col=mix(dark,amber,.5+.4*sin(p.x*130.));alpha=coffee;}
+ for(int i=0;i<14;i++){
+  float k=float(i), angle=k*2.39996;
+  float burst=clamp((t-2.0)*1.8,0.,2.8);
+  vec2 center=vec2(cos(angle),sin(angle))*(.19+burst*(.42+hash(vec2(k,2.))*.7));
+  center.y-=burst*burst*.16;
+  vec2 d=p-center;
+  float droplet=(1.-smoothstep(.008,.014+.012*hash(vec2(k,3.)),length(d)))*smoothstep(2.,2.15,t)*(1.-smoothstep(2.65,3.2,t));
+  if(droplet>alpha){col=mix(amber,vec3(.96,.8,.55),pow(max(0.,1.-length(d-vec2(-.004,.005))*65.),6.));alpha=droplet;}
+ }
+ gl_FragColor=vec4(max(col,0.),alpha*arrive);
+}`;
+  const shaders = [],
+    program = gl.createProgram(),
+    buffer = gl.createBuffer();
+  let frame = null,
+    stopped = false;
+  const stop = () => {
+    if (stopped) return;
+    stopped = true;
+    if (frame !== null) window.cancelAnimationFrame(frame);
+    canvas.classList.remove("coffee-rendered");
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+    if (buffer) gl.deleteBuffer(buffer);
+    if (program) gl.deleteProgram(program);
+    for (const shader of shaders) gl.deleteShader(shader);
+    canvas.removeEventListener("webglcontextlost", lost);
+  };
+  const lost = (event) => {
+    event.preventDefault();
+    stop();
+  };
+  try {
+    for (const [type, text] of [
+      [gl.VERTEX_SHADER, vertex],
+      [gl.FRAGMENT_SHADER, fragment],
+    ]) {
+      const shader = gl.createShader(type);
+      if (!shader) throw Error("Coffee shader unavailable");
+      shaders.push(shader);
+      gl.shaderSource(shader, text);
+      gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS))
+        throw Error("Coffee shader unsupported");
+      gl.attachShader(program, shader);
+    }
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS))
+      throw Error("Coffee renderer unsupported");
+    gl.useProgram(program);
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
+      gl.STATIC_DRAW,
+    );
+    const position = gl.getAttribLocation(program, "position");
+    gl.enableVertexAttribArray(position);
+    gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
+    const size = gl.getUniformLocation(program, "resolution"),
+      time = gl.getUniformLocation(program, "time");
+    const started = performance.now();
+    let lastDraw = -100;
+    const draw = (now) => {
+      if (stopped) return;
+      const elapsed = (now - started) / 1000;
+      if (elapsed > 5.5) {
+        stop();
+        return;
+      }
+      if (now - lastDraw >= 32) {
+        lastDraw = now;
+        const scale = Math.min(
+          1,
+          1000 / window.innerWidth,
+          700 / window.innerHeight,
+        );
+        const width = Math.max(1, Math.round(window.innerWidth * scale)),
+          height = Math.max(1, Math.round(window.innerHeight * scale));
+        if (canvas.width !== width || canvas.height !== height) {
+          canvas.width = width;
+          canvas.height = height;
+        }
+        gl.viewport(0, 0, width, height);
+        gl.uniform2f(size, width, height);
+        gl.uniform1f(time, elapsed);
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+        canvas.classList.add("coffee-rendered");
+      }
+      frame = window.requestAnimationFrame(draw);
+    };
+    canvas.addEventListener("webglcontextlost", lost);
+    frame = window.requestAnimationFrame(draw);
+  } catch {
+    stop();
+  }
+  return stop;
+}
+
 function dismissCoffeeSip() {
+  stopCoffeeSplash();
+  stopCoffeeSplash = () => {};
   clearTimeout(coffeeSipTimer);
   coffeeSipTimer = null;
   coffeeSipEpoch++;
@@ -184,14 +338,17 @@ function playCoffeeSip() {
   const reducedMotion = window.matchMedia?.(
     "(prefers-reduced-motion: reduce)",
   )?.matches;
+  if (!reducedMotion) stopCoffeeSplash = startCoffeeSplash($("coffeeLiquid"));
   coffeeSipTimer = setTimeout(
     () => {
       if (epoch !== coffeeSipEpoch) return;
+      stopCoffeeSplash();
+      stopCoffeeSplash = () => {};
       coffeeSipVisible = false;
       coffeeSipTimer = null;
       $("coffeeSip").classList.add("hidden");
     },
-    reducedMotion ? 900 : 2800,
+    reducedMotion ? 900 : 5500,
   );
 }
 async function initCoffee() {

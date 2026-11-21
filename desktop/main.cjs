@@ -525,7 +525,9 @@ async function verifyStartup() {
     check(coffeeEnabled && coffeeSipVisible, "Coffee did not show its brief sip animation");
     check(!document.getElementById("coffeeStage") && !document.getElementById("coffeeShowAnimation"), "Legacy Coffee screen or replay control remains");
     check((await native("coffeeStatus")).enabled, "Native keep-awake registration failed");
-    for (let attempt=0; attempt<100 && coffeeSipVisible; attempt++) await new Promise(resolve => setTimeout(resolve, 50));
+    check($("coffeeSip").textContent.includes("Thanks man"), "Coffee thank-you message missing");
+    check(getComputedStyle($("coffeeSip")).pointerEvents === "none", "Coffee splash intercepts input");
+    for (let attempt=0; attempt<140 && coffeeSipVisible; attempt++) await new Promise(resolve => setTimeout(resolve, 50));
     check(!coffeeSipVisible && $("coffeeSip").classList.contains("hidden"), "Sip animation did not dismiss itself");
     check(coffeeEnabled && (await native("coffeeStatus")).enabled, "Automatic dismissal stopped Coffee");
     chooseCoffeeColour(2);

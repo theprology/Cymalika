@@ -1,5 +1,10 @@
 # Cipher 0.5.0 local candidate
 
+## 0.5.9
+
+- Coffee now plays a single glossy coffee-and-water swirl, splashes across the app, and says “Thanks man” before returning to chat. No sugar or milk imagery is used. The effect dismisses automatically after 5.5 seconds, does not intercept clicks or change keep-awake behavior, and respects reduced motion.
+- The shared effect uses a bounded, disposable WebGL renderer with a CSS fallback on systems without WebGL.
+
 ## 0.5.8
 
 - Adds secure password entry for inspected website/app password fields. The user approves and enters the value in a separate native window; the model receives only a field reference and filled/cancelled status. Passwords are not written to chat, disk, clipboard or model tool arguments. Filling does not click Sign in; the website/app can react to input.
