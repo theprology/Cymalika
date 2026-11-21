@@ -142,11 +142,20 @@ class Workspace {
     await walk(this.root, 0);
     return out.sort();
   }
-  async search(query, extra = []) {
+  async search(query, extra = [], pathContains = "") {
     if (typeof query !== "string" || query.length < 2)
       throw Error("Search needs two characters.");
     const hits = [];
-    for (const p of await this.files(extra)) {
+    const paths = (await this.files(extra))
+      .filter((p) =>
+        p.toLowerCase().includes(String(pathContains).toLowerCase()),
+      )
+      .sort(
+        (a, b) =>
+          Number(/\.(md|txt|rst)$/i.test(a)) -
+            Number(/\.(md|txt|rst)$/i.test(b)) || a.localeCompare(b),
+      );
+    for (const p of paths) {
       let r;
       try {
         r = await this.read(p);

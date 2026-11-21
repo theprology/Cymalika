@@ -134,14 +134,33 @@ fs.writeFileSync(
   path.join(projectRoot, "README.md"),
   "Run checks with python3 -m unittest discover -s tests -v.\n",
 );
+if (process.env.CIPHER_TEST_QUESTION === "1") {
+  fs.writeFileSync(
+    path.join(projectRoot, "src/scanner.py"),
+    "def scan(target):\n    return []\n",
+  );
+  fs.writeFileSync(
+    path.join(projectRoot, "src/worker.py"),
+    "from src.scanner import scan\n\nRUNTIME_CONFIGURED = False\n\ndef run_job(target):\n    if not RUNTIME_CONFIGURED:\n        raise RuntimeError('Scanner runtime is not configured')\n    return scan(target)\n",
+  );
+  fs.writeFileSync(
+    path.join(projectRoot, "AI_EVOLUTION_DESIGN.md"),
+    "Historical security scanner research; not runtime evidence.\n".repeat(100),
+  );
+}
 const workspace = new Workspace(path.join(root, "state"));
 await workspace.init();
 await workspace.select(projectRoot);
 const events = [];
+let compactedReadSent = false;
+let compactedRequestSent = false;
 context.liveBridge = async (action, args = {}) => {
   if (action === "request") {
     const request =
       typeof args.body === "string" ? JSON.parse(args.body) : args.body;
+    compactedRequestSent ||= JSON.stringify(request.messages).includes(
+      "Compacted for context",
+    );
     console.log("MODEL request", request.messages.length, "messages");
     const response = await fetch(args.url, {
       method: args.method || "POST",
@@ -154,10 +173,18 @@ context.liveBridge = async (action, args = {}) => {
     return data;
   }
   if (action === "listFiles") return workspace.files();
-  if (action === "search") return workspace.search(args.query);
+  if (action === "search")
+    return workspace.search(args.query, [], args.path_contains);
   if (action === "readFile") {
     events.push({ action, path: args.path });
-    return workspace.read(args.path);
+    const result = await workspace.read(args.path);
+    if (process.env.CIPHER_TEST_LARGE_READ === "1" && !compactedReadSent) {
+      compactedReadSent = true;
+      result.content +=
+        "\n# Unrelated historical notes\n" +
+        "# Archived observation, no instruction.\n".repeat(1000);
+    }
+    return result;
   }
   if (action === "saveState") return {};
   if (action === "revisions") return [];
@@ -205,6 +232,16 @@ vm.runInContext(
 `,
   context,
 );
+if (process.env.CIPHER_TEST_QUESTION === "1")
+  vm.runInContext(
+    `
+  files = fixtureFiles; settings.rounds = 4;
+  approveEdit = async () => { throw Error("Read-only question test: no writes allowed"); };
+  approveCommand = async () => { throw Error("Read-only question test: no commands allowed"); };
+  $("prompt").value = "Are the security scanner tools wired and connected to start working? Inspect the source and answer whether this project is ready. Do not change files or run commands.";
+`,
+    context,
+  );
 await context.runLive();
 const transcript = context.api.getCurrent();
 fs.writeFileSync(
@@ -216,25 +253,65 @@ fs.writeFileSync(
   ),
 );
 console.log("EVIDENCE", root);
-assert(
-  events.some((e) => e.action === "edit" && e.path === "src/prices.py"),
-  "Model must find and edit the implementation",
-);
-assert(
-  events.some((e) => e.action === "command" && e.exit_code === 0),
-  "Model must run successful checks",
-);
-assert.equal(
-  fs
-    .readFileSync(path.join(projectRoot, "tests/test_prices.py"), "utf8")
-    .includes("assertEqual(total([]), 0)"),
-  true,
-);
-assert(
-  !fs
-    .readFileSync(path.join(projectRoot, "src/prices.py"), "utf8")
-    .includes("+ 1"),
-);
-console.log(
-  "PASS: existing model independently found and fixed implementation and ran its tests through Cipher's actual agent loop.",
-);
+if (process.env.CIPHER_TEST_LARGE_READ === "1") {
+  assert(compactedReadSent, "Must exercise an oversized read");
+  assert(
+    compactedRequestSent,
+    "Actual model requests must use automatic compaction",
+  );
+  assert(
+    transcript.messages.some(
+      (m) => m.role === "tool" && m.content.length > 30000,
+    ),
+    "Full observations must remain saved",
+  );
+}
+if (process.env.CIPHER_TEST_QUESTION === "1") {
+  assert(
+    events.some((e) => e.action === "readFile" && e.path === "src/worker.py"),
+    "Read the actual job caller",
+  );
+  assert(
+    !events.some((e) => ["edit", "command"].includes(e.action)),
+    "Question must remain read-only",
+  );
+  const reply =
+    transcript.display.filter((m) => m.role === "assistant").at(-1)?.content ||
+    "";
+  assert(
+    reply.length > 100 && !/^(let me|i will|i'll)\b/i.test(reply),
+    "Must answer, not promise",
+  );
+  assert(
+    /not configured|runtime_configured|configuration.{0,40}(missing|false|disabled)|disabled|missing.{0,40}config/i.test(
+      reply,
+    ),
+    "Must report the actual missing runtime configuration",
+  );
+  console.log(
+    "PASS: existing model answered project readiness from actual caller/source evidence without modifying files or executing commands.",
+  );
+} else {
+  assert(
+    events.some((e) => e.action === "edit" && e.path === "src/prices.py"),
+    "Model must find and edit the implementation",
+  );
+  assert(
+    events.some((e) => e.action === "command" && e.exit_code === 0),
+    "Model must run successful checks",
+  );
+  assert.equal(
+    fs
+      .readFileSync(path.join(projectRoot, "tests/test_prices.py"), "utf8")
+      .includes("assertEqual(total([]), 0)"),
+    true,
+  );
+  assert(
+    !fs
+      .readFileSync(path.join(projectRoot, "src/prices.py"), "utf8")
+      .includes("+ 1"),
+  );
+  console.log(
+    "PASS: existing model independently found and fixed implementation and ran its tests through Cipher's actual agent loop.",
+  );
+}

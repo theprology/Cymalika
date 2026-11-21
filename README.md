@@ -136,3 +136,13 @@ Installers appear in `dist/`. GitHub Actions runs tests and produces platform ar
 Bug reports, accessibility improvements, platform testing, and focused pull requests are welcome. Include your operating system, Cipher version, provider/model, reproduction steps, and sanitized logs. Never include API keys or private project contents.
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md). Cipher is free to use, modify, and redistribute under the [MIT license](LICENSE). Model weights and third-party services retain their own licenses and terms.
+
+### Coffee: keep awake
+
+Turn on **Give me a coffee** in the sidebar to keep your whole computer awake while Cipher is open. On Mac this matches `caffeinate -dim` (display, system idle and disk idle). The drinking animation opens across the app window; **Back to work** dismisses it while keeping Coffee on. **Change colour** changes the whole app and cycles Amber, Green, Red, Blue, Violet and Rose; the left arrow returns to the previous colour, and the dots select a colour directly. Your colour is remembered. Switch Coffee off to restore normal idle sleep. Quitting Cipher also releases it; closing a laptop lid or choosing Sleep still works normally.
+
+### Project Explorer and messaging
+
+Expand folders in **Explorer**, or search by filename/path. Drag its right edge to make file names wider. Click a file to open the source viewer; files open in tabs with line numbers and syntax colours. **Edit file** starts a draft, **Review my edits** asks you to approve the save, and **Back to chat** returns to your conversation. Switching tabs preserves drafts.
+
+Press **Enter** to send a message, **Shift+Enter** for a new line, or **Command/Ctrl+Enter** to send.

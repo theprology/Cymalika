@@ -1223,6 +1223,7 @@ async function manualAction(title, args, fn) {
   }
 }
 async function reviewAction(title, args, fn, preview = null) {
+  closeFileViewer();
   const epoch = taskEpoch;
   if (cancelled) return { status: "cancelled" };
   const c = card(

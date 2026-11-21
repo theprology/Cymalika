@@ -174,6 +174,7 @@ final class ComputerOperationCancellation {
   func cancel() { lock.lock(); stopped = true; lock.unlock() }
 }
 final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
+  let coffee = CoffeeAwake()
   weak var web: WKWebView?
   let workspace: Workspace
   let policy = AccessPolicy()
@@ -208,6 +209,10 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
     let args = b["args"] as? [String: Any] ?? [:]
     do {
       switch action {
+      case "coffeeStatus": reply(id, ["enabled": coffee.enabled])
+      case "setCoffee":
+        guard let enabled = args["enabled"] as? Bool else { throw Failure("Coffee needs an on/off value.") }
+        reply(id, try coffee.setEnabled(enabled))
       case "loadState":
         let data = try? Data(contentsOf: workspace.storage.appendingPathComponent("state.json"))
         var state = (data.flatMap { try? JSONSerialization.jsonObject(with: $0) }) as? [String: Any] ?? [:]
@@ -271,7 +276,15 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         let query = args["query"] as? String ?? ""
         guard query.count >= 2 else { throw Failure("Search needs at least two characters.") }
         var hits: [[String: Any]] = []
-        for path in try workspace.files(args["excludes"] as? [String] ?? []) {
+        let pathFilter = args["path_contains"] as? String ?? ""
+        let searchPaths = try workspace.files(args["excludes"] as? [String] ?? []).filter {
+          pathFilter.isEmpty || $0.localizedCaseInsensitiveContains(pathFilter)
+        }.sorted {
+          let a = ["md", "txt", "rst"].contains(URL(fileURLWithPath: $0).pathExtension.lowercased())
+          let b = ["md", "txt", "rst"].contains(URL(fileURLWithPath: $1).pathExtension.lowercased())
+          return a == b ? $0 < $1 : !a
+        }
+        for path in searchPaths {
           guard let text = try? workspace.read(path)["content"] as? String else { continue }
           for (i, line) in text.components(separatedBy: "\n").enumerated()
           where line.localizedCaseInsensitiveContains(query) {
@@ -566,6 +579,7 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
     }
   }
   func prepareRendererRecovery() {
+    coffee.stop()
     cancelWork()
     policy.fullComputer = false
     browser.close()
@@ -964,6 +978,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     NSApp.activate(ignoringOtherApps: true)
   }
   func applicationWillTerminate(_ notification: Notification) {
+    bridge.coffee.stop()
     for task in bridge.tasks.values { task.cancel() }
     for stream in bridge.streams.values { stream.cancel() }
     for process in bridge.processes.values {
@@ -1167,6 +1182,19 @@ if CommandLine.arguments.count >= 3 && CommandLine.arguments[1] == "--command-wo
   }
   let data = try! JSONSerialization.data(withJSONObject: lines)
   print(String(data: data, encoding: .utf8)!)
+} else if CommandLine.arguments.contains("--coffee-self-test") {
+  do {
+    let coffee = CoffeeAwake()
+    assert(!coffee.enabled)
+    _ = try coffee.setEnabled(true)
+    assert(coffee.enabled)
+    _ = try coffee.setEnabled(true)
+    print("Coffee assertions active for inspection")
+    Thread.sleep(forTimeInterval: 3)
+    _ = try coffee.setEnabled(false)
+    assert(!coffee.enabled)
+    print("PASS: native coffee assertions enable, remain idempotent and release")
+  } catch { fputs("FAIL: \(error)\n", stderr); exit(1) }
 } else if CommandLine.arguments.contains("--self-test") {
   do { try selfTest() } catch {
     fputs("FAIL: \(error)\n", stderr)

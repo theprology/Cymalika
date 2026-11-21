@@ -436,3 +436,204 @@ console.log(
 function descendantsForReview(node) {
   return [node, ...node.children.flatMap(descendantsForReview)];
 }
+
+// Reproduce a question that loops over identical discovery calls, then demand a conclusion.
+vm.runInContext(
+  `
+  access.files = true; imageAttachments = []; attachments = []; cancelled = false; busy = false;
+  settings = { ...defaults, model: "fixture", streaming: false, rounds: 12 };
+  project = { path: "/fixture", name: "fixture" }; files = ["src/scanner.py"];
+  globalThis.loopModelCalls = 0; globalThis.loopSearchCalls = 0; globalThis.summarySeen = false;
+  native = async (action) => { if (action === "search") { loopSearchCalls++; return [{path:"src/scanner.py",line:1,text:"def scan():"}]; } return {}; };
+  modelRequest = async request => {
+    loopModelCalls++;
+    if (!request.body.tools && !request.body.format) {
+      summarySeen = true;
+      return {message:{content:"The search found src/scanner.py, but I did not inspect its callers or run checks. I cannot confirm runtime readiness."}};
+    }
+    if (request.body.format === "json") return {message:{content:JSON.stringify({action:"search_project",arguments:{query:"scanner"},message:"Let me look at the source files."})}};
+    return {message:{content:"Let me look at the source files.",tool_calls:[{function:{name:"search_project",arguments:{query:"scanner"}}}]}};
+  };
+  current = {id:"loop-question",mode:"build",messages:[],display:[],created:Date.now()};
+  $("prompt").value = "Are the scanner tools wired up and working? Do not change files or run commands.";
+`,
+  context,
+);
+await api.sendReal();
+assert.equal(
+  context.loopSearchCalls,
+  2,
+  "Do not execute the same discovery indefinitely",
+);
+assert(
+  context.summarySeen,
+  "An investigation must conclude with an evidence answer",
+);
+assert(context.loopModelCalls < 12);
+assert.equal(
+  api
+    .getCurrent()
+    .display.filter((m) => m.content === "Let me look at the source files.")
+    .length,
+  1,
+);
+assert(
+  api
+    .getCurrent()
+    .display.some((m) =>
+      /cannot confirm that the project is working/.test(m.content),
+    ),
+);
+
+vm.runInContext(
+  `
+  globalThis.promiseCalls = 0;
+  modelRequest = async request => { promiseCalls++; return {message:{content:"Let me investigate the source."}}; };
+  current = {id:"promise-question",mode:"ask",messages:[],display:[],created:Date.now()};
+  $("prompt").value = "Is the scanner connected?";
+`,
+  context,
+);
+await api.sendReal();
+assert.equal(context.promiseCalls, 3);
+assert(
+  api
+    .getCurrent()
+    .display.some((m) =>
+      /could not complete this investigation/.test(m.content),
+    ),
+);
+console.log(
+  "PASS: repeated discovery is bounded, compatibility recovery uses the same model, duplicate progress is hidden, and questions conclude with evidence or a clear unresolved result.",
+);
+
+vm.runInContext(
+  `
+  globalThis.coffeeCalls = [];
+  native = async (action, args) => { coffeeCalls.push({action,args}); if (action === "setCoffee") return {enabled:args.enabled}; return {enabled:false}; };
+  settings.coffeeColour = 0;
+`,
+  context,
+);
+await vm.runInContext("initCoffee()", context);
+assert.equal(vm.runInContext("coffeeEnabled", context), false);
+vm.runInContext('$("coffeeSwitch").checked = true', context);
+await vm.runInContext("toggleCoffee()", context);
+assert.equal(vm.runInContext("coffeeEnabled", context), true);
+vm.runInContext("chooseCoffeeColour(2)", context);
+assert.equal(vm.runInContext("settings.coffeeColour", context), 2);
+vm.runInContext('$("coffeePrevious").onclick()', context);
+assert.equal(vm.runInContext("settings.coffeeColour", context), 1);
+vm.runInContext("chooseCoffeeColour(-1)", context);
+assert.equal(vm.runInContext("settings.coffeeColour", context), 5);
+assert.equal(vm.runInContext("persisted().settings.coffeeColour", context), 5);
+assert.equal(
+  vm.runInContext("persisted().settings.coffeeEnabled", context),
+  undefined,
+);
+vm.runInContext('$("coffeeSwitch").checked = false', context);
+await vm.runInContext("toggleCoffee()", context);
+assert.equal(vm.runInContext("coffeeEnabled", context), false);
+vm.runInContext(
+  'native = async () => { throw Error("sleep service unavailable"); }; $("coffeeSwitch").checked = true;',
+  context,
+);
+const previousConsole = context.console;
+context.console = { ...console, error() {} };
+await vm.runInContext("toggleCoffee()", context);
+context.console = previousConsole;
+assert.equal(vm.runInContext("coffeeEnabled", context), false);
+assert.equal(vm.runInContext('$("coffeeSwitch").checked', context), false);
+console.log(
+  "PASS: Coffee confirms native state, reverses colours, remembers colour only and rolls back failed keep-awake requests.",
+);
+
+vm.runInContext(
+  `
+  globalThis.keyboardSends = 0;
+  globalThis.actualSendBeforeKeyboardTest = send;
+  send = () => { keyboardSends++; };
+  busy = false;
+  globalThis.enterEvent = (extra={}) => ({key:"Enter",keyCode:13,preventDefault(){this.prevented=true},stopPropagation(){},...extra});
+  handleComposerKey(enterEvent());
+  handleComposerKey(enterEvent({shiftKey:true}));
+  handleComposerKey(enterEvent({isComposing:true}));
+  handleComposerKey(enterEvent({keyCode:229}));
+  handleComposerKey(enterEvent({altKey:true}));
+`,
+  context,
+);
+assert.equal(context.keyboardSends, 1);
+vm.runInContext(
+  "handleComposerKey(enterEvent({metaKey:true})); busy=true; handleComposerKey(enterEvent()); busy=false; send=actualSendBeforeKeyboardTest;",
+  context,
+);
+assert.equal(context.keyboardSends, 2);
+vm.runInContext("chooseCoffeeColour(2);", context);
+assert.equal(doc.body.dataset.appColour, "red");
+assert.equal(vm.runInContext("coffeeEnabled", context), false);
+
+vm.runInContext(
+  `
+  files = ["src/a.py","src/b.ts","docs/README.md"];
+  project = {path:"/explorer-fixture",name:"Explorer"};
+  $("fileFilter").value = "";
+  expandedFolders.clear(); openFileTabs.clear(); filePreview=null;
+  globalThis.explorerReads = [];
+  globalThis.sourceFixture = {"src/a.py":"def add(a, b):\\n    return a + b\\n", "src/b.ts":"export const n = 3;\\n", "docs/README.md":"# Project\\n"};
+  native = async (action,args) => { if(action === "readFile") { explorerReads.push(args.path); return {path:args.path,content:sourceFixture[args.path],hash:"original-hash"}; } return {}; };
+  renderFiles();
+`,
+  context,
+);
+assert.equal(
+  nodes.get("files").children.length,
+  2,
+  "Root folders are grouped, not flat paths",
+);
+vm.runInContext('expandedFolders.add("src"); renderFiles();', context);
+assert.equal(nodes.get("files").children.length, 4);
+vm.runInContext('$("fileFilter").value="a.py"; renderFiles();', context);
+assert.equal(
+  nodes.get("files").children.length,
+  2,
+  "Search reveals matching ancestors",
+);
+await vm.runInContext('preview("src/a.py")', context);
+assert.equal(vm.runInContext("filePreview.path", context), "src/a.py");
+assert.equal(nodes.get("editorLines").textContent, "1\n2\n3");
+vm.runInContext(
+  '$("editFileToggle").onclick(); $("fileContent").value="draft a"; $("fileContent").oninput();',
+  context,
+);
+await vm.runInContext('preview("src/b.ts")', context);
+await vm.runInContext('preview("src/a.py")', context);
+assert.equal(nodes.get("fileContent").value, "draft a");
+assert.equal(vm.runInContext("openFileTabs.size", context), 2);
+assert.equal(
+  context.explorerReads.filter((p) => p === "src/a.py").length,
+  1,
+  "A draft must not be overwritten by a fresh read",
+);
+assert.equal(
+  context.sourceFixture["src/a.py"],
+  "def add(a, b):\n    return a + b\n",
+);
+assert.equal(vm.runInContext("hasFileDrafts()", context), true);
+vm.runInContext('$("discardFileEdits").onclick();', context);
+assert.equal(vm.runInContext("hasFileDrafts()", context), false);
+vm.runInContext("resizeExplorer(10000);", context);
+assert.equal(vm.runInContext("settings.explorerWidth", context), 480);
+vm.runInContext("resizeExplorer(1);", context);
+assert.equal(vm.runInContext("settings.explorerWidth", context), 220);
+console.log(
+  "PASS: Enter sends, Shift+Enter and IME do not; global palette works while Coffee is off; explorer groups folders, searches ancestors and preserves tab drafts without writing files.",
+);
+
+vm.runInContext('resizeExplorer(300); $("widenExplorer").onclick();', context);
+assert.equal(vm.runInContext("settings.explorerWidth", context), 420);
+vm.runInContext('$("widenExplorer").onclick();', context);
+assert.equal(vm.runInContext("settings.explorerWidth", context), 300);
+console.log(
+  "PASS: Explorer can also widen/compact with one accessible button.",
+);

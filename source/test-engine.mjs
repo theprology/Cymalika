@@ -128,8 +128,8 @@ const trimmed = trimHistory(long, 4096);
 assert.equal(trimmed.omitted, 2);
 assert.equal(trimmed.messages[0].content, "latest");
 assert.equal(trimmed.messages.at(-1).role, "tool");
-assert.throws(() =>
-  trimHistory([{ role: "user", content: "x".repeat(15000) }], 4096),
+assert(
+  trimHistory([{ role: "user", content: "x".repeat(15000) }], 4096).compacted,
 );
 console.log(
   "PASS: Ollama, OpenAI-compatible, Anthropic request/response contracts; text fallback; tool-result history; read-only modes; context trimming.",
@@ -154,14 +154,89 @@ assert.equal(compacted.messages.length, desktop.length);
 assert.equal(compacted.messages.at(-1).content.length, 15000);
 assert(compacted.messages[2].content.includes("superseded"));
 assert.equal(desktop[2].content.length, 15000);
-assert.throws(() =>
+assert(
   trimHistory(
     [
       { role: "user", content: "x".repeat(30000) },
       { role: "user", internal: true, content: "image context" },
     ],
     8192,
-  ),
+  ).compacted,
+);
+
+const scan = [{ role: "user", content: "Find the right file and fix the bug" }];
+for (let i = 0; i < 80; i++)
+  scan.push(
+    {
+      role: "assistant",
+      content: "Reading",
+      toolCalls: [
+        {
+          id: `read-${i}`,
+          name: "read_file",
+          args: { path: `src/file-${i}.py` },
+        },
+      ],
+    },
+    {
+      role: "tool",
+      name: "read_file",
+      callId: `read-${i}`,
+      content:
+        `src/file-${i}.py hash: actual-${i}\n` + "source line\n".repeat(5000),
+    },
+  );
+const original = JSON.stringify(scan);
+const managed = trimHistory(scan, 16384, { reservedTokens: 6000 });
+assert(managed.compacted);
+assert.equal(managed.messages[0].content, scan[0].content);
+assert(JSON.stringify(managed.messages).length <= (16384 - 6000) * 2.5);
+assert(JSON.stringify(managed.messages).includes("actual-79"));
+assert.equal(JSON.stringify(scan), original);
+for (const [i, message] of managed.messages.entries()) {
+  if (message.role !== "tool") continue;
+  const call = managed.messages
+    .slice(0, i)
+    .findLast((m) => m.role === "assistant");
+  assert(call.toolCalls.some((t) => t.id === message.callId));
+}
+for (const provider of ["ollama", "openai", "anthropic"]) {
+  const req = requestFor(
+    { ...s, provider },
+    [{ role: "system", content: "Inspect files" }, ...managed.messages],
+    TOOLS,
+  );
+  assert(req.body.messages.length > 0);
+}
+const hugeEdit = trimHistory(
+  [
+    { role: "user", content: "Fix the file" },
+    {
+      role: "assistant",
+      content: "",
+      toolCalls: [
+        {
+          id: "edit",
+          name: "request_edit",
+          args: { path: "big.py", content: "a".repeat(200000) },
+        },
+      ],
+    },
+    {
+      role: "tool",
+      callId: "edit",
+      name: "request_edit",
+      content: "User rejected this edit; no file was changed.",
+    },
+  ],
+  4096,
+);
+assert(hugeEdit.compacted);
+assert(hugeEdit.messages.some((m) => m.content?.includes("User rejected")));
+assert.throws(() => trimHistory(scan, NaN), /context size/);
+assert.throws(
+  () => trimHistory(scan, 4096, { reservedTokens: 4000 }),
+  /Instructions and tools/,
 );
 console.log(
   "PASS: superseded desktop snapshots compact without losing tool-call history or the original task.",
@@ -193,4 +268,41 @@ assert.equal(
 );
 console.log(
   "PASS: thinking envelopes and unmatched Ollama thinking prefixes are hidden while literal code examples are preserved.",
+);
+
+const indexedPrompt = systemPrompt(
+  "build",
+  "/project",
+  Array.from(
+    { length: 500 },
+    (_, i) => `src/${i}/` + "directory/".repeat(40) + "code.py",
+  ),
+  false,
+  TOOLS,
+  4096,
+);
+assert(indexedPrompt.length < 5000);
+assert(indexedPrompt.includes("search_project"));
+
+const escapedEvidence = [
+  {
+    role: "user",
+    content: JSON.stringify({
+      question: "Are the tools ready?",
+      results: Array.from({ length: 30 }, (_, i) => ({
+        path: `src/worker-${i}.py`,
+        content: '"quoted"\\path\n'.repeat(2000),
+      })),
+    }),
+  },
+];
+const escapedSaved = JSON.stringify(escapedEvidence);
+const escapedTrimmed = trimHistory(escapedEvidence, 16384, {
+  reservedTokens: 1500,
+});
+assert(escapedTrimmed.compacted);
+assert(JSON.stringify(escapedTrimmed.messages).length <= (16384 - 1500) * 2.5);
+assert.equal(JSON.stringify(escapedEvidence), escapedSaved);
+console.log(
+  "PASS: large serialized evidence with escaped source fits the actual request budget without mutating saved history.",
 );

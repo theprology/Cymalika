@@ -20,44 +20,121 @@
             ><small>YOUR MODELS. YOUR WORKSPACE.</small>
           </div>
         </div>
-        <label class="computer-access-toggle" for="computerAccessSwitch">
-          <span
-            ><strong>Computer access</strong
-            ><small id="computerAccessLabel"
-              >Off · This session only</small
-            ></span
+        <div class="sidebar-controls">
+          <label class="computer-access-toggle" for="computerAccessSwitch">
+            <span
+              ><strong>Computer access</strong
+              ><small id="computerAccessLabel"
+                >Off · This session only</small
+              ></span
+            >
+            <input
+              id="computerAccessSwitch"
+              type="checkbox"
+              role="switch"
+              aria-label="Computer access"
+            />
+          </label>
+          <section
+            id="coffeeCard"
+            class="coffee-card"
+            aria-label="Coffee keep awake"
           >
-          <input
-            id="computerAccessSwitch"
-            type="checkbox"
-            role="switch"
-            aria-label="Computer access"
-          />
-        </label>
-        <button id="openProject" class="button primary wide">
-          <span>＋</span> Open project <kbd>⌘O</kbd>
-        </button>
-        <div class="section-label">
-          WORKSPACE
-          <button
-            id="revealProject"
-            class="icon-button"
-            title="Show project folder"
-          >
-            ↗
+            <label class="coffee-heading" for="coffeeSwitch">
+              <span
+                ><strong>Give me a coffee</strong
+                ><small>Keep your computer awake</small></span
+              >
+              <input
+                id="coffeeSwitch"
+                type="checkbox"
+                role="switch"
+                aria-describedby="coffeeStatus"
+              />
+            </label>
+            <div id="coffeeParty" class="coffee-party">
+              <div class="coffee-app-colour-label">APP COLOUR</div>
+              <div class="coffee-colour-controls">
+                <button
+                  id="coffeePrevious"
+                  class="coffee-previous"
+                  type="button"
+                  aria-label="Previous app colour"
+                  title="Previous colour"
+                >
+                  ←
+                </button>
+                <button id="coffeeNext" class="coffee-next" type="button">
+                  Change colour <span aria-hidden="true">→</span>
+                </button>
+                <span id="coffeeColourName" class="coffee-colour-name"
+                  >Amber</span
+                >
+              </div>
+              <div
+                id="coffeeSwatches"
+                class="coffee-swatches"
+                aria-label="Pick an app colour"
+              ></div>
+            </div>
+            <p id="coffeeStatus" class="coffee-status" role="status">
+              Off · Your normal sleep settings apply
+            </p>
+            <button
+              id="coffeeShowAnimation"
+              type="button"
+              class="coffee-replay hidden"
+            >
+              Show drinking animation ↗
+            </button>
+            <p id="coffeeNote" class="coffee-note hidden">
+              While Cipher is open. Closing the lid or choosing Sleep still
+              works.
+            </p>
+          </section>
+          <button id="openProject" class="button primary wide">
+            <span>＋</span> Open project <kbd>⌘O</kbd>
           </button>
-        </div>
-        <div id="projectCard" class="project-card">
-          <span class="folder-icon">▱</span>
-          <div>
-            <strong>No project open</strong
-            ><small>Choose a folder to get started</small>
+          <div class="section-label">
+            WORKSPACE
+            <button
+              id="revealProject"
+              class="icon-button"
+              title="Show project folder"
+            >
+              ↗
+            </button>
           </div>
+          <div id="projectCard" class="project-card">
+            <span class="folder-icon">▱</span>
+            <div>
+              <strong>No project open</strong
+              ><small>Choose a folder to get started</small>
+            </div>
+          </div>
+          <details class="recent-project-switcher">
+            <summary>Recent projects</summary>
+            <div id="projects" class="recent-list"></div>
+          </details>
         </div>
-        <div class="section-label">RECENT PROJECTS</div>
-        <div id="projects" class="recent-list"></div>
         <div class="section-label">
-          FILES
+          EXPLORER
+          <button
+            id="widenExplorer"
+            class="icon-button"
+            aria-label="Widen Explorer"
+            title="Widen Explorer"
+          >
+            ↔
+          </button>
+          <button
+            id="collapseFolders"
+            class="icon-button"
+            title="Collapse all folders"
+            aria-label="Collapse all folders"
+          >
+            ⊟
+          </button>
           <button
             id="refreshFiles"
             class="icon-button"
@@ -72,7 +149,20 @@
           placeholder="Find a file…"
           aria-label="Find a file"
         />
-        <div id="files" class="file-list"></div>
+        <div
+          id="files"
+          class="file-list"
+          role="tree"
+          aria-label="Project files"
+        ></div>
+        <div
+          id="sidebarResize"
+          class="sidebar-resize"
+          role="separator"
+          tabindex="0"
+          aria-orientation="vertical"
+          aria-label="Resize project explorer"
+        ></div>
         <div class="sidebar-bottom">
           <button id="computerButton" class="settings-link">
             Access details
@@ -161,6 +251,55 @@
           >
         </div>
         <section
+          id="editorPane"
+          class="editor-pane hidden"
+          aria-label="Project file viewer"
+        >
+          <div
+            id="editorTabs"
+            class="editor-tabs"
+            role="tablist"
+            aria-label="Open files"
+          ></div>
+          <div class="editor-filebar">
+            <strong id="fileTitle">Project file</strong
+            ><button id="closeEditor" class="button subtle">
+              Back to chat ✕
+            </button>
+          </div>
+          <div class="editor-actions">
+            <button id="includeFile" class="button">Add to next message</button>
+            <button id="editFileToggle" class="button">Edit file</button>
+            <button id="saveFileEdits" class="button primary">
+              Review my edits
+            </button>
+            <button id="discardFileEdits" class="button subtle">
+              Discard draft
+            </button>
+            <span id="editorFileStatus" class="muted"></span>
+          </div>
+          <div class="editor-code">
+            <pre id="editorLines" class="editor-lines" aria-hidden="true">
+1</pre
+            >
+            <div id="editorScroll" class="editor-scroll">
+              <pre
+                id="fileHighlighted"
+                class="file-highlighted"
+                tabindex="0"
+                aria-label="File contents"
+              ></pre>
+              <textarea
+                id="fileContent"
+                class="editor-textarea hidden"
+                spellcheck="false"
+                wrap="off"
+                aria-label="File contents editor"
+              ></textarea>
+            </div>
+          </div>
+        </section>
+        <section
           id="conversation"
           class="conversation"
           aria-label="Conversation"
@@ -234,7 +373,7 @@
               <button
                 id="sendButton"
                 class="send-button"
-                title="Send task (Command+Enter)"
+                title="Send message (Enter); Shift+Enter for a new line"
               >
                 ↑
               </button>
@@ -243,7 +382,7 @@
           <div class="composer-caption">
             <span id="capabilityHint"
               >Model capabilities vary. Verify important changes.</span
-            ><span>⌘ ↵ to send</span>
+            ><span>Enter to send · Shift+Enter for a new line</span>
           </div>
         </footer>
       </main>
@@ -469,33 +608,6 @@ Commands run in the selected project after your approval. Output appears here.</
         </form>
       </div>
     </dialog>
-    <dialog id="fileDialog" class="large-modal">
-      <div class="modal-header">
-        <div>
-          <span class="eyebrow">PROJECT FILE</span>
-          <h2 id="fileTitle">File preview</h2>
-        </div>
-        <button
-          data-close="fileDialog"
-          class="icon-button"
-          aria-label="Close dialog"
-        >
-          ✕
-        </button>
-      </div>
-      <div class="preview-actions">
-        <button id="includeFile" class="button primary">
-          Add to next message</button
-        ><button id="saveFileEdits" class="button">Review my edits</button
-        ><span class="muted">Edit here · saves require approval</span>
-      </div>
-      <textarea
-        id="fileContent"
-        class="code-preview"
-        spellcheck="false"
-        aria-label="File contents editor"
-      ></textarea>
-    </dialog>
     <dialog id="historyDialog">
       <div class="modal-header">
         <div>
@@ -557,6 +669,145 @@ Commands run in the selected project after your approval. Output appears here.</
         </button>
       </div>
       <div id="tourBody" class="tour-body"></div>
+    </dialog>
+    <dialog
+      id="coffeeStage"
+      class="coffee-stage"
+      aria-labelledby="coffeeStageTitle"
+    >
+      <div class="coffee-stage-content">
+        <span class="eyebrow">COFFEE TIME</span>
+        <h2 id="coffeeStageTitle">Your whole computer can stay awake.</h2>
+        <p id="coffeeStageScope">
+          Display, system and disks · while Cipher is open
+        </p>
+        <div class="coffee-art" aria-hidden="true">
+          <svg class="coffee-mascot" viewBox="0 0 240 120" fill="none">
+            <ellipse
+              cx="120"
+              cy="107"
+              rx="62"
+              ry="6"
+              fill="currentColor"
+              opacity=".1"
+            />
+            <path
+              class="coffee-steam steam-one"
+              d="M80 32c-10-12 10-13 0-25"
+              stroke="currentColor"
+              stroke-width="3"
+              stroke-linecap="round"
+            />
+            <path
+              class="coffee-steam steam-two"
+              d="M97 29c-10-12 10-13 0-25"
+              stroke="currentColor"
+              stroke-width="3"
+              stroke-linecap="round"
+            />
+            <g class="coffee-drinker">
+              <path
+                d="M158 93v9m24-9v9"
+                stroke="currentColor"
+                stroke-width="5"
+                stroke-linecap="round"
+              />
+              <rect
+                x="146"
+                y="41"
+                width="50"
+                height="52"
+                rx="20"
+                fill="var(--surface)"
+                stroke="currentColor"
+                stroke-width="3"
+              />
+              <path
+                d="M156 57h1m25 0h1"
+                stroke="currentColor"
+                stroke-width="5"
+                stroke-linecap="round"
+              />
+              <path
+                class="coffee-smile"
+                d="M164 71q7 8 14 0"
+                stroke="currentColor"
+                stroke-width="3"
+                stroke-linecap="round"
+              />
+              <path
+                d="M147 80q-13 0-17-10"
+                stroke="currentColor"
+                stroke-width="4"
+                stroke-linecap="round"
+              />
+            </g>
+            <g class="coffee-cup">
+              <path
+                d="M109 48h9c20 0 20 29 0 29h-9"
+                stroke="var(--coffee-colour)"
+                stroke-width="8"
+              />
+              <path
+                d="M56 43h57l-4 40q-1 14-24 14T61 83z"
+                fill="var(--coffee-colour)"
+              />
+              <ellipse
+                cx="85"
+                cy="44"
+                rx="29"
+                ry="7"
+                fill="var(--coffee-colour)"
+              />
+              <ellipse cx="85" cy="44" rx="23" ry="4" fill="#33221e" />
+              <path
+                d="M72 59v17"
+                stroke="#fff"
+                opacity=".4"
+                stroke-width="4"
+                stroke-linecap="round"
+              />
+              <path
+                d="M81 73q5-5 10 0"
+                stroke="#33221e"
+                stroke-width="3"
+                stroke-linecap="round"
+              />
+            </g>
+            <path
+              class="coffee-sip"
+              d="M132 56q12-6 23 8"
+              stroke="var(--coffee-colour)"
+              stroke-width="3"
+              stroke-linecap="round"
+              stroke-dasharray="3 6"
+            />
+          </svg>
+        </div>
+        <div class="coffee-stage-colours">
+          <button
+            id="coffeeStagePrevious"
+            class="button"
+            aria-label="Previous app colour"
+          >
+            ←
+          </button>
+          <button id="coffeeStageNext" class="button">Change colour →</button>
+          <span id="coffeeStageColourName"></span>
+        </div>
+        <div
+          id="coffeeStageSwatches"
+          class="coffee-swatches"
+          aria-label="Choose app colour"
+        ></div>
+        <button id="coffeeStageClose" class="button primary">
+          Back to work · keep awake
+        </button>
+        <small
+          >Closing this animation keeps Coffee on. Turn Coffee off in the
+          sidebar to allow idle sleep again.</small
+        >
+      </div>
     </dialog>
     <div id="toast" class="toast hidden" role="status"></div>
     <script type="module" src="app.mjs"></script>

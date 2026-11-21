@@ -57,6 +57,20 @@ const { Workspace, apiURL, request } = require("./core.cjs");
     }
     assert.deepEqual(await w.files(), ["math.js"]);
     assert.equal((await w.search("add"))[0].path, "math.js");
+    await fs.writeFile(
+      path.join(root, "AI_DOC.md"),
+      "add historical note\n".repeat(80),
+    );
+    assert.equal(
+      (await w.search("add"))[0].path,
+      "math.js",
+      "Source must precede documentation",
+    );
+    assert(
+      (await w.search("add", [], "math.js")).every((h) => h.path === "math.js"),
+    );
+    assert.deepEqual(await w.search("add", [], "missing/"), []);
+    await fs.unlink(path.join(root, "AI_DOC.md"));
     const fresh = await w.prepare("src/new.js", "hello");
     await w.apply(fresh.id);
     await w.undo(fresh.id);

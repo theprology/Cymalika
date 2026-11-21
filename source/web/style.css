@@ -2490,3 +2490,579 @@ body:not([data-theme="hacker"]) .project-card {
   flex-direction: row;
   text-align: left;
 }
+
+.coffee-card {
+  --coffee-colour: #f2b45f;
+  padding: 14px;
+  margin: 0 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--raised);
+  transition:
+    border-color 0.3s,
+    box-shadow 0.3s;
+}
+.coffee-card.coffee-on {
+  border-color: var(--coffee-colour);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--coffee-colour) 10%, transparent);
+}
+.coffee-heading {
+  display: flex;
+  flex-direction: row;
+  margin: 0;
+  text-align: left;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+}
+.coffee-heading strong {
+  display: block;
+  font-size: 13px;
+}
+.coffee-heading small {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  margin-top: 2px;
+}
+.coffee-heading input {
+  appearance: none;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 21px;
+  padding: 3px;
+  margin: 0;
+  border-radius: 20px;
+  background: var(--line);
+  cursor: pointer;
+}
+.coffee-heading input:before {
+  content: "";
+  display: block;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--text);
+  transition: transform 0.2s;
+}
+.coffee-heading input:checked {
+  background: var(--coffee-colour);
+}
+.coffee-heading input:checked:before {
+  background: #202326;
+  transform: translateX(13px);
+}
+.coffee-heading input:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.coffee-art {
+  height: 84px;
+  color: var(--coffee-colour);
+  overflow: hidden;
+}
+.coffee-mascot {
+  display: block;
+  height: 84px;
+  width: 100%;
+}
+.coffee-cup {
+  transform-origin: 100px 85px;
+  animation: coffee-drink 4.6s ease-in-out infinite;
+}
+.coffee-drinker {
+  transform-origin: 170px 95px;
+  animation: coffee-bob 4.6s ease-in-out infinite;
+}
+.coffee-steam {
+  animation: coffee-steam 2.8s ease-in-out infinite;
+}
+.steam-two {
+  animation-delay: -0.9s;
+}
+.coffee-sip {
+  opacity: 0;
+  animation: coffee-sip 4.6s ease-in-out infinite;
+}
+.coffee-colour-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.coffee-previous,
+.coffee-next {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.coffee-next {
+  white-space: nowrap;
+  font-size: 10px;
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+}
+.coffee-previous:hover,
+.coffee-next:hover {
+  border-color: var(--coffee-colour);
+  background: var(--hover);
+}
+.coffee-colour-name {
+  font-size: 10px;
+  color: var(--muted);
+  min-width: 30px;
+  text-align: right;
+}
+.coffee-swatches {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding-top: 12px;
+}
+.coffee-swatch {
+  background: var(--swatch);
+  width: 22px;
+  height: 22px;
+  border: 4px solid transparent;
+  border-radius: 50%;
+  padding: 0;
+  cursor: pointer;
+}
+.coffee-swatch[aria-pressed="true"] {
+  outline: 1px solid var(--text);
+  outline-offset: 3px;
+}
+.coffee-status {
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--muted);
+  margin: 9px 0 0;
+}
+.coffee-on .coffee-status {
+  color: var(--text);
+}
+.coffee-note {
+  font-size: 10px;
+  color: var(--muted);
+  margin: 5px 0 0;
+  line-height: 1.5;
+}
+@keyframes coffee-drink {
+  0%,
+  18%,
+  76%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  36%,
+  60% {
+    transform: translate(26px, -12px) rotate(-20deg);
+  }
+}
+@keyframes coffee-bob {
+  0%,
+  20%,
+  80%,
+  100% {
+    transform: rotate(0deg);
+  }
+  38%,
+  60% {
+    transform: rotate(-7deg);
+  }
+}
+@keyframes coffee-steam {
+  0%,
+  100% {
+    transform: translateY(2px);
+    opacity: 0.25;
+  }
+  50% {
+    transform: translateY(-4px);
+    opacity: 0.8;
+  }
+}
+@keyframes coffee-sip {
+  0%,
+  30%,
+  65%,
+  100% {
+    opacity: 0;
+  }
+  40%,
+  55% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .coffee-cup,
+  .coffee-drinker,
+  .coffee-steam,
+  .coffee-sip {
+    animation: none;
+  }
+  .coffee-heading input:before {
+    transition: none;
+  }
+}
+
+.sidebar {
+  overflow-y: auto;
+}
+.coffee-card {
+  flex-shrink: 0;
+}
+
+/* App-wide palette, independent of keep-awake state. */
+body[data-app-colour] {
+  --bg: hsl(var(--tint-hue) 26% 9%);
+  --surface: hsl(var(--tint-hue) 26% 12%);
+  --raised: hsl(var(--tint-hue) 24% 15%);
+  --hover: hsl(var(--tint-hue) 28% 20%);
+  --line: hsl(var(--tint-hue) 24% 28%);
+  --text: hsl(var(--tint-hue) 22% 94%);
+  --muted: hsl(var(--tint-hue) 20% 69%);
+  --accent: hsl(var(--tint-hue) 76% 75%);
+  --accent-text: hsl(var(--tint-hue) 48% 12%);
+  --soft: hsl(var(--tint-hue) 36% 19%);
+  --sidebar: hsl(var(--tint-hue) 29% 11%);
+  --code: hsl(var(--tint-hue) 26% 8%);
+}
+body[data-app-colour][data-theme="light"] {
+  --bg: hsl(var(--tint-hue) 55% 97%);
+  --surface: hsl(var(--tint-hue) 42% 93%);
+  --raised: hsl(var(--tint-hue) 50% 99%);
+  --hover: hsl(var(--tint-hue) 40% 87%);
+  --line: hsl(var(--tint-hue) 28% 77%);
+  --text: hsl(var(--tint-hue) 36% 13%);
+  --muted: hsl(var(--tint-hue) 24% 37%);
+  --accent: hsl(var(--tint-hue) 66% 32%);
+  --accent-text: #fff;
+  --soft: hsl(var(--tint-hue) 45% 88%);
+  --sidebar: hsl(var(--tint-hue) 44% 92%);
+  --code: hsl(var(--tint-hue) 35% 95%);
+}
+body[data-app-colour][data-theme="hacker"] {
+  --bg: hsl(var(--tint-hue) 45% 5%);
+  --surface: hsl(var(--tint-hue) 40% 8%);
+  --sidebar: hsl(var(--tint-hue) 40% 6%);
+  --accent: hsl(var(--tint-hue) 90% 72%);
+  --text: hsl(var(--tint-hue) 55% 85%);
+}
+.coffee-app-colour-label {
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 0.13em;
+  margin: 14px 0 7px;
+}
+.coffee-replay {
+  background: none;
+  border: none;
+  color: var(--accent);
+  padding: 8px 0 0;
+  font: inherit;
+  font-size: 11px;
+  text-align: left;
+  cursor: pointer;
+}
+.coffee-stage {
+  width: 100vw;
+  max-width: none;
+  height: 100vh;
+  max-height: none;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  padding: 30px;
+  background: var(--bg);
+  color: var(--text);
+}
+.coffee-stage::backdrop {
+  background: var(--bg);
+}
+.coffee-stage-content {
+  min-height: 100%;
+  max-width: 900px;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+.coffee-stage h2 {
+  font-size: clamp(28px, 4vw, 52px);
+  margin: 12px 0;
+  letter-spacing: -0.04em;
+}
+.coffee-stage p,
+.coffee-stage small {
+  color: var(--muted);
+}
+.coffee-stage .coffee-art {
+  width: min(660px, 78vw);
+  height: min(330px, 36vh);
+  margin: 10px 0;
+  color: var(--coffee-colour);
+}
+.coffee-stage .coffee-mascot {
+  width: 100%;
+  height: 100%;
+}
+.coffee-stage-colours {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.coffee-stage .coffee-swatches {
+  padding: 18px 0 24px;
+  gap: 18px;
+}
+.coffee-stage small {
+  max-width: 450px;
+  font-size: 12px;
+  margin-top: 18px;
+}
+
+.app {
+  grid-template-columns: var(--explorer-width, 300px) minmax(0, 1fr) 320px;
+}
+.app.chat-focus {
+  grid-template-columns: var(--explorer-width, 300px) minmax(0, 1fr);
+}
+.sidebar {
+  position: relative;
+}
+.sidebar-resize {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 7px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 8;
+  touch-action: none;
+}
+.sidebar-resize:hover,
+.sidebar-resize:focus-visible {
+  background: var(--accent);
+  opacity: 0.5;
+}
+.file-list {
+  min-height: 180px;
+  flex: 1 0 180px;
+  padding-bottom: 10px;
+  overflow: auto;
+}
+.file-list button.explorer-file,
+.file-list button.explorer-folder {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  padding: 5px 7px 5px calc(6px + var(--depth) * 14px);
+  min-height: 29px;
+  border-radius: 4px;
+  color: var(--text);
+  white-space: nowrap;
+}
+.file-list button.selected {
+  background: var(--soft);
+  color: var(--accent);
+}
+.file-list button .explorer-name {
+  opacity: 1;
+  color: inherit;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.explorer-chevron {
+  width: 10px;
+  flex-shrink: 0;
+}
+.explorer-folder-icon {
+  color: var(--accent) !important;
+  font-size: 17px;
+}
+.explorer-file-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 19px;
+  flex-shrink: 0;
+  font-size: 9px;
+  font-family: CipherMono, monospace;
+}
+.file-py {
+  color: #e3bb72 !important;
+}
+.file-js,
+.file-json {
+  color: #e0cb77 !important;
+}
+.file-ts,
+.file-swift {
+  color: #89bde9 !important;
+}
+.workspace.viewing-file .conversation,
+.workspace.viewing-file .composer-wrap {
+  display: none;
+}
+.editor-pane {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  background: var(--code);
+}
+.editor-tabs {
+  display: flex;
+  flex-shrink: 0;
+  overflow-x: auto;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+.editor-tab {
+  display: flex;
+  align-items: center;
+  border-right: 1px solid var(--line);
+}
+.editor-tab button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 11px 12px;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.editor-tab button[aria-selected="true"] {
+  background: var(--code);
+  color: var(--text);
+  box-shadow: inset 0 2px var(--accent);
+}
+.editor-tab button:hover {
+  background: var(--hover);
+}
+.editor-filebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.editor-filebar strong {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  font-weight: 500;
+}
+.editor-actions {
+  padding: 8px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.editor-actions .button {
+  font-size: 11px;
+  padding: 6px 10px;
+}
+.editor-code {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.editor-lines,
+.file-highlighted,
+.editor-textarea {
+  font:
+    13px/22px CipherMono,
+    Menlo,
+    Consolas,
+    monospace;
+  tab-size: 4;
+  margin: 0;
+  padding: 14px 16px;
+  white-space: pre;
+}
+.editor-lines {
+  flex-shrink: 0;
+  min-width: 58px;
+  color: var(--muted);
+  text-align: right;
+  background: var(--surface);
+  overflow: hidden;
+  user-select: none;
+  border-right: 1px solid var(--line);
+}
+.editor-scroll {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  position: relative;
+}
+.file-highlighted {
+  color: var(--text);
+  min-height: 100%;
+  width: max-content;
+  min-width: 100%;
+}
+.editor-textarea {
+  display: block;
+  width: 100%;
+  height: 100%;
+  resize: none;
+  border: 0;
+  border-radius: 0;
+  color: var(--text);
+  background: var(--code);
+  outline-offset: -3px;
+}
+@media (max-width: 1000px) {
+  .app,
+  .app.chat-focus {
+    grid-template-columns: min(var(--explorer-width, 260px), 34vw) minmax(
+        0,
+        1fr
+      );
+  }
+  .app .inspector {
+    display: none;
+  }
+}
+
+.sidebar-controls {
+  flex-shrink: 0;
+}
+.app.file-view-open .sidebar-controls {
+  display: none;
+}
+.recent-project-switcher {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+.recent-project-switcher summary {
+  padding: 5px 0;
+  cursor: pointer;
+}
+.sidebar .coffee-note {
+  display: none;
+}
+.sidebar-bottom .settings-link {
+  padding: 7px 4px;
+  font-size: 11px;
+}
+.sidebar-bottom .button {
+  padding: 8px 10px;
+}

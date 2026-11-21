@@ -1,5 +1,33 @@
 # Cipher 0.5.0 local candidate
 
+## 0.5.4
+
+- App colour now changes the whole workspace, dialogs, editor and sidebar, independently of Coffee being on or off. Light/dark/hacker modes still work.
+- Coffee opens a full-window drinking animation with app colour controls. Back to work closes the animation while keeping Coffee on; Show drinking animation reopens it. On Mac, Coffee holds display, system idle and disk idle assertions, matching `caffeinate -dim`. Closing the lid and manual Sleep remain available.
+- Enter sends a chat message. Shift+Enter inserts a line break, and Command/Ctrl+Enter still sends. IME composition does not send prematurely.
+- Project Explorer groups folders and files, supports collapse/search and sidebar resizing, and opens files in a tabbed, syntax-coloured source viewer with line numbers. Manual draft edits remain separate until reviewed and saved.
+
+## 0.5.3
+
+- Fixed context fitting for large JSON-encoded source results, including the final evidence summary. Compaction now measures the serialized request and leaves saved history unchanged.
+- Added Coffee in the sidebar: keep the computer and display awake while Cipher is open, with an animated cup taking a sip. Normal sleep returns when switched off or when the app exits.
+- Cycle six coffee colours, step back, or pick a swatch. The colour is remembered; Coffee starts off after an app restart. Reduced-motion preferences are respected.
+- Uses macOS power assertions and Electron power blockers on Windows/Linux; it does not change system sleep settings or override lid closure or manual Sleep.
+
+## 0.5.2
+
+- Repeated identical discovery requests trigger compatibility recovery and are not executed indefinitely. Duplicate progress messages are hidden.
+- Investigations finish with an evidence summary when they exhaust their steps or stop making progress. Questions cannot confirm readiness based only on filenames/search results.
+- Search prioritizes source over documentation and accepts a path filter. File discovery accepts a filename substring.
+- Added regression coverage for repeated searches, progress-only answers, source-prioritized search and scoped search.
+
+## 0.5.1
+
+- Large single-task conversations now compact older observations automatically instead of stopping with a context-budget error. The full saved chat is preserved.
+- Context estimates reserve room for instructions, tools and the model reply; project indexes scale with the configured context.
+- Compaction keeps tool calls paired with their results and tells the model to re-read partial evidence before editing.
+- Validated with the existing local Ollama model discovering and fixing a disposable project, then running its tests; an oversized-read variant exercises compaction. This is a focused reliability check, not a claim of parity with hosted coding models.
+
 - One Computer access switch enables session app discovery, internet browsing and user-folder file tools, with no per-app or per-origin setup.
 - The same selected model can discover running/installed apps, request opening an app, browse/search websites, find text files, propose saves, and request commands in a chosen user directory.
 - No selected coding project or manual file attachment is needed for computer tasks. Project scope remains separate.

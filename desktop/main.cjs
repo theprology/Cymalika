@@ -7,7 +7,10 @@ const {
   shell,
   Menu,
   globalShortcut,
+  powerSaveBlocker,
 } = require("electron");
+const { CoffeeAwake } = require("./coffee.cjs");
+const coffee = new CoffeeAwake(powerSaveBlocker);
 const fs = require("node:fs/promises");
 const { randomUUID } = require("node:crypto");
 const path = require("node:path");
@@ -67,6 +70,10 @@ function requireComputerAccess() {
 }
 async function handle(action, a, id) {
   switch (action) {
+    case "coffeeStatus":
+      return { enabled: coffee.enabled };
+    case "setCoffee":
+      return coffee.setEnabled(a.enabled);
     case "loadState": {
       const state = await workspace.readJSON("state.json", {});
       if (rendererNotice) {
@@ -115,7 +122,7 @@ async function handle(action, a, id) {
       return workspace.read(a.path);
     case "search":
       workspace.require("files");
-      return workspace.search(a.query, a.excludes);
+      return workspace.search(a.query, a.excludes, a.path_contains);
     case "prepareWrite":
       workspace.require("edits");
       return workspace.prepare(a.path, a.content, a.expected_hash);
@@ -377,6 +384,7 @@ async function createWindow() {
   computer = new Computer(workspace, captureAllowedWindow);
   win.webContents.on("render-process-gone", () => {
     if (quitting || win.isDestroyed()) return;
+    coffee.stop();
     rendererNotice = resetAfterRendererFailure(cancel, workspace, computer);
     browser.close();
     win
@@ -479,19 +487,91 @@ async function verifyStartup() {
     controls.steps !== 9
   )
     throw Error("Workspace controls are incomplete.");
-  console.log(
-    "PASS: packaged desktop startup, sandboxed preload, native IPC, workspace controls and first-run tour.",
+  const fixtureRoot = path.join(app.getPath("userData"), "startup-project");
+  await fs.mkdir(path.join(fixtureRoot, "src"), { recursive: true });
+  await fs.writeFile(
+    path.join(fixtureRoot, "src/one.py"),
+    "def one():\n    return 1\n",
   );
+  await fs.writeFile(
+    path.join(fixtureRoot, "src/two.js"),
+    "export const two = 2;\n",
+  );
+  await fs.writeFile(
+    path.join(fixtureRoot, "README.md"),
+    "# Startup fixture\n",
+  );
+  await workspace.select(fixtureRoot);
+  const fixtureFiles = await workspace.files();
+  const featureChecks = await win.webContents.executeJavaScript(`(async () => {
+    const check = (condition, description) => { if (!condition) throw Error(description); };
+    $("tourDialog").close();
+    $("coffeeSwitch").checked = true;
+    await toggleCoffee();
+    check(coffeeEnabled && $("coffeeStage").open, "Coffee did not open its full-window animation");
+    check((await native("coffeeStatus")).enabled, "Native keep-awake registration failed");
+    $("coffeeStageClose").click();
+    check(coffeeEnabled && !$("coffeeStage").open, "Dismissing animation stopped Coffee");
+    chooseCoffeeColour(2);
+    const red = getComputedStyle(document.body).backgroundColor;
+    chooseCoffeeColour(1);
+    const green = getComputedStyle(document.body).backgroundColor;
+    check(red !== green && document.body.dataset.appColour === "green", "Palette did not change the whole app");
+    $("coffeeSwitch").checked = false;
+    await toggleCoffee();
+    check(!(await native("coffeeStatus")).enabled, "Native keep-awake registration was not released");
+    check(getComputedStyle(document.body).backgroundColor === green, "Palette incorrectly depends on Coffee being enabled");
+    const originalSend = send;
+    let sent = 0;
+    try {
+      send = () => { sent++; };
+      const enter = new KeyboardEvent("keydown", {key:"Enter",bubbles:true,cancelable:true});
+      $("prompt").dispatchEvent(enter);
+      const shift = new KeyboardEvent("keydown", {key:"Enter",shiftKey:true,bubbles:true,cancelable:true});
+      $("prompt").dispatchEvent(shift);
+      const composing = new KeyboardEvent("keydown", {key:"Enter",isComposing:true,bubbles:true,cancelable:true});
+      $("prompt").dispatchEvent(composing);
+      check(sent === 1 && enter.defaultPrevented && !shift.defaultPrevented && !composing.defaultPrevented, "Composer keyboard handling failed");
+    } finally { send = originalSend; }
+    await activateProject(${JSON.stringify({ path: fixtureRoot, name: "Startup fixture", files: fixtureFiles })});
+    check(document.querySelectorAll("#files .explorer-folder").length === 1, "Explorer did not group the source folder");
+    await preview("src/one.py");
+    check($("fileHighlighted").textContent === ${JSON.stringify("def one():\n    return 1\n")}, "Source text changed in the viewer");
+    check($("editorLines").textContent === ${JSON.stringify("1\n2\n3")}, "Source line numbers are incorrect");
+    $("editFileToggle").click();
+    $("fileContent").value = "local draft";
+    $("fileContent").dispatchEvent(new Event("input"));
+    await preview("src/two.js"); await preview("src/one.py");
+    check($("fileContent").value === "local draft" && openFileTabs.size === 2, "Switching tabs discarded a draft");
+    check((await native("readFile", {path:"src/one.py"})).content.includes("return 1"), "A draft was written without review");
+    $("discardFileEdits").click();
+    const before = document.querySelector(".sidebar").getBoundingClientRect().width;
+    resizeExplorer(300); $("widenExplorer").click();
+    check(settings.explorerWidth > 300, "Explorer widening control did not work");
+    check(document.querySelector(".sidebar").getBoundingClientRect().width !== before, "Explorer width did not update on screen");
+    closeFileViewer();
+    return {coffee:true,appPalette:true,keyboard:true,explorer:true,sourceTabs:true,draftIsolation:true};
+  })()`);
+  if (coffee.enabled)
+    throw Error("Startup checks leaked a keep-awake registration.");
+  console.log(
+    "PASS: packaged startup, IPC, Coffee on/off, app-wide palette, Enter/Shift+Enter, Explorer, source tabs and draft isolation.",
+  );
+  return {
+    platform: process.platform,
+    version: app.getVersion(),
+    checks: featureChecks,
+  };
 }
 app
   .whenReady()
   .then(async () => {
     await createWindow();
     if (smokeTest) {
-      await verifyStartup();
+      const result = await verifyStartup();
       await fs.writeFile(
         path.join(app.getPath("userData"), "startup-result.json"),
-        JSON.stringify({ ok: true }),
+        JSON.stringify({ ok: true, ...result }),
       );
       app.exit(0);
     }
@@ -508,6 +588,7 @@ app
 app.on("window-all-closed", () => app.quit());
 app.on("before-quit", () => {
   quitting = true;
+  coffee.stop();
   if (workspace) cancel();
   globalShortcut.unregisterAll();
 });
