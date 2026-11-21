@@ -22,6 +22,18 @@ In Cipher, **Computer access** is one session switch for app discovery, web brow
 
 No Cipher account, subscription, or model download is required. Cloud providers may charge for their APIs. Cipher never downloads or silently switches models.
 
+## See Cipher in action
+
+[![Watch the Cipher walkthrough](docs/media/cipher-walkthrough.gif)](docs/DEMO.md)
+
+[**Watch the captioned video**](https://github.com/theprology/cipher/raw/refs/heads/main/docs/media/cipher-walkthrough.mp4) · [Screenshots and step-by-step instructions](docs/DEMO.md)
+
+Real Cipher 0.5.5 captures: open a project, ask your existing model for a fix, review the edit, and inspect the test results. The video is edited and model waits are shortened.
+
+| Browse your project                                       | Review a proposed change                              |
+| --------------------------------------------------------- | ----------------------------------------------------- |
+| ![Cipher source explorer](docs/media/cipher-explorer.png) | ![Cipher edit approval](docs/media/cipher-review.png) |
+
 ## What can I ask Cipher to do?
 
 - “Find where sign-in errors are handled and explain how it works.”

@@ -2,6 +2,8 @@
 
 You do not need to be a programmer to follow this guide. Take one step at a time. If a proposed action is confusing, reject it and ask Cipher to explain.
 
+[Watch the captioned demo and view screenshots](DEMO.md) for a visual introduction.
+
 Open **Getting started** near the bottom-left of Cipher to replay the guided tour. The printable handbook covers the same workflow in more detail.
 
 ## 1. Understand the two parts
@@ -21,7 +23,7 @@ Cipher is free. Running a local model uses your computer's resources. If you cho
 
 ## 3. Connect your installed model
 
-1. Click **Settings & connections** near the bottom-left.
+1. Click **Settings & models** near the bottom-left.
 2. Click **Model connection**.
 3. Set **Connection type** to **Ollama - local models**.
 4. For Ollama on this computer, use **http://localhost:11434** as the API base URL.
@@ -63,7 +65,7 @@ Use **Activity** at the top to show or hide the right panel. Approval requests b
 1. Click **Ask**.
 2. Click the message box at the bottom.
 3. Type: **Read this project, explain what it does, and tell me how to run it. Do not change any files.**
-4. Press **Command + Enter** on Mac, or **Ctrl + Enter** on Windows/Linux. You can also click the send arrow.
+4. Press **Enter** to send. Use **Shift + Enter** for a new line. **Command/Ctrl + Enter** and the send arrow also send.
 5. Wait while the model reads the files it needs.
 6. Read its explanation. Ask it to explain any unfamiliar words.
 
@@ -122,7 +124,7 @@ Click **Stop** while Cipher is working. It cancels pending approvals and generat
 ## 11. Edit a file yourself
 
 1. Click the file in the left sidebar.
-2. Change its text in the built-in editor.
+2. Click **Edit file**, then change its text in the built-in editor.
 3. Click **Review my edits**.
 4. Review the proposed change.
 5. Click **Approve & save** to write it, or **Reject** to leave it unapplied.
