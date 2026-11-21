@@ -6,7 +6,7 @@
 
 A free, open-source desktop coding agent for **Ollama and compatible model APIs**, on **macOS, Windows, and Linux**. Chat with your model, explore a project, review file edits, and run checks in one app.
 
-**Bring your own model · Ask, Plan & Build · Project Explorer · Computer access**
+**Set up models inside the app · Ask, Plan & Build · Project Explorer · Computer access**
 
 [**Download the latest Cipher**](https://github.com/theprology/cipher/releases/latest) · [Report a bug](https://github.com/theprology/cipher/issues/new) · [Read the walkthrough](docs/WALKTHROUGH.md)
 
@@ -20,7 +20,7 @@ Cipher brings conversations, project files, plans, and tools into one desktop ap
 
 In Cipher, **Computer access** is one session switch for app discovery, web browsing and user-folder files. Turn it on and describe a task; the model chooses the tools it needs. Review proposed actions in chat, use Stop to interrupt, and turn access off to disconnect. [How to use computer access](docs/COMPUTER_USE.md).
 
-No Cipher account, subscription, or model download is required. Cloud providers may charge for their APIs. Model downloads are optional and start only after you review and confirm them. Cipher never silently switches your selected model.
+Cipher itself needs no account or subscription. For local use, keep your existing Ollama/model or install the internal engine and download a chosen model inside Cipher. Cloud APIs are another option and may charge separately. Downloads start only after you review and confirm them; Cipher never silently switches your selected model.
 
 ## Models without leaving the app
 
@@ -32,9 +32,9 @@ In **Settings → Appearance**, give your assistant a name. That name appears in
 
 [![Watch the Cipher walkthrough](docs/media/cipher-walkthrough.gif)](docs/DEMO.md)
 
-[**Watch the captioned video**](https://github.com/theprology/cipher/raw/refs/heads/main/docs/media/cipher-walkthrough.mp4) · [Screenshots and step-by-step instructions](docs/DEMO.md)
+[**Watch the narrated video**](https://github.com/theprology/cipher/releases/latest/download/Cipher-Quickstart.mp4) · [Screenshots and step-by-step instructions](docs/DEMO.md)
 
-Real Cipher 0.5.5 captures: open a project, ask your existing model for a fix, review the edit, and inspect the test results. The video is edited and model waits are shortened.
+Cipher 0.6.0 interface walkthrough with narration, readable captions and a transcript. New-install states and prepared example edits are labelled illustrations; the practice file save and two-test result are real. No model/runtime download or live AI inference is claimed by the video.
 
 | Browse your project                                       | Review a proposed change                              |
 | --------------------------------------------------------- | ----------------------------------------------------- |
@@ -50,18 +50,19 @@ Use your existing model. Tool use and task quality depend on that model; Cipher 
 
 ## Get started
 
-1. Install Cipher from [Releases](https://github.com/theprology/cipher/releases). Check the release notes for available installers and verification status.
-2. Run Ollama with a model you already have, or open **Settings → Model connection** to connect an API.
-3. Choose **Open project** and select your source folder.
-4. Run **Check your model** to verify a small tool exchange.
-5. Choose **Ask**, **Plan**, or **Build** and describe your task.
-6. Review proposed edits and commands in **Activity** before approving them.
+**New here? Start with the [picture-by-picture beginner guide](docs/WALKTHROUGH.md).** It covers downloading the correct installer, setting up a local engine/model, and creating your first file without coding.
 
-Try: “Find how sign-in works, explain the relevant files, and propose a plan to improve its error messages.” Then review the plan and ask Cipher to build it.
+1. Download the installer for your computer from [the latest release](https://github.com/theprology/cipher/releases/latest).
+2. Open Cipher → **Models & downloads**. If Ollama is already running, select your installed model. If you are starting fresh, use **Local engine → Install local engine → Start local engine**, then **Get models** to download your chosen model.
+3. In **Installed models**, choose **Use this model**. Look for **Connected**.
+4. Choose **Ask** and send a simple question.
+5. Open a practice folder, choose **Build**, and ask it to create a small text file. Review the proposed contents, choose **Approve & save**, and open the saved file.
 
-You do not need to attach each file. The model can list and search the project and read relevant source on demand, within the configured limits.
+You do not need to install Ollama separately: Cipher can install an internal copy. Local models still need that engine. Cloud APIs are an alternative under Settings; providers may charge for usage.
 
-Need a slower introduction? Click **Getting started** inside the app for the nine-step tour, or follow [the beginner walkthrough](docs/WALKTHROUGH.md). A printable [eight-page handbook](docs/Cipher-Beginners-Handbook.pdf) is also included.
+[Watch the narrated walkthrough](docs/DEMO.md) · [Read the steps](docs/WALKTHROUGH.md) · [Printable handbook](docs/Cipher-Beginners-Handbook.pdf) · [Optional practice project ZIP](docs/tutorial-project.zip)
+
+You do not need VS Code or manual attachments for every file. Run **Check your model** for a small tool-use check; model capabilities and actual task results still matter.
 
 ## Install from your terminal
 

@@ -1,57 +1,83 @@
-# Watch Cipher, then try it yourself
+# Start with Cipher: watch, then follow along
 
-[Watch the captioned walkthrough](media/cipher-walkthrough.mp4) · [Download Cipher](https://github.com/theprology/cipher/releases/latest) · [Full beginner guide](WALKTHROUGH.md)
+[**Watch or download the narrated video**](https://github.com/theprology/cipher/releases/latest/download/Cipher-Quickstart.mp4) · [**Read the beginner steps**](WALKTHROUGH.md) · [**Download the handbook**](Cipher-Beginners-Handbook.pdf)
 
-![Cipher walkthrough preview](media/cipher-walkthrough.gif)
+[![Animated preview of Cipher setup and first tasks](media/cipher-walkthrough.gif)](https://github.com/theprology/cipher/releases/latest/download/Cipher-Quickstart.mp4)
 
-The video is a silent, captioned walkthrough made from real Cipher 0.5.5 macOS captures. [Read the transcript](media/TRANSCRIPT.md). Long model waits are shortened. It uses an isolated sample project and the existing local Ollama model shown in the interface. It is not a speed benchmark or a guarantee that every model completes every task. The same main controls are available on Windows and Linux; operating-system permissions differ.
+The video has spoken narration and readable captions. You can pause whenever you need. [Read the full transcript](media/TRANSCRIPT.md), [download subtitles](media/cipher-walkthrough.srt), or [open the repository copy of the video](media/cipher-walkthrough.mp4).
 
-Download or copy the [small practice project](tutorial-project) to follow the same exercise. It contains an intentional bug and requires Python 3. Use a copy; the screenshots show the fixed result.
+## Choose where to start
 
-## Follow along
+- **I have not installed Cipher:** start at [step 1: download the right file](WALKTHROUGH.md#1-download-the-right-file).
+- **I already have Ollama:** go to [step 3A](WALKTHROUGH.md#3a-i-already-have-ollama-and-a-model). Keep your existing installation.
+- **I am starting from scratch:** go to [step 3B](WALKTHROUGH.md#3b-i-am-starting-from-scratch). Install the internal engine first, then download and select a model.
+- **I have an API key instead:** go to [step 3C](WALKTHROUGH.md#3c-i-want-a-cloud-api-instead).
+- **I want my first simple success:** follow [the hello.txt exercise](WALKTHROUGH.md#5-make-your-first-file-without-coding). It needs no Python, terminal or programming knowledge.
 
-1. Install Cipher from the latest release. Open Ollama with a model you already have, or configure a supported API in **Settings & models → Model connection**.
-2. Choose your model at the top and look for **Connected**. Use **Check your model** to test a small tool exchange.
-3. Click **Open project** and choose a folder containing your code. Folders and files appear in **Explorer**. Click a filename to read it in a tab.
-4. Choose **Ask** to get an explanation, **Plan** to work out an approach, or **Build** to propose changes.
-5. Describe the result you want. Press **Enter** to send; **Shift+Enter** inserts a new line. You do not need to attach every file.
-6. Watch **Activity** as the model reads relevant files. Review each proposed change and choose **Approve & save** only when it is right.
-7. Review any proposed test command before running it. Read the real output under **Terminal**. A reply saying “done” does not replace checking the result.
-8. Click the changed file in Explorer to inspect the saved source. Use a checkpoint or Git if you need to undo a change.
+**The Ollama explanation in one sentence:** local models need an engine; Cipher can install an internal Ollama engine, so you do not need to install Ollama separately. If you already have Ollama, keep using it.
 
-The task shown in this walkthrough is:
+## What the recording shows
 
-> Fix the basket total calculation. Find the relevant source and tests yourself. Make the smallest fix, then run python3 -m unittest discover -s tests -v.
+This is a Cipher **0.6.0** interface walkthrough captured from an isolated demonstration workspace. It includes illustrated first-install views and prepared teaching questions/edits. It is not a live AI inference recording, speed benchmark, or proof of a complete fresh-machine installation. The model shown on the existing-installation screens was already installed; `qwen3:4b` is only an example download ID and was not downloaded for the recording.
 
-The sample function adds the unit price and quantity; the intended behavior multiplies them. The sample has two tests: three items and an empty basket. This small example makes the proposed change easy to review.
+The text-file save, practice source edit and two-test command result are real operations in a disposable practice folder. Captions identify prepared examples and actual results. No personal project, account credential, API key, system permission grant, runtime download or model download is included. Narration uses the installed macOS Samantha synthetic voice. Screens show the shared desktop interface; OS installation and permissions differ on Mac, Windows and Linux.
 
-## Optional controls
+## Screenshots: setup to first result
 
-- **Computer access** is for app, browser, and user-folder tools beyond the selected project. It is not needed for this coding example. Turn it on only when your task needs those tools, and review the proposed actions. macOS may also require system permissions.
-- **Give me a coffee** keeps the computer awake while Cipher is open. A brief sip appears and automatically returns to the chat. Turn it off to restore normal idle sleep.
-- **Change colour**, its back arrow, and the colour dots change the whole app palette. The theme button at the top cycles the available themes.
-- **Getting started** reopens the built-in tour whenever you need it.
+### 1. Open Cipher
 
-## Screenshots
+![Cipher 0.6.0 workspace](media/cipher-workspace.png)
 
-### Connect an existing model
+### 2. Reuse your existing model
 
-![Cipher local Ollama connection settings](media/cipher-model-setup.png)
+![Installed models inside Cipher](media/cipher-existing-model.png)
 
-### Start a conversation in your project
+### 3. Or start with an internal engine
 
-![Cipher project workspace with a connected local model](media/cipher-workspace.png)
+![Illustrated first-time engine setup](media/cipher-engine.png)
 
-### Browse the source without leaving Cipher
+### 4. Choose and review a model download
 
-![Cipher Explorer with the sample Python file open](media/cipher-explorer.png)
+![Review the exact model before downloading](media/cipher-model-review.png)
 
-### Review before saving
+### 5. Create a tiny file without coding
 
-![Cipher proposed source change awaiting approval](media/cipher-review.png)
+![Prepared hello.txt request in the actual review interface](media/cipher-first-file-review.png)
 
-### Check actual results
+### 6. Open the saved file and check it
 
-![Cipher terminal showing the sample test results](media/cipher-tests.png)
+![Actual saved hello.txt in the disposable practice folder](media/cipher-first-file-saved.png)
 
-No private project, saved personal conversation, API key, or account credential is included in these captures.
+### 7. Explore project files
+
+![Explorer and source tabs](media/cipher-explorer.png)
+
+### 8. Review a code change
+
+![Prepared teaching edit awaiting approval](media/cipher-review.png)
+
+### 9. Read actual test results
+
+![Actual passing practice-project tests](media/cipher-tests.png)
+
+### 10. Choose your assistant’s name
+
+![Appearance and custom assistant name](media/cipher-name.png)
+
+### 11. Discover the extra tools
+
+![Plans, goals, resources and other tools](media/cipher-workbench.png)
+
+## Optional coding exercise
+
+[Download the practice project ZIP](tutorial-project.zip). Extract it, then choose its **Cipher-practice** folder with Open project. It has an intentional basket-total bug. Python 3 is needed only to run this exercise’s tests.
+
+Send this request in Build:
+
+> Fix the basket total calculation. Find the relevant source and tests yourself. Make the smallest fix, then run the existing tests. Show me proposed edits and commands before executing them.
+
+Review the proposed file and command. Check the real saved file and Terminal output afterward. The first hello.txt exercise is a simpler option if you do not have Python.
+
+## Everything in one download
+
+The [getting-started bundle](https://github.com/theprology/cipher/releases/latest/download/Cipher-Getting-Started.zip) contains the handbook, narrated video, transcript, subtitles, screenshots and optional practice-project ZIP. Extract it and open **START-HERE.html**. Internet is still needed for installing the runtime/model, model search, cloud APIs and browsing websites.

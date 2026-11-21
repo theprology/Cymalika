@@ -76,11 +76,14 @@ jobs:
           gh api "repos/$REPOSITORY/releases/assets/$mac_asset" -H 'Accept: application/octet-stream' > "release-files/Cipher-$version-mac-arm64.dmg"
           printf '%s  %s\n' "$MAC_SHA256" "release-files/Cipher-$version-mac-arm64.dmg" | sha256sum -c -
           cp install.sh install.ps1 docs/Cipher-Beginners-Handbook.pdf release-files/
+          cp docs/media/cipher-walkthrough.mp4 release-files/Cipher-Quickstart.mp4
+          cp docs/media/cipher-walkthrough.gif release-files/Cipher-Quickstart.gif
+          cp docs/Cipher-Getting-Started.zip release-files/Cipher-Getting-Started.zip
           git archive --format=zip --prefix=Cipher/ -o "release-files/Cipher-source-$version.zip" HEAD
           python3 - <<'PY'
           import hashlib,json,os,pathlib
           root=pathlib.Path('release-files');v=os.environ['CIPHER_VERSION']
-          names=[f'Cipher-{v}-x64-setup.exe',f'Cipher-{v}-x64-portable.exe',f'Cipher-{v}-amd64.deb',f'Cipher-{v}-x86_64.AppImage',f'Cipher-{v}-mac-arm64.dmg',f'Cipher-source-{v}.zip','install.sh','install.ps1','Cipher-Beginners-Handbook.pdf']
+          names=[f'Cipher-{v}-x64-setup.exe',f'Cipher-{v}-x64-portable.exe',f'Cipher-{v}-amd64.deb',f'Cipher-{v}-x86_64.AppImage',f'Cipher-{v}-mac-arm64.dmg',f'Cipher-source-{v}.zip','install.sh','install.ps1','Cipher-Beginners-Handbook.pdf','Cipher-Quickstart.mp4','Cipher-Quickstart.gif','Cipher-Getting-Started.zip']
           sums={}
           for name in names:
               p=root/name
@@ -93,7 +96,7 @@ jobs:
           (pathlib.Path('/tmp/asset-names.json')).write_text(json.dumps(names+['SHA256SUMS.txt']))
           notes=pathlib.Path('docs/RELEASE_NOTES.md').read_text().split('## '+v+'\n',1)[1].split('\n## ',1)[0].strip()+f'''
 
-          Coffee keeps the computer and display awake on Windows/Linux. On Mac it also prevents disk idle sleep, matching caffeinate -dim while Cipher is open. No AI model is included or downloaded.
+          Coffee keeps the computer and display awake on Windows/Linux. On Mac it also prevents disk idle sleep, matching caffeinate -dim while Cipher is open. No AI model is bundled or downloaded automatically. Use Models & downloads to choose a model download inside Cipher.
 
           Validation: Windows setup and portable installation, Linux package installation, packaged UI/native IPC checks for Coffee, colours, keyboard, file tabs and draft isolation, plus native computer-control fixtures and the shared test suite. Build: https://github.com/{os.environ['REPOSITORY']}/actions/runs/{os.environ['CI_RUN']} .
 

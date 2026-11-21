@@ -2,7 +2,7 @@
 
 ## Your first task
 
-Keep Ollama running. Open Settings, choose Ollama, use `http://localhost:11434`, and select an installed model. Cipher does not install models. Run Check your model before relying on agent tools. Open your project folder and begin with Ask to explore its structure. Plan creates a draft with steps and acceptance checks; reviewing it authorizes a plan, not subsequent saves or commands. Build can propose those actions for review.
+Open **Models & downloads** to select your installed model, or use **Local engine** and **Get models** to install an engine and download a model inside Cipher. Existing Ollama users can keep their current installation at `http://localhost:11434`. Run Check your model before relying on agent tools. Open your project folder and begin with Ask to explore its structure. Plan creates a draft with steps and acceptance checks; reviewing it authorizes a plan, not subsequent saves or commands. Build can propose those actions for review.
 
 A useful request is: “Find the relevant files yourself, make this change, preserve unrelated work, and run the existing checks.” Review the actual diff and command before approving. A model can make mistakes even after a successful compatibility check.
 

@@ -1,5 +1,13 @@
 # Validation
 
+## 0.6.0 beginner walkthrough media — November 21, 2026
+
+- A separate temporary Electron profile rendered the current shared UI for the public tutorial. The capture manifest records zero model/runtime downloads and no live inference. First-install views and teaching requests are labelled illustrations in the video/transcript. No user app state, credential or personal project was captured.
+- The prepared hello.txt proposal went through the real review/save callback and the saved bytes were checked. The prepared pricing fix likewise used the real file proposal and approval path. The actual disposable-project command returned exit code 0 with two passing tests. The before/after source was independently read.
+- The final 25-chapter, 1920×1080 H.264/AAC video was decoded for visual review, including the complete model/settings dialogs and first-file sequence. It runs about 5 minutes 20 seconds and has audible synthetic narration, burned-in captions, SRT/VTT subtitles and a transcript. The GIF uses selected chapters from the same material.
+- The 14-page handbook was rendered and visually checked. Relative Markdown links, both ZIP archives’ CRC/paths, the bundle’s PDF/video byte matches, all 25 subtitle cues and the actual save/test capture evidence passed. Documentation generation scripts are included for reproduction.
+- This is an educational interface walkthrough, not a fresh-machine installation, runtime download, live model demonstration or performance benchmark. Application binaries remain unchanged; updated public documentation is separate from their existing validation.
+
 ## 0.6.0 model library and assistant names — November 21, 2026
 
 - In the installed, signed/notarized Mac app, the model shelf read the existing Ollama model’s ID, disk size, parameter/quantization details and actual loaded-memory state. The original selected model remained unchanged.

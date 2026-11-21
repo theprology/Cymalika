@@ -1,0 +1,99 @@
+1
+00:00:00,000 --> 00:00:12,446
+Welcome to Cipher. This guide starts from downloading the app. You do not need to know how to code. Pause the video whenever you want. Some first-time setup views are illustrated examples.
+
+2
+00:00:12,546 --> 00:00:24,658
+Open the latest release on GitHub and scroll to Assets. Choose the Mac DMG, Windows setup EXE, or the Linux package for your computer. Do not choose source code to use the app.
+
+3
+00:00:24,758 --> 00:00:35,593
+Open Cipher after installing it. Your messages and replies appear in the middle. Files appear on the left. Models and downloads is near the model selector at the top.
+
+4
+00:00:35,692 --> 00:00:47,808
+If you already have Ollama and a model, leave them installed. Open Models and downloads, then Installed models. Click Use this model. If it already says Selected, you are ready.
+
+5
+00:00:47,908 --> 00:01:01,874
+For a new setup, open Local engine and choose Install local engine. Ollama is the engine that runs local models. Cipher can install its own internal copy, so a separate Ollama installer is not required.
+
+6
+00:01:01,974 --> 00:01:14,204
+Review the official engine download and choose Install this engine when you want it. Wait for it to finish, then click Start local engine. Installing the engine alone does not install an AI model.
+
+7
+00:01:14,305 --> 00:01:27,197
+Now open Get models. Enter the model ID you want, then choose Find model. The written guide gives qwen three colon four b as one example. Its suitability depends on your computer and the task.
+
+8
+00:01:27,296 --> 00:01:39,680
+Check the model name, license and available space. Choose Download this model and wait for completion. Then open Installed models and choose Use this model. Look for Connected in the chat window.
+
+9
+00:01:39,780 --> 00:01:52,691
+Start with Ask mode. Type, Hello, explain what you can help me do using simple words. Press Enter to send. Shift and Enter adds a new line. The first model load can take longer.
+
+10
+00:01:52,791 --> 00:02:05,082
+Click Open project and choose a practice folder. Files appear in Explorer. Click a file to read it. You do not need to attach every file. The model can search the selected project.
+
+11
+00:02:05,182 --> 00:02:18,373
+Make a new practice folder and open it in Cipher. Choose Build. Ask for a hello dot text file containing My assistant is working. Read the proposed filename and text, then choose Approve and save.
+
+12
+00:02:18,473 --> 00:02:31,774
+Click hello dot text in Explorer to read what was saved. This is a real text file in the disposable practice folder. You do not need Python, a terminal, or programming knowledge for this first task.
+
+13
+00:02:31,874 --> 00:02:44,430
+Ask gives explanations. Plan proposes an approach before changes. Build can propose edits and actions. For important work, ask for a plan first and read what it intends to change.
+
+14
+00:02:44,530 --> 00:02:58,992
+This prepared example shows the real edit review screen. Read the filename and proposed contents. Green lines are additions and red lines are removals. Approve and save writes the file. Reject leaves the proposal unapplied.
+
+15
+00:02:59,092 --> 00:03:11,381
+After approval, the card says Saved and checkpoint created. Open the file in Explorer to inspect the result. Undo this save can restore earlier contents if the file has not changed again.
+
+16
+00:03:11,482 --> 00:03:25,339
+A code project may have tests. Read a proposed command before choosing Run command. If you do not understand it, reject it and ask for an explanation. The optional practice exercise needs Python three.
+
+17
+00:03:25,439 --> 00:03:37,442
+The practice project now reports two tests and O K. This is real output from the disposable example. A reply saying done is not proof. Read the results and check your project normally.
+
+18
+00:03:37,542 --> 00:03:49,742
+The saved source now multiplies price by quantity. Your first task can be much simpler: ask for a hello dot text file in a new practice folder. The written guide explains every step.
+
+19
+00:03:49,842 --> 00:04:03,195
+You can name your assistant. Open Settings, then Appearance. Enter a name and save. The sidebar and replies use it. This example uses Atlas. The installed application is still called Cipher.
+
+20
+00:04:03,295 --> 00:04:15,841
+Keep several models installed if you have enough disk space. Save named connections for local or cloud models. Choose one from the chat header. Keeping multiple models loaded uses extra memory.
+
+21
+00:04:15,942 --> 00:04:28,889
+More tools opens plans, goals, resources, project memory, Git and external tool connections. You do not need to configure all of them on day one. Add the tools that help your task.
+
+22
+00:04:28,989 --> 00:04:44,138
+The Computer access switch lets your model request app, web and ordinary file actions. Review each proposed action. macOS permissions may need your direct approval. Turn access off when finished. The guide explains these steps.
+
+23
+00:04:44,238 --> 00:04:54,507
+Appearance offers light, dark and hacker themes. Change colour and the colour dots change the whole app palette. Choose a text size that is comfortable for you.
+
+24
+00:04:54,607 --> 00:05:06,284
+Coffee keeps your computer awake while Cipher is open. The coffee and water animation says Thanks man, then returns to chat. Keep-awake stays on until you turn it off or quit.
+
+25
+00:05:06,384 --> 00:05:20,155
+Getting started reopens the tour whenever you are lost. Start with one reply and one small reviewed file. Then learn the advanced tools. The GitHub guide, transcript and printable handbook are there whenever you need them.
