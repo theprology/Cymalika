@@ -1,5 +1,11 @@
 # Cipher 0.5.0 local candidate
 
+## 0.5.5
+
+- Turning Coffee on now shows a brief, non-blocking sip animation over the current chat, then automatically disappears after one sip. Keep-awake remains on.
+- Removed the separate Coffee screen, replay button and Back to work step. Colours stay in the sidebar. Reduced-motion users see a short static confirmation.
+- Added regression and packaged-app checks for automatic dismissal, rapid off/on cycles and unchanged native keep-awake state.
+
 ## 0.5.4
 
 - App colour now changes the whole workspace, dialogs, editor and sidebar, independently of Coffee being on or off. Light/dark/hacker modes still work.

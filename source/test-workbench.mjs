@@ -637,3 +637,69 @@ assert.equal(vm.runInContext("settings.explorerWidth", context), 300);
 console.log(
   "PASS: Explorer can also widen/compact with one accessible button.",
 );
+
+vm.runInContext(
+  `
+  globalThis.savedSipTimeout = setTimeout; globalThis.savedSipClear = clearTimeout;
+  globalThis.sipCallbacks = []; globalThis.sipNativeCalls = [];
+  setTimeout = (fn,ms) => { sipCallbacks.push({fn,ms}); return sipCallbacks.length; };
+  clearTimeout = () => {};
+  native = async (action,args) => { sipNativeCalls.push({action,args}); return {enabled:args?.enabled === true}; };
+  coffeeEnabled = false; dismissCoffeeSip();
+  $("coffeeSwitch").checked = true;
+`,
+  context,
+);
+await vm.runInContext("toggleCoffee()", context);
+assert.equal(vm.runInContext("coffeeSipVisible", context), true);
+assert.equal(context.sipCallbacks.at(-1).ms, 2800);
+context.sipCallbacks.at(-1).fn();
+assert.equal(vm.runInContext("coffeeSipVisible", context), false);
+assert.equal(vm.runInContext("coffeeEnabled", context), true);
+assert.equal(
+  context.sipNativeCalls.length,
+  1,
+  "Dismissing the animation must not disable keep-awake",
+);
+await vm.runInContext(
+  '$("coffeeSwitch").checked=false; toggleCoffee()',
+  context,
+);
+await vm.runInContext(
+  '$("coffeeSwitch").checked=true; toggleCoffee()',
+  context,
+);
+const staleSip = context.sipCallbacks.at(-1).fn;
+await vm.runInContext(
+  '$("coffeeSwitch").checked=false; toggleCoffee()',
+  context,
+);
+await vm.runInContext(
+  '$("coffeeSwitch").checked=true; toggleCoffee()',
+  context,
+);
+staleSip();
+assert.equal(
+  vm.runInContext("coffeeSipVisible", context),
+  true,
+  "A stale timer must not dismiss a newer sip",
+);
+context.sipCallbacks.at(-1).fn();
+assert.equal(vm.runInContext("coffeeEnabled", context), true);
+vm.runInContext(
+  "window.matchMedia = () => ({matches:true}); playCoffeeSip();",
+  context,
+);
+assert.equal(context.sipCallbacks.at(-1).ms, 900);
+await vm.runInContext(
+  '$("coffeeSwitch").checked=false; toggleCoffee()',
+  context,
+);
+assert.equal(vm.runInContext("coffeeSipVisible", context), false);
+vm.runInContext(
+  "setTimeout=savedSipTimeout; clearTimeout=savedSipClear; delete window.matchMedia;",
+  context,
+);
+console.log(
+  "PASS: Coffee sip dismisses automatically, preserves keep-awake, ignores stale timers, cancels on off and respects reduced motion.",
+);

@@ -139,7 +139,7 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md). Cipher i
 
 ### Coffee: keep awake
 
-Turn on **Give me a coffee** in the sidebar to keep your whole computer awake while Cipher is open. On Mac this matches `caffeinate -dim` (display, system idle and disk idle). The drinking animation opens across the app window; **Back to work** dismisses it while keeping Coffee on. **Change colour** changes the whole app and cycles Amber, Green, Red, Blue, Violet and Rose; the left arrow returns to the previous colour, and the dots select a colour directly. Your colour is remembered. Switch Coffee off to restore normal idle sleep. Quitting Cipher also releases it; closing a laptop lid or choosing Sleep still works normally.
+Turn on **Give me a coffee** in the sidebar to keep your whole computer awake while Cipher is open. On Mac this matches `caffeinate -dim` (display, system idle and disk idle). Turning Coffee on briefly pops up Cipher taking a sip, then automatically returns to your chat while keeping the computer awake. There is no separate animation screen or replay button. **Change colour** changes the whole app and cycles Amber, Green, Red, Blue, Violet and Rose; the left arrow returns to the previous colour, and the dots select a colour directly. Your colour is remembered. Switch Coffee off to restore normal idle sleep. Quitting Cipher also releases it; closing a laptop lid or choosing Sleep still works normally.
 
 ### Project Explorer and messaging
 

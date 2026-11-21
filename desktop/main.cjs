@@ -508,10 +508,12 @@ async function verifyStartup() {
     $("tourDialog").close();
     $("coffeeSwitch").checked = true;
     await toggleCoffee();
-    check(coffeeEnabled && $("coffeeStage").open, "Coffee did not open its full-window animation");
+    check(coffeeEnabled && coffeeSipVisible, "Coffee did not show its brief sip animation");
+    check(!document.getElementById("coffeeStage") && !document.getElementById("coffeeShowAnimation"), "Legacy Coffee screen or replay control remains");
     check((await native("coffeeStatus")).enabled, "Native keep-awake registration failed");
-    $("coffeeStageClose").click();
-    check(coffeeEnabled && !$("coffeeStage").open, "Dismissing animation stopped Coffee");
+    for (let attempt=0; attempt<100 && coffeeSipVisible; attempt++) await new Promise(resolve => setTimeout(resolve, 50));
+    check(!coffeeSipVisible && $("coffeeSip").classList.contains("hidden"), "Sip animation did not dismiss itself");
+    check(coffeeEnabled && (await native("coffeeStatus")).enabled, "Automatic dismissal stopped Coffee");
     chooseCoffeeColour(2);
     const red = getComputedStyle(document.body).backgroundColor;
     chooseCoffeeColour(1);

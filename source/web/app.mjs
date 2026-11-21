@@ -107,6 +107,9 @@ const coffeeColours = [
 ];
 let coffeeEnabled = false;
 let coffeePending = false;
+let coffeeSipVisible = false;
+let coffeeSipTimer = null;
+let coffeeSipEpoch = 0;
 function paintCoffee() {
   const index = Number.isInteger(settings.coffeeColour)
     ? ((settings.coffeeColour % coffeeColours.length) + coffeeColours.length) %
@@ -119,8 +122,7 @@ function paintCoffee() {
   document.body.dataset.appColour = colour.name.toLowerCase();
   $("coffeeCard").style.setProperty("--coffee-colour", colour.value);
   $("coffeeCard").classList.toggle("coffee-on", coffeeEnabled);
-  $("coffeeShowAnimation").classList.toggle("hidden", !coffeeEnabled);
-  if (!coffeeEnabled && $("coffeeStage").open) $("coffeeStage").close();
+  if (!coffeeEnabled) dismissCoffeeSip();
   $("coffeeNote").classList.toggle("hidden", !coffeeEnabled);
   $("coffeeSwitch").checked = coffeeEnabled;
   $("coffeeSwitch").disabled = coffeePending;
@@ -130,8 +132,7 @@ function paintCoffee() {
       ? "On · Keeping your computer awake"
       : "Off · Your normal sleep settings apply";
   $("coffeeColourName").textContent = colour.name;
-  $("coffeeStageColourName").textContent = colour.name;
-  for (const id of ["coffeeSwatches", "coffeeStageSwatches"])
+  for (const id of ["coffeeSwatches"])
     $(id).replaceChildren(
       ...coffeeColours.map((c, i) => {
         const swatch = button("", "coffee-swatch", () => chooseCoffeeColour(i));
@@ -159,7 +160,7 @@ async function toggleCoffee() {
     const result = await native("setCoffee", { enabled: requested });
     const wasEnabled = coffeeEnabled;
     coffeeEnabled = result.enabled === true;
-    if (coffeeEnabled && !wasEnabled) showCoffeeStage();
+    if (coffeeEnabled && !wasEnabled) playCoffeeSip();
   } catch (error) {
     failure(error);
   } finally {
@@ -167,25 +168,32 @@ async function toggleCoffee() {
     paintCoffee();
   }
 }
-function showCoffeeStage() {
-  if (!coffeeEnabled || $("coffeeStage").open) return;
-  $("coffeeStageTitle").textContent =
-    desktopPlatform === "darwin"
-      ? "Your whole Mac can stay awake."
-      : "Your whole computer can stay awake.";
-  $("coffeeStageScope").textContent =
-    desktopPlatform === "darwin"
-      ? "Display, system and disks · like caffeinate -dim"
-      : "Computer and display · while Cipher is open";
-  $("coffeeStage").showModal();
-  $("coffeeStageClose").focus();
+function dismissCoffeeSip() {
+  clearTimeout(coffeeSipTimer);
+  coffeeSipTimer = null;
+  coffeeSipEpoch++;
+  coffeeSipVisible = false;
+  $("coffeeSip").classList.add("hidden");
 }
-$("coffeeStageClose").onclick = () => $("coffeeStage").close();
-$("coffeeShowAnimation").onclick = showCoffeeStage;
-$("coffeeStagePrevious").onclick = () =>
-  chooseCoffeeColour(settings.coffeeColour - 1);
-$("coffeeStageNext").onclick = () =>
-  chooseCoffeeColour(settings.coffeeColour + 1);
+function playCoffeeSip() {
+  dismissCoffeeSip();
+  if (!coffeeEnabled) return;
+  const epoch = coffeeSipEpoch;
+  coffeeSipVisible = true;
+  $("coffeeSip").classList.remove("hidden");
+  const reducedMotion = window.matchMedia?.(
+    "(prefers-reduced-motion: reduce)",
+  )?.matches;
+  coffeeSipTimer = setTimeout(
+    () => {
+      if (epoch !== coffeeSipEpoch) return;
+      coffeeSipVisible = false;
+      coffeeSipTimer = null;
+      $("coffeeSip").classList.add("hidden");
+    },
+    reducedMotion ? 900 : 2800,
+  );
+}
 async function initCoffee() {
   paintCoffee();
   try {

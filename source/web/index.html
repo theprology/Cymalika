@@ -80,13 +80,6 @@
             <p id="coffeeStatus" class="coffee-status" role="status">
               Off · Your normal sleep settings apply
             </p>
-            <button
-              id="coffeeShowAnimation"
-              type="button"
-              class="coffee-replay hidden"
-            >
-              Show drinking animation ↗
-            </button>
             <p id="coffeeNote" class="coffee-note hidden">
               While Cipher is open. Closing the lid or choosing Sleep still
               works.
@@ -670,17 +663,13 @@ Commands run in the selected project after your approval. Output appears here.</
       </div>
       <div id="tourBody" class="tour-body"></div>
     </dialog>
-    <dialog
-      id="coffeeStage"
-      class="coffee-stage"
-      aria-labelledby="coffeeStageTitle"
+    <div
+      id="coffeeSip"
+      class="coffee-toast hidden"
+      role="status"
+      aria-label="Coffee on. Keeping your computer awake."
     >
-      <div class="coffee-stage-content">
-        <span class="eyebrow">COFFEE TIME</span>
-        <h2 id="coffeeStageTitle">Your whole computer can stay awake.</h2>
-        <p id="coffeeStageScope">
-          Display, system and disks · while Cipher is open
-        </p>
+      <div class="coffee-toast-content">
         <div class="coffee-art" aria-hidden="true">
           <svg class="coffee-mascot" viewBox="0 0 240 120" fill="none">
             <ellipse
@@ -784,31 +773,9 @@ Commands run in the selected project after your approval. Output appears here.</
             />
           </svg>
         </div>
-        <div class="coffee-stage-colours">
-          <button
-            id="coffeeStagePrevious"
-            class="button"
-            aria-label="Previous app colour"
-          >
-            ←
-          </button>
-          <button id="coffeeStageNext" class="button">Change colour →</button>
-          <span id="coffeeStageColourName"></span>
-        </div>
-        <div
-          id="coffeeStageSwatches"
-          class="coffee-swatches"
-          aria-label="Choose app colour"
-        ></div>
-        <button id="coffeeStageClose" class="button primary">
-          Back to work · keep awake
-        </button>
-        <small
-          >Closing this animation keeps Coffee on. Turn Coffee off in the
-          sidebar to allow idle sleep again.</small
-        >
+        <span class="coffee-toast-caption">Coffee on ☕</span>
       </div>
-    </dialog>
+    </div>
     <div id="toast" class="toast hidden" role="status"></div>
     <script type="module" src="app.mjs"></script>
   </body>
