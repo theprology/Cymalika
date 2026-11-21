@@ -578,6 +578,55 @@ assert.equal(actionRan, true);
 console.log(
   "PASS: the actual approval renderer handles file reviews without an app ID and does not execute them before approval.",
 );
+let sensitiveRuns = 0;
+const confirmation =
+  "Delete the named disposable fixture permanently? It cannot be restored by Cipher.";
+const rejectedConfirmation = api.reviewReal(
+  "Fixture confirmation",
+  { confirmation },
+  async () => {
+    sensitiveRuns++;
+    return { status: "performed" };
+  },
+);
+const confirmationCard = nodes.get("messages").children.at(-1);
+assert(
+  descendantsForReview(confirmationCard).some(
+    (n) => n.textContent === confirmation,
+  ),
+);
+assert.equal(sensitiveRuns, 0);
+await descendantsForReview(confirmationCard)
+  .find((n) => n.textContent === "Reject")
+  .onclick();
+assert.equal((await rejectedConfirmation).status, "rejected");
+assert.equal(sensitiveRuns, 0);
+const allowedConfirmation = api.reviewReal(
+  "Fixture confirmation",
+  { confirmation: "Allow the fixture-only action?" },
+  async () => {
+    sensitiveRuns++;
+    return { status: "performed" };
+  },
+);
+const allowedCard = nodes.get("messages").children.at(-1);
+assert.equal(sensitiveRuns, 0);
+await descendantsForReview(allowedCard)
+  .find((n) => n.textContent === "Approve this action")
+  .onclick();
+assert.equal((await allowedConfirmation).status, "performed");
+assert.equal(sensitiveRuns, 1);
+await assert.rejects(
+  api.reviewReal("Invalid confirmation", { confirmation: 123 }, async () => {
+    sensitiveRuns++;
+  }),
+  /confirmation question/,
+);
+assert.equal(sensitiveRuns, 1);
+console.log(
+  "PASS: explicit confirmation text is displayed; rejection performs nothing; approval executes only that action once; malformed questions cannot execute.",
+);
+
 function descendantsForReview(node) {
   return [node, ...node.children.flatMap(descendantsForReview)];
 }

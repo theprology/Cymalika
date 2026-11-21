@@ -1,5 +1,12 @@
 # Cipher 0.5.0 local candidate
 
+## 0.5.7
+
+- Replaces blanket handoff instructions for sensitive actions with explicit, specific user confirmation before using an available reviewed tool.
+- Action cards can display the model's confirmation question, including the target and consequences. Approval applies to that action; Reject still prevents execution and retries.
+- Computer access alone does not approve purchases, permissions, agreements, credential entry, CAPTCHA/security-warning interactions or permanent deletion. Password/secret values must stay out of chat and logs. Existing protected-field, operating-system, site and tool limits are reported accurately and are not removed by approval.
+- Regression checks exercise the actual confirmation-card renderer with no real purchases, account changes, deletion or credential entry.
+
 ## 0.5.6
 
 - macOS uses cooperative app activation and raises the target browser window before verifying focus; input is still refused if the correct app is not foreground.
