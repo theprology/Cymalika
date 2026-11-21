@@ -266,6 +266,29 @@ final class ComputerController {
       }
     } catch { completion(.failure(error)) }
   }
+  func navigate(_ args: [String: Any], completion: @escaping (Result<Any, Error>) -> Void) {
+    do {
+      guard policy.fullComputer else { throw Failure("Turn on Computer access first.") }
+      let app = try target(args["app"] as? String ?? "")
+      let name = (app.localizedName ?? "").lowercased()
+      guard name.range(of: "chrome|chromium|safari|firefox|edge|brave|opera|vivaldi", options: .regularExpression) != nil,
+        let applicationURL = app.bundleURL else { throw Failure("Choose a running browser from computer_apps.") }
+      let url = try policy.checkURL(args["url"] as? String ?? "")
+      let epoch = policy.epoch
+      let configuration = NSWorkspace.OpenConfiguration()
+      configuration.activates = true
+      NSWorkspace.shared.open([url], withApplicationAt: applicationURL, configuration: configuration) { _, error in
+        DispatchQueue.main.async {
+          guard self.policy.fullComputer, self.policy.epoch == epoch else {
+            completion(.failure(Failure("Browser navigation cancelled."))); return
+          }
+          if let error { completion(.failure(error)); return }
+          completion(.success(["status": "navigation_requested", "app": args["app"] as? String ?? "", "url": url.absoluteString,
+            "next": "Call computer_read to verify the loaded URL and page content. Opening a URL does not prove the page loaded."]))
+        }
+      }
+    } catch { completion(.failure(error)) }
+  }
   func focus(_ app: NSRunningApplication) {
     app.unhide()
     if #available(macOS 14.0, *) {
@@ -275,6 +298,7 @@ final class ComputerController {
       _ = app.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
     }
     let root = AXUIElementCreateApplication(app.processIdentifier)
+    _ = AXUIElementSetAttributeValue(root, kAXFrontmostAttribute as CFString, kCFBooleanTrue)
     if let window = attribute(root, kAXFocusedWindowAttribute) {
       let element = window as! AXUIElement
       _ = AXUIElementPerformAction(element, kAXRaiseAction as CFString)

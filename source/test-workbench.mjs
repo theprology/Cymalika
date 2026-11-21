@@ -333,6 +333,7 @@ vm.runInContext(
     if(action==="computerApps") return {running:[{id:"chrome-fixture",name:"Google Chrome"}]};
     if(action==="computerRead") return {snapshot:"nav-"+(++navigationReads),elements:[]};
     if(action==="computerAction") return {status:"performed"};
+    if(action==="computerNavigate") return {status:"navigation_requested"};
     return {};
   };
 `,
@@ -364,16 +365,12 @@ assert.equal(navResult.status, "navigation_requested");
 const inputs = context.navigationEvents.filter(
   (e) => e.action === "computerAction",
 );
-assert.deepEqual(
-  Array.from(inputs, (e) => e.operation),
-  ["key", "key", "type", "key"],
+assert.equal(inputs.length, 0);
+const nativeNavigation = context.navigationEvents.find(
+  (e) => e.action === "computerNavigate",
 );
-assert.deepEqual(
-  Array.from(inputs, (e) => e.snapshot),
-  ["nav-1", "nav-2", "nav-3", "nav-4"],
-);
-assert.equal(inputs[0].key, "t");
-assert.equal(inputs[2].text, "https://example.com/");
+assert.equal(nativeNavigation.url, "https://example.com/");
+assert.equal(nativeNavigation.app, "chrome-fixture");
 await assert.rejects(
   api.tool(
     {
@@ -410,7 +407,7 @@ vm.runInContext("access.computerAccess=false", context);
 await assert.rejects(navigationReview.execute(), /cancelled/);
 assert.equal(context.navigationEvents.length, beforeRevocation);
 console.log(
-  "PASS: browser navigation waits for approval, preserves tabs, uses fresh snapshots, rejects non-web URLs/credentials and cancels on access revocation.",
+  "PASS: browser navigation waits for approval, uses the native Mac URL handoff without address-bar typing, rejects non-web URLs/credentials and cancels on access revocation.",
 );
 
 // A browser observation must not turn an actionable laptop request into a handoff.

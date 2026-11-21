@@ -408,6 +408,7 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
             args["app"] as? String ?? "", includeMenus: args["include_menus"] as? Bool ?? false))
       case "computerScreenshot":
         computer.capture(args["app"] as? String ?? "") { result in self.advancedReply(id, result) }
+      case "computerNavigate": computer.navigate(args) { result in self.advancedReply(id, result) }
       case "computerAction": computer.perform(args) { result in self.advancedReply(id, result) }
       case "browserShow":
         try policy.require("browser")

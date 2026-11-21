@@ -1919,6 +1919,21 @@ async function advancedTool(t, mode) {
           if (result?.error || result?.status !== "performed")
             throw Error(result?.error || "Browser action was not performed.");
         };
+        if (desktopPlatform === "darwin") {
+          check();
+          const result = await native("computerNavigate", {
+            app: a.app,
+            url: url.href,
+          });
+          check();
+          if (result?.error || result?.status !== "navigation_requested")
+            throw Error(result?.error || "The browser did not accept the URL.");
+          addActivity(
+            "Website navigation requested",
+            browser.name + " · " + url.href,
+          );
+          return result;
+        }
         const modifiers = [
           desktopPlatform === "darwin" ? "command" : "control",
         ];
