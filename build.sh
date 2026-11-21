@@ -28,5 +28,5 @@ else
   [[ "${CYMALIKA_REQUIRE_SIGNING:-0}" != 1 ]] || { echo 'Release signing identity is missing.' >&2; exit 1; }
   codesign --force --deep --sign - 'build/CyMalika.app'
 fi
-codesign --verify --deep --strict 'build/CyMalika.app' 
+codesign --verify --deep --strict 'build/CyMalika.app'
 'build/CyMalika.app/Contents/MacOS/CyMalika' --self-test
