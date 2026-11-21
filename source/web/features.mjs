@@ -638,7 +638,7 @@ function renderHub(tab, body) {
     actions(body).append(
       button("Save current connection as profile", "button primary", () => {
         idle();
-        const { apiKey, ...safe } = settings;
+        const safe = connectionSettings(settings);
         desk.profiles.push({
           id: crypto.randomUUID(),
           name: name.value || settings.model,
@@ -664,11 +664,7 @@ function renderHub(tab, body) {
           "button primary",
           safeClick(async () => {
             idle();
-            settings = { ...defaults, ...p.settings, apiKey: "" };
-            setTheme(settings.theme);
-            await refreshModels();
-            scheduleSave();
-            toast("Profile selected. Enter an API key if needed.");
+            await useConnection(p);
           }),
         ),
         button("Remove profile", "button", () => {
@@ -2298,7 +2294,7 @@ async function modelRequest(req, provider, textMode) {
     body = elem("div", "message-body");
   meta.append(
     elem("span", "avatar", "⌘"),
-    elem("span", "", "Cipher"),
+    elem("span", "assistant-name", assistantName()),
     elem("small", "muted", "responding live"),
   );
   row.append(meta, body);
@@ -2392,7 +2388,7 @@ const tourSteps = [
     summary: "Keep Ollama running, then choose a model you already installed.",
     details: [
       "Open Settings & models → Model connection. Choose Ollama and keep the address http://localhost:11434 if Ollama runs on this computer.",
-      "Choose your installed model in the model selector. Cipher never downloads a model for you.",
+      "Choose an installed model in the model selector, or open Models & downloads to install a local engine and download a model. Downloads require your choice and confirmation.",
       "Use Check your model on the welcome screen. A pass means a small tool test worked; it does not guarantee every coding task will succeed.",
       "If you use a paid API instead, its provider may charge you. Cipher itself is free.",
     ],

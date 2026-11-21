@@ -137,6 +137,14 @@ export function requestFor(settings, messages, tools, textMode = false) {
     if (!textMode && tools.length)
       body.tools = tools.map((t) => ({ type: "function", function: t }));
     if (settings.thinking === "off") body.think = false;
+    body.keep_alive =
+      settings.keepAlive === "-1"
+        ? -1
+        : settings.keepAlive === "0"
+          ? 0
+          : ["5m", "30m"].includes(settings.keepAlive)
+            ? settings.keepAlive
+            : "5m";
     if (textMode) body.format = "json";
     if (settings.apiKey) headers.Authorization = "Bearer " + settings.apiKey;
   } else if (settings.provider === "anthropic") {

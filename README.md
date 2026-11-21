@@ -20,7 +20,13 @@ Cipher brings conversations, project files, plans, and tools into one desktop ap
 
 In Cipher, **Computer access** is one session switch for app discovery, web browsing and user-folder files. Turn it on and describe a task; the model chooses the tools it needs. Review proposed actions in chat, use Stop to interrupt, and turn access off to disconnect. [How to use computer access](docs/COMPUTER_USE.md).
 
-No Cipher account, subscription, or model download is required. Cloud providers may charge for their APIs. Cipher never downloads or silently switches models.
+No Cipher account, subscription, or model download is required. Cloud providers may charge for their APIs. Model downloads are optional and start only after you review and confirm them. Cipher never silently switches your selected model.
+
+## Models without leaving the app
+
+Open **Models & downloads** to reuse your existing Ollama, install a checksum-verified local runtime, download Ollama IDs or public Hugging Face GGUF models, and manage your installed model shelf. Keep several models loaded when memory permits, or unload them to free RAM/VRAM. Save local and cloud API connections and switch from the chat header. API keys stay in memory.
+
+In **Settings → Appearance**, give your assistant a name. That name appears in the sidebar and replies, independently of the model you select. See the [model library guide](docs/MODEL_LIBRARY.md). Model format, hardware, licensing and tool capabilities determine compatibility; a model host is not itself an inference runtime.
 
 ## See Cipher in action
 

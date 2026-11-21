@@ -11,6 +11,7 @@ for (const file of [
   "advanced-engine.mjs",
   "app.mjs",
   "features.mjs",
+  "model-library.mjs",
 ]) {
   let text = await readFile(path.join(out, file), "utf8");
   text = text

@@ -1,5 +1,13 @@
 # Cipher 0.5.0 local candidate
 
+## 0.6.0
+
+- Adds Models & downloads: installed-model size and memory information, explicit Ollama/Hugging Face GGUF downloads with progress/cancel, exact-name removal confirmation, and model load/unload controls.
+- Reuses existing Ollama services. New users can review, checksum-verify and install an app-managed official runtime, then start it without a system-wide service. External engines are never stopped by Cipher.
+- Saved connection switching is available in chat; profiles keep generation settings independently from appearance and assistant identity. API keys remain session-only.
+- Settings → Appearance now offers a custom assistant name, rendered as plain text and included in identity instructions.
+- The shared UI supports macOS, Windows and Linux; runtime/platform, model format, hardware and provider capabilities still apply. See the model library guide for setup and limitations.
+
 ## 0.5.9
 
 - Coffee now plays a single glossy coffee-and-water swirl, splashes across the app, and says “Thanks man” before returning to chat. No sugar or milk imagery is used. The effect dismisses automatically after 5.5 seconds, does not intercept clicks or change keep-awake behavior, and respects reduced motion.

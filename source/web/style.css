@@ -3088,3 +3088,123 @@ body[data-app-colour][data-theme="hacker"] {
 .sidebar-bottom .button {
   padding: 8px 10px;
 }
+
+.model-library-dialog {
+  width: min(1000px, 94vw);
+  max-height: 90vh;
+}
+.library-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 0 24px 12px;
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+.library-tabs button {
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--muted);
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+.library-tabs button.active {
+  color: var(--text);
+  background: var(--hover);
+}
+.library-body,
+.library-jobs,
+.library-review {
+  padding: 0 24px;
+}
+.library-body {
+  padding-bottom: 24px;
+}
+.library-status {
+  padding: 0 24px;
+  font-size: 12px;
+  color: var(--muted);
+  min-height: 18px;
+}
+.library-model-card,
+.library-job {
+  padding: 18px;
+  margin: 12px 0;
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow-wrap: anywhere;
+}
+.library-model-card strong {
+  font-size: 15px;
+}
+.library-model-card p,
+.library-help {
+  font-size: 12px;
+  line-height: 1.6;
+}
+.library-actions,
+.library-search {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 12px;
+}
+.library-actions input {
+  flex: 1;
+  min-width: 120px;
+}
+.library-review:not(:empty) {
+  padding: 18px 24px;
+  margin: 12px 24px;
+  border: 1px solid var(--accent);
+  border-radius: 14px;
+  background: var(--soft);
+}
+.library-job {
+  display: grid;
+  gap: 8px;
+  font-size: 12px;
+}
+.library-job progress {
+  width: 100%;
+  accent-color: var(--accent);
+}
+.library-search input {
+  flex: 1;
+  min-width: 160px;
+}
+.library-model-readme {
+  white-space: pre-wrap;
+  max-height: 300px;
+  overflow: auto;
+  font-size: 11px;
+  padding: 14px;
+  background: var(--code);
+}
+.library-digest {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 10px;
+}
+#connectionSelect {
+  max-width: 170px;
+  font-size: 11px;
+}
+#openModelLibrary {
+  font-size: 11px;
+  padding: 7px 10px;
+  white-space: nowrap;
+}
+.model-picker {
+  flex-wrap: wrap;
+}
+#assistantBrand {
+  overflow-wrap: anywhere;
+}
+
+.library-status.error {
+  color: #ef9191;
+}

@@ -7,6 +7,7 @@ for (const file of [
   "source/test-mcp.mjs",
   "desktop/test-core.cjs",
   "desktop/test-coffee.cjs",
+  "desktop/test-model-library.cjs",
   "desktop/test-personal-files.cjs",
   "desktop/test-computer-access.cjs",
   "desktop/test-computer.cjs",

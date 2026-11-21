@@ -9,6 +9,8 @@ const {
   globalShortcut,
   powerSaveBlocker,
 } = require("electron");
+const { ModelLibrary } = require("./model-library.cjs");
+let modelLibrary;
 const { SecureEntry } = require("./secure-entry.cjs");
 const secureEntry = new SecureEntry(() => win);
 const { CoffeeAwake } = require("./coffee.cjs");
@@ -74,6 +76,8 @@ function requireComputerAccess() {
 }
 async function handle(action, a, id) {
   switch (action) {
+    case "modelLibrary":
+      return modelLibrary.handle(a);
     case "coffeeStatus":
       return { enabled: coffee.enabled };
     case "setCoffee":
@@ -373,6 +377,9 @@ async function handle(action, a, id) {
   }
 }
 async function createWindow() {
+  modelLibrary = new ModelLibrary(
+    path.join(app.getPath("userData"), "local-models"),
+  );
   workspace = new Workspace(path.join(app.getPath("userData"), "workspace"));
   await workspace.init();
   win = new BrowserWindow({
@@ -520,6 +527,17 @@ async function verifyStartup() {
   const featureChecks = await win.webContents.executeJavaScript(`(async () => {
     const check = (condition, description) => { if (!condition) throw Error(description); };
     $("tourDialog").close();
+    const originalName = settings.assistantName;
+    settings.assistantName = "Atlas"; paintIdentity();
+    check($("assistantBrand").textContent === "Atlas", "Assistant name did not update");
+    check(!Object.hasOwn(connectionSettings({...settings,apiKey:"fixture-session-key"}),"apiKey"), "Connection profile contains an API key");
+    check(!Object.hasOwn(connectionSettings(settings),"assistantName"), "Model connection overwrites assistant identity");
+    settings.assistantName = originalName; paintIdentity();
+    check(Array.isArray(await native("modelLibrary",{operation:"jobs"})), "Native model-library bridge unavailable");
+    libraryTab = "connections"; await renderModelLibrary();
+    check($("modelLibraryBody").textContent.includes("Your models, your connections"), "Model connections screen did not render");
+    libraryTab = "download"; await renderModelLibrary();
+    check($("modelLibraryBody").textContent.includes("Already know the model ID?"), "Model discovery screen did not render");
     $("coffeeSwitch").checked = true;
     await toggleCoffee();
     check(coffeeEnabled && coffeeSipVisible, "Coffee did not show its brief sip animation");
@@ -607,6 +625,7 @@ app.on("window-all-closed", () => app.quit());
 app.on("before-quit", () => {
   quitting = true;
   coffee.stop();
+  modelLibrary?.close();
   if (workspace) cancel();
   globalShortcut.unregisterAll();
 });

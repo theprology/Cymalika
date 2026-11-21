@@ -178,6 +178,7 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
   weak var web: WKWebView?
   let workspace: Workspace
   let policy = AccessPolicy()
+  lazy var modelLibrary = ModelLibrary(workspace.storage.appendingPathComponent("local-models"))
   lazy var computer = ComputerController(policy)
   lazy var browser = BrowserController(policy)
   lazy var personalFiles = PersonalFiles(storage: workspace.storage.appendingPathComponent("computer-files"))
@@ -209,6 +210,13 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
     let args = b["args"] as? [String: Any] ?? [:]
     do {
       switch action {
+      case "modelLibrary":
+        modelLibrary.handle(args) { result in
+          switch result {
+          case .success(let value): self.reply(id, value)
+          case .failure(let error): self.reply(id, error: error.localizedDescription)
+          }
+        }
       case "coffeeStatus": reply(id, ["enabled": coffee.enabled])
       case "setCoffee":
         guard let enabled = args["enabled"] as? Bool else { throw Failure("Coffee needs an on/off value.") }
@@ -989,6 +997,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   }
   func applicationWillTerminate(_ notification: Notification) {
     bridge.coffee.stop()
+    bridge.modelLibrary.close()
     for task in bridge.tasks.values { task.cancel() }
     for stream in bridge.streams.values { stream.cancel() }
     for process in bridge.processes.values {

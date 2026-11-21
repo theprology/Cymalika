@@ -101,6 +101,7 @@ for (const file of [
   "advanced-engine.mjs",
   "app.mjs",
   "features.mjs",
+  "model-library.mjs",
 ]) {
   let text = fs.readFileSync(new URL(file, web), "utf8");
   text = text
@@ -983,4 +984,39 @@ vm.runInContext(
 );
 console.log(
   "PASS: Coffee sip dismisses automatically, preserves keep-awake, ignores stale timers, cancels on off and respects reduced motion.",
+);
+
+vm.runInContext(`settings.assistantName = "Nova"; paintIdentity();`, context);
+assert.equal(vm.runInContext("assistantName()", context), "Nova");
+assert.equal(doc.getElementById("assistantBrand").textContent, "Nova");
+vm.runInContext(
+  `settings.assistantName = "<img src=x>"; paintIdentity();`,
+  context,
+);
+assert.equal(
+  doc.getElementById("assistantBrand").textContent,
+  "<img src=x>",
+  "Names remain text rather than HTML",
+);
+vm.runInContext(`settings.assistantName = "Nova\\nInjected";`, context);
+assert.equal(vm.runInContext("assistantName()", context), "Cipher");
+vm.runInContext(
+  `settings.assistantName = "Nova"; settings.apiKey="session-key"; settings.theme="hacker";`,
+  context,
+);
+assert.equal(
+  vm.runInContext("connectionSettings(settings).apiKey", context),
+  undefined,
+);
+assert.equal(
+  vm.runInContext("connectionSettings(settings).assistantName", context),
+  undefined,
+);
+assert.equal(
+  vm.runInContext("connectionSettings(settings).theme", context),
+  undefined,
+);
+assert.equal(JSON.stringify(api.persisted()).includes("session-key"), false);
+console.log(
+  "PASS: custom assistant names render as text, reject control characters, and stay independent of model profiles and session-only keys.",
 );

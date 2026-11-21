@@ -75,6 +75,7 @@ jobs:
       - run: npm test
       - run: CIPHER_ARCH=$(uname -m) ./build.sh
       - run: python3 source/test-native-stream.py
+      - run: python3 source/test-model-library.py
       - run: |
           mkdir -p staging
           ditto build/Cipher.app staging/Cipher.app

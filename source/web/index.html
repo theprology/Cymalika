@@ -16,7 +16,9 @@
         <div class="brand">
           <div class="brandmark">⌘</div>
           <div>
-            <strong>Cipher<span class="brand-dot">.</span></strong
+            <strong
+              ><span id="assistantBrand">Cipher</span
+              ><span class="brand-dot">.</span></strong
             ><small>YOUR MODELS. YOUR WORKSPACE.</small>
           </div>
         </div>
@@ -228,6 +230,12 @@
             </button>
           </div>
           <div class="model-picker">
+            <select id="connectionSelect" aria-label="Saved model connection">
+              <option value="">Current connection</option>
+            </select>
+            <button id="openModelLibrary" class="button" type="button">
+              Models & downloads
+            </button>
             <span class="model-symbol">◇</span
             ><select id="modelSelect" aria-label="AI model">
               <option value="">Connect a model</option></select
@@ -472,9 +480,16 @@ Commands run in the selected project after your approval. Output appears here.</
           <section data-settings-panel="connection">
             <h3>Bring your own intelligence.</h3>
             <p class="muted">
-              Use an installed local model or connect a compatible API. Cipher
-              never downloads models.
+              Use a local model or connect a compatible API. Download models and
+              set up a local engine inside the app.
             </p>
+            <button
+              id="settingsModelLibrary"
+              type="button"
+              class="button primary"
+            >
+              Get models inside the app
+            </button>
             <label
               >Connection type<select id="provider">
                 <option value="ollama">Ollama · local models</option>
@@ -546,6 +561,13 @@ Commands run in the selected project after your approval. Output appears here.</
               /></label>
             </div>
             <label
+              >Keep Ollama models loaded<select id="keepAlive">
+                <option value="5m">5 minutes after use</option>
+                <option value="30m">30 minutes after use</option>
+                <option value="-1">Until unloaded or engine stops</option>
+                <option value="0">Unload after each response</option>
+              </select></label
+            ><label
               >Ollama thinking<select id="thinking">
                 <option value="default">Model default</option>
                 <option value="off">Off (if supported)</option>
@@ -568,7 +590,17 @@ Commands run in the selected project after your approval. Output appears here.</
             </div>
           </section>
           <section data-settings-panel="appearance" class="hidden">
-            <h3>Find your atmosphere.</h3>
+            <h3>Make it yours.</h3>
+            <label
+              >Your assistant’s name<input
+                id="assistantName"
+                maxlength="48"
+                placeholder="Cipher"
+            /></label>
+            <p class="muted">
+              This name appears on the sidebar and assistant replies. The
+              installed application remains Cipher.
+            </p>
             <p class="muted">Choose the atmosphere that helps you focus.</p>
             <div class="theme-grid">
               <button type="button" data-theme-choice="light">
@@ -600,6 +632,32 @@ Commands run in the selected project after your approval. Output appears here.</
           </div>
         </form>
       </div>
+    </dialog>
+    <dialog id="modelLibraryDialog" class="model-library-dialog">
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow">YOUR INTELLIGENCE, IN ONE PLACE</span>
+          <h2>Models & downloads</h2>
+        </div>
+        <button
+          data-close="modelLibraryDialog"
+          class="icon-button"
+          aria-label="Close model library"
+        >
+          ✕
+        </button>
+      </div>
+      <nav class="library-tabs" aria-label="Model library">
+        <button data-library-tab="installed" class="active">
+          Installed models</button
+        ><button data-library-tab="download">Get models</button
+        ><button data-library-tab="connections">Connections</button
+        ><button data-library-tab="engine">Local engine</button>
+      </nav>
+      <p id="modelLibraryStatus" class="library-status" role="status"></p>
+      <div id="modelLibraryReview" class="library-review"></div>
+      <div id="modelLibraryJobs" class="library-jobs" aria-live="polite"></div>
+      <div id="modelLibraryBody" class="library-body"></div>
     </dialog>
     <dialog id="historyDialog">
       <div class="modal-header">

@@ -12,16 +12,18 @@ final class ModelStream: NSObject, URLSessionDataDelegate {
   var session: URLSession!
   var task: URLSessionDataTask!
   var buffer = Data(), responseData = Data(), total = 0, status = 0
+  let maxBytes: Int
   var failed: Error?
   let onLine: (String) -> Void
   let onEnd: (Error?) -> Void
-  init(request: URLRequest, onLine: @escaping (String) -> Void, onEnd: @escaping (Error?) -> Void) {
+  init(request: URLRequest, maxBytes: Int = 12_000_000, idleTimeout: Double = 180, resourceTimeout: Double = 600, onLine: @escaping (String) -> Void, onEnd: @escaping (Error?) -> Void) {
+    self.maxBytes = maxBytes
     self.onLine = onLine
     self.onEnd = onEnd
     super.init()
     let config = URLSessionConfiguration.ephemeral
-    config.timeoutIntervalForRequest = 180
-    config.timeoutIntervalForResource = 600
+    config.timeoutIntervalForRequest = idleTimeout
+    config.timeoutIntervalForResource = resourceTimeout
     session = URLSession(configuration: config, delegate: self, delegateQueue: nil)
     task = session.dataTask(with: request)
   }
@@ -41,7 +43,7 @@ final class ModelStream: NSObject, URLSessionDataDelegate {
   }
   func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
     total += data.count
-    guard total <= 12_000_000 else {
+    guard total <= maxBytes else {
       failed = Failure("Model stream exceeded 12 MB.")
       task.cancel()
       return
