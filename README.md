@@ -16,7 +16,7 @@ A calm, open-source desktop workspace for reading, writing, and improving code w
 
 Cipher brings conversations, project files, plans, and tools into one desktop app. Open your project, choose an installed model, and describe what you want to build. Cipher gives the model tools to find relevant files, propose edits, and request checks. You review actions before they run.
 
-In 0.5 source/local builds, **Computer access** is one session switch for app discovery, web browsing and user-folder files. Turn it on and describe a task; the model chooses the tools it needs. Review proposed actions in chat, use Stop to interrupt, and turn access off to disconnect. [How to use computer access](docs/COMPUTER_USE.md).
+In Cipher 0.5.4 desktop releases, **Computer access** is one session switch for app discovery, web browsing and user-folder files. Turn it on and describe a task; the model chooses the tools it needs. Review proposed actions in chat, use Stop to interrupt, and turn access off to disconnect. [How to use computer access](docs/COMPUTER_USE.md).
 
 No Cipher account, subscription, or model download is required. Cloud providers may charge for their APIs. Cipher never downloads or silently switches models.
 
@@ -78,7 +78,7 @@ The scripts download Cipher from Releases and verify its SHA-256 checksum. They 
 | Windows x64             | Electron `.exe` installer and portable app | Built and tested on Windows CI, including packaged startup and tool bridge |
 | Linux x64               | Electron AppImage and Debian package       | Installed and started on Linux CI, with backend and bridge checks          |
 
-The Windows and Linux versions share the interface, model adapters, and agent loop. Their backend provides coding, Git, streaming, and browser tools. **Cipher 0.4 adds desktop tools on Windows and Linux.** The backends use Windows UI Automation and Linux AT-SPI; see [computer use](docs/COMPUTER_USE.md) and [signing](docs/SIGNING.md) for current setup and limits. Do not assume desktop automation parity between platforms. Mac 0.4 downloads are Developer ID signed and Apple-notarized. Windows 0.4 downloads remain unsigned pending a Windows signing-provider review. Linux packages have GitHub provenance attestations. Linux Wayland does not yet support pointer/key/capture sessions; use X11 for those tools.
+The Windows and Linux versions share the interface, model adapters, and agent loop. Their backend provides coding, Git, streaming, and browser tools. **Cipher 0.4 adds desktop tools on Windows and Linux.** The backends use Windows UI Automation and Linux AT-SPI; see [computer use](docs/COMPUTER_USE.md) and [signing](docs/SIGNING.md) for current setup and limits. Do not assume desktop automation parity between platforms. Mac 0.5.4 downloads are Developer ID signed and Apple-notarized. Windows 0.5.4 downloads are currently unsigned. Linux 0.5.4 downloads include SHA-256 checksums and a linked, verified CI build. Signature and attestation status is recorded per release. Linux Wayland does not yet support pointer/key/capture sessions; use X11 for those tools.
 
 ## Bring your own model
 

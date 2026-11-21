@@ -1,6 +1,6 @@
 # Publisher signing
 
-A successful build is not a publisher signature. Cipher 0.4 Mac downloads are Developer ID signed and Apple-notarized. Linux packages have GitHub provenance attestations. Windows publisher signing is pending an external provider review; the previously published 0.3.0 downloads remain development builds. The signed-release workflow refuses to produce a signed candidate when credentials are absent; it does not silently fall back to ad-hoc or unsigned signing.
+A successful build is not a publisher signature. Cipher 0.5.4 Mac downloads are Developer ID signed and Apple-notarized. Windows 0.5.4 downloads are unsigned. Linux 0.5.4 downloads include SHA-256 checksums and links to their source build; provenance attestations are available only where explicitly attached or recorded for a release. The signed-release workflow refuses to produce a signed candidate when credentials are absent. Check the notes for the exact version you download.
 
 ## Mac
 

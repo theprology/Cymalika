@@ -78,3 +78,9 @@ The Windows backend uses an MTA UI Automation client. The Linux backend uses AT-
 The Mac publisher certificate was created under the user's approved Apple developer team. Its private key remains in the local login Keychain; the temporary plaintext key copy was removed after successful signing. No private signing material is included in the repository or release.
 
 Windows Authenticode signing is not complete: the free signing inquiry was sent, but the external provider has not approved or issued credentials. Linux attestations are distinct from Windows/macOS publisher signatures. Wayland compositor-mediated pointer/keyboard/capture support remains outstanding. Extended interactive testing across different apps and desktop configurations is still needed.
+
+## Cipher 0.5.4 across desktop platforms
+
+Source commit `a3b3c2e472791a69b13a57c00aa2428a633dcd6e` passed [Build and test](https://github.com/theprology/cipher/actions/runs/44876623232). Windows setup and portable packages were installed and started on Windows CI. The Debian package was installed and started on Linux CI. The packaged applications exercised native keep-awake registration/release, whole-app colour changes, Enter/Shift+Enter and IME handling, folder grouping, source tabs, line numbers, draft isolation and Explorer width controls. Native app-control fixtures also passed on both platforms. These checks used CI desktops, not a physical sleep/wake cycle or an Ollama model hosted on each runner.
+
+The Mac app was tested locally with the existing Ollama model and macOS power assertions; the Mac download was signed and notarized separately. No model is included in the downloads.
