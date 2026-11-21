@@ -1,5 +1,12 @@
 # Validation
 
+## 0.5.8 secure entry and permission review — November 21, 2026
+
+- In the installed, Developer ID signed and Apple-notarized Mac app, the existing `CyberCrew/notmythos-8b:3.8-27b-uncensored` model opened a disposable local page, inspected its password field, and called `password_fill` using only the snapshot and field reference. The native secure window displayed the actual local origin and field. After approval with a public fixture value, the model read back `filled: true`, a redacted value, and the page status “Password fixture filled correctly”. No login or network submission occurred. Computer access was turned off afterward and Cipher closed the temporary browser.
+- Shared checks cover cancelled entry, target changes, stale snapshots, access revocation, status-only results, reflected-value redaction, capture restrictions and isolated secure-window IPC. Permission tests require the actual origin/control, explicit review, a fresh snapshot and result inspection; rejected requests perform no grant.
+- The Windows and Linux target-OS fixtures in [build 44897494956](https://github.com/theprology/cipher/actions/runs/44897494956) passed real password-field filling, redaction and permission-checkbox invocation/readback. These disposable controls do not grant OS access. Full browser/system permission flows were not exercised on physical Windows/Linux desktops.
+- No real credential, camera, microphone, location grant, protected OS authentication, UAC or production account was used. Protected prompts remain direct-user steps. Native application secure-field support depends on the application exposing a writable control.
+
 ## 0.5.7 explicit action confirmation — November 21, 2026
 
 - In the installed Mac app, the existing local model proposed a benign Chrome navigation with the exact confirmation question requested for the test. The card displayed the question and waited. After approval, the native browser navigation returned successfully and the model inspected the actual Example Domain page. The test used only app discovery, browser navigation and app reading; no purchase, credential entry, agreement, permission change or deletion was performed.
