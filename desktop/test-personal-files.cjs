@@ -4,7 +4,7 @@ const os = require("node:os");
 const path = require("node:path");
 const { PersonalFiles } = require("./personal-files.cjs");
 (async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "cipher-personal-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "cymalika-personal-"));
   const home = path.join(root, "home");
   await fs.mkdir(path.join(home, "Documents"), { recursive: true });
   await fs.mkdir(path.join(home, "Library"));

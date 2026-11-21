@@ -1,5 +1,5 @@
 @font-face {
-  font-family: CipherMono;
+  font-family: CyMalikaMono;
   src: local("SF Mono"), local("Menlo");
 }
 * {
@@ -65,7 +65,7 @@ body[data-theme="hacker"] .eyebrow,
 body[data-theme="hacker"] .section-label,
 body[data-theme="hacker"] .breadcrumb,
 body[data-theme="hacker"] .connection-status {
-  font-family: CipherMono, Menlo, monospace;
+  font-family: CyMalikaMono, Menlo, monospace;
 }
 body[data-theme="hacker"] .welcome {
   background-image: linear-gradient(#72f19703 1px, transparent 1px);
@@ -819,7 +819,7 @@ select {
   padding: 13px;
   border-radius: 8px;
   overflow: auto;
-  font-family: CipherMono, Menlo, monospace;
+  font-family: CyMalikaMono, Menlo, monospace;
   font-size: 10px;
   line-height: 1.7;
   tab-size: 4;
@@ -910,7 +910,7 @@ select {
   border-radius: 6px;
   overflow: auto;
   font:
-    9px/1.7 CipherMono,
+    9px/1.7 CyMalikaMono,
     Menlo,
     monospace;
   max-height: 300px;
@@ -957,7 +957,7 @@ select {
 }
 #terminalOutput {
   font:
-    10px/1.7 CipherMono,
+    10px/1.7 CyMalikaMono,
     Menlo,
     monospace;
   white-space: pre-wrap;
@@ -1394,7 +1394,7 @@ textarea.code-preview {
   margin: 24px 0;
 }
 .message-body :not(pre) > code {
-  font-family: CipherMono, Menlo, monospace;
+  font-family: CyMalikaMono, Menlo, monospace;
   font-size: 0.86em;
   padding: 2px 5px;
   border: 1px solid var(--line);
@@ -1426,7 +1426,7 @@ textarea.code-preview {
   background: var(--surface);
   border-bottom: 1px solid var(--line);
   font:
-    10px/1.5 CipherMono,
+    10px/1.5 CyMalikaMono,
     Menlo,
     monospace;
   color: var(--muted);
@@ -1677,7 +1677,7 @@ body[data-theme="hacker"] .syntax-number {
 }
 .tool-preview {
   font:
-    11px/1.7 CipherMono,
+    11px/1.7 CyMalikaMono,
     Menlo,
     monospace;
   max-height: 310px;
@@ -1691,7 +1691,7 @@ body[data-theme="hacker"] .syntax-number {
 }
 .feature-card > pre {
   font:
-    10px/1.6 CipherMono,
+    10px/1.6 CyMalikaMono,
     Menlo,
     monospace;
   max-height: 260px;
@@ -2921,7 +2921,7 @@ body[data-app-colour][data-theme="hacker"] {
   width: 19px;
   flex-shrink: 0;
   font-size: 9px;
-  font-family: CipherMono, monospace;
+  font-family: CyMalikaMono, monospace;
 }
 .file-py {
   color: #e3bb72 !important;
@@ -3008,7 +3008,7 @@ body[data-app-colour][data-theme="hacker"] {
 .file-highlighted,
 .editor-textarea {
   font:
-    13px/22px CipherMono,
+    13px/22px CyMalikaMono,
     Menlo,
     Consolas,
     monospace;

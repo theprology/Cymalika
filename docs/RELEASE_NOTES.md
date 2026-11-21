@@ -1,9 +1,16 @@
-# Cipher 0.5.0 local candidate
+# CyMalika 0.5.0 local candidate
+
+## 0.6.1
+
+- Renamed the application and repository to CyMalika.
+- Updated app windows, default assistant identity, installers, terminal commands and documentation links.
+- Rebuilt the screenshots, narrated video, GIF, captions and beginner handbook with the new name.
+- Existing workspace data and model connections migrate on first launch. Custom assistant names are preserved. No model download is required.
 
 ## 0.6.0
 
 - Adds Models & downloads: installed-model size and memory information, explicit Ollama/Hugging Face GGUF downloads with progress/cancel, exact-name removal confirmation, and model load/unload controls.
-- Reuses existing Ollama services. New users can review, checksum-verify and install an app-managed official runtime, then start it without a system-wide service. External engines are never stopped by Cipher.
+- Reuses existing Ollama services. New users can review, checksum-verify and install an app-managed official runtime, then start it without a system-wide service. External engines are never stopped by CyMalika.
 - Saved connection switching is available in chat; profiles keep generation settings independently from appearance and assistant identity. API keys remain session-only.
 - Settings → Appearance now offers a custom assistant name, rendered as plain text and included in identity instructions.
 - The shared UI supports macOS, Windows and Linux; runtime/platform, model format, hardware and provider capabilities still apply. See the model library guide for setup and limitations.
@@ -35,7 +42,7 @@
 - Computer tasks continue past app discovery and browser inspection instead of asking the user to open an ordinary target page.
 - A new reviewed browser-navigation tool opens a website in a new tab of the chosen running browser, preserving its existing session and tabs. Mac navigation uses the native browser URL-opening API without address-bar typing. Windows/Linux navigation uses fresh accessibility snapshots between inputs. The model must inspect the resulting page.
 - Combined website-and-report tasks check for navigation, observation, a successful file save, and a matching readback before accepting completion. Rejected actions stop recovery.
-- Navigation guidance distinguishes Cipher Browser's separate session from an existing Chrome/Safari login and keeps login, permission and production confirmations with the user.
+- Navigation guidance distinguishes CyMalika Browser's separate session from an existing Chrome/Safari login and keeps login, permission and production confirmations with the user.
 - New-tab keyboard support is shared across macOS, Windows and Linux. Existing models and saved settings are preserved.
 
 ## 0.5.5
@@ -54,7 +61,7 @@
 ## 0.5.3
 
 - Fixed context fitting for large JSON-encoded source results, including the final evidence summary. Compaction now measures the serialized request and leaves saved history unchanged.
-- Added Coffee in the sidebar: keep the computer and display awake while Cipher is open, with an animated cup taking a sip. Normal sleep returns when switched off or when the app exits.
+- Added Coffee in the sidebar: keep the computer and display awake while CyMalika is open, with an animated cup taking a sip. Normal sleep returns when switched off or when the app exits.
 - Cycle six coffee colours, step back, or pick a swatch. The colour is remembered; Coffee starts off after an app restart. Reduced-motion preferences are respected.
 - Uses macOS power assertions and Electron power blockers on Windows/Linux; it does not change system sleep settings or override lid closure or manual Sleep.
 
@@ -75,7 +82,7 @@
 - One Computer access switch enables session app discovery, internet browsing and user-folder file tools, with no per-app or per-origin setup.
 - The same selected model can discover running/installed apps, request opening an app, browse/search websites, find text files, propose saves, and request commands in a chosen user directory.
 - No selected coding project or manual file attachment is needed for computer tasks. Project scope remains separate.
-- Turning access off cancels pending work, closes Cipher Browser and revokes broad access. App quit and interface recovery reset it too.
+- Turning access off cancels pending work, closes CyMalika Browser and revokes broad access. App quit and interface recovery reset it too.
 - Proposed writes, commands, app launches, clicks and typing remain reviewable. Hidden credential stores, OS permissions and protected human-only actions retain their boundaries.
 - The existing local model passed a real shared-loop test discovering notes and saving a correct summary in a disposable user folder.
 
@@ -83,7 +90,7 @@ The local Mac build is signed and notarized. This does not download or switch mo
 
 ---
 
-# Cipher 0.4.1 local candidate
+# CyMalika 0.4.1 local candidate
 
 - Chat-first layout with Activity closed by default and clearer mode hints.
 - Direct Computer use setup: select an app, connect it, describe the task in chat.
@@ -97,7 +104,7 @@ This candidate uses existing models. The local Mac build is signed and notarized
 
 ---
 
-# Cipher 0.4.0
+# CyMalika 0.4.0
 
 Computer tools now extend beyond the native Mac app.
 
@@ -118,4 +125,4 @@ Computer tools now extend beyond the native Mac app.
 
 ## Desktop limits
 
-Normal operating-system permissions apply. Windows protected/elevated windows and secure desktops are not bypassed. Linux X11 supports pointer/key/capture tools; Wayland currently supports exposed accessibility operations, with compositor-mediated pointer and capture sessions still outstanding. Choose allowed apps and review actions in Cipher. No model weights are included or downloaded.
+Normal operating-system permissions apply. Windows protected/elevated windows and secure desktops are not bypassed. Linux X11 supports pointer/key/capture tools; Wayland currently supports exposed accessibility operations, with compositor-mediated pointer and capture sessions still outstanding. Choose allowed apps and review actions in CyMalika. No model weights are included or downloaded.

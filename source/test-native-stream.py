@@ -12,7 +12,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
   data=('\n'.join([json.dumps({'message':{'content':'Hello 🌱'}},ensure_ascii=False),json.dumps({'message':{'content':' world'},'done':True})])+'\n').encode()
   for i in range(0,len(data),3):self.wfile.write(data[i:i+3]);self.wfile.flush();time.sleep(.001)
 server=http.server.ThreadingHTTPServer(('127.0.0.1',0),Handler);threading.Thread(target=server.serve_forever,daemon=True).start()
-exe=pathlib.Path(__file__).resolve().parent.parent/'build/Cipher.app/Contents/MacOS/Cipher'
+exe=pathlib.Path(__file__).resolve().parent.parent/'build/CyMalika.app/Contents/MacOS/CyMalika'
 try:
  r=subprocess.run([str(exe),'--stream-probe',f'http://127.0.0.1:{server.server_port}/ok'],text=True,capture_output=True,timeout=20);assert r.returncode==0,r.stderr;lines=json.loads(r.stdout);assert json.loads(lines[0])['message']['content']=='Hello 🌱';assert json.loads(lines[1])['done']
  for route,status in [('error','400'),('redirect','302')]:

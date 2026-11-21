@@ -142,7 +142,7 @@ const fs = require("node:fs"),
     configurable: true,
   });
   const page = vm.createContext({
-    window: { __cipherBrowserElements: [element] },
+    window: { __cymalikaBrowserElements: [element] },
     location: { href: "https://fixture.test/login" },
     HTMLInputElement: Input,
     Event: class {},

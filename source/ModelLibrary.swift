@@ -4,7 +4,7 @@ import Foundation
 
 final class ModelLibrary {
   let root: URL
-  let queue = DispatchQueue(label: "CipherModelLibrary", qos: .userInitiated)
+  let queue = DispatchQueue(label: "CyMalikaModelLibrary", qos: .userInitiated)
   let lock = NSLock()
   var jobs: [String: [String: Any]] = [:]
   var plans: [String: [String: Any]] = [:]
@@ -37,7 +37,7 @@ final class ModelLibrary {
   func fetch(_ raw: String, timeout: Double = 8) throws -> Data {
     guard let url = URL(string: raw) else { throw Failure("Invalid model service URL.") }
     var request = URLRequest(url: url); request.timeoutInterval = timeout
-    request.setValue("Cipher-model-library", forHTTPHeaderField: "User-Agent")
+    request.setValue("CyMalika-model-library", forHTTPHeaderField: "User-Agent")
     let semaphore = DispatchSemaphore(value: 0)
     var outcome: Result<Data, Error> = .failure(Failure("Service request did not finish."))
     let client = URLSession(configuration: .ephemeral)

@@ -77,7 +77,7 @@ const context = vm.createContext({
   document: doc,
   window: {
     webkit: {
-      messageHandlers: { cipher: { postMessage: (m) => posted.push(m) } },
+      messageHandlers: { cymalika: { postMessage: (m) => posted.push(m) } },
     },
   },
   crypto: webcrypto,
@@ -118,7 +118,7 @@ script +=
   "\nconst actualSendForTest=send;globalThis.api={sendReal:actualSendForTest,queueImage,init:featureInit,tool:advancedTool,persisted,runGoal,getDesk:()=>desk,getCurrent:()=>current,setCurrent:c=>current=c,setProject:p=>project=p,setSettings:s=>settings={...settings,...s},setReview:fn=>reviewAction=fn,setSend:fn=>send=fn,setNative:fn=>native=fn,nextEpoch:()=>taskEpoch++,pendingImages:()=>pendingComputerImages,extraSystem,allTools,openTour,getTourStep:()=>tourStep,tourCount:()=>tourSteps.length};";
 vm.runInContext(script, context);
 
-const root = fs.mkdtempSync(path.join(os.tmpdir(), "cipher-live-"));
+const root = fs.mkdtempSync(path.join(os.tmpdir(), "cymalika-live-"));
 const projectRoot = path.join(root, "project");
 fs.mkdirSync(path.join(projectRoot, "src"), { recursive: true });
 fs.mkdirSync(path.join(projectRoot, "tests"));
@@ -134,7 +134,7 @@ fs.writeFileSync(
   path.join(projectRoot, "README.md"),
   "Run checks with python3 -m unittest discover -s tests -v.\n",
 );
-if (process.env.CIPHER_TEST_QUESTION === "1") {
+if (process.env.CYMALIKA_TEST_QUESTION === "1") {
   fs.writeFileSync(
     path.join(projectRoot, "src/scanner.py"),
     "def scan(target):\n    return []\n",
@@ -178,7 +178,7 @@ context.liveBridge = async (action, args = {}) => {
   if (action === "readFile") {
     events.push({ action, path: args.path });
     const result = await workspace.read(args.path);
-    if (process.env.CIPHER_TEST_LARGE_READ === "1" && !compactedReadSent) {
+    if (process.env.CYMALIKA_TEST_LARGE_READ === "1" && !compactedReadSent) {
       compactedReadSent = true;
       result.content +=
         "\n# Unrelated historical notes\n" +
@@ -232,7 +232,7 @@ vm.runInContext(
 `,
   context,
 );
-if (process.env.CIPHER_TEST_QUESTION === "1")
+if (process.env.CYMALIKA_TEST_QUESTION === "1")
   vm.runInContext(
     `
   files = fixtureFiles; settings.rounds = 4;
@@ -253,7 +253,7 @@ fs.writeFileSync(
   ),
 );
 console.log("EVIDENCE", root);
-if (process.env.CIPHER_TEST_LARGE_READ === "1") {
+if (process.env.CYMALIKA_TEST_LARGE_READ === "1") {
   assert(compactedReadSent, "Must exercise an oversized read");
   assert(
     compactedRequestSent,
@@ -266,7 +266,7 @@ if (process.env.CIPHER_TEST_LARGE_READ === "1") {
     "Full observations must remain saved",
   );
 }
-if (process.env.CIPHER_TEST_QUESTION === "1") {
+if (process.env.CYMALIKA_TEST_QUESTION === "1") {
   assert(
     events.some((e) => e.action === "readFile" && e.path === "src/worker.py"),
     "Read the actual job caller",
@@ -312,6 +312,6 @@ if (process.env.CIPHER_TEST_QUESTION === "1") {
       .includes("+ 1"),
   );
   console.log(
-    "PASS: existing model independently found and fixed implementation and ran its tests through Cipher's actual agent loop.",
+    "PASS: existing model independently found and fixed implementation and ran its tests through CyMalika's actual agent loop.",
   );
 }

@@ -1,6 +1,6 @@
 # Publisher signing
 
-A successful build is not a publisher signature. Cipher 0.5.4 Mac downloads are Developer ID signed and Apple-notarized. Windows 0.5.4 downloads are unsigned. Linux 0.5.4 downloads include SHA-256 checksums and links to their source build; provenance attestations are available only where explicitly attached or recorded for a release. The signed-release workflow refuses to produce a signed candidate when credentials are absent. Check the notes for the exact version you download.
+A successful build is not a publisher signature. CyMalika 0.5.4 Mac downloads are Developer ID signed and Apple-notarized. Windows 0.5.4 downloads are unsigned. Linux 0.5.4 downloads include SHA-256 checksums and links to their source build; provenance attestations are available only where explicitly attached or recorded for a release. The signed-release workflow refuses to produce a signed candidate when credentials are absent. Check the notes for the exact version you download.
 
 ## Mac
 
@@ -9,10 +9,10 @@ Direct downloads require **Developer ID Application**, rather than Apple Develop
 Local build:
 
 ```sh
-export CIPHER_SIGN_IDENTITY='Developer ID Application: Your Publisher (TEAMID)'
-CIPHER_REQUIRE_SIGNING=1 ./build.sh
-export CIPHER_NOTARY_PROFILE=YourStoredNotaryProfile
-scripts/notarize-mac.sh build/Cipher.app
+export CYMALIKA_SIGN_IDENTITY='Developer ID Application: Your Publisher (TEAMID)'
+CYMALIKA_REQUIRE_SIGNING=1 ./build.sh
+export CYMALIKA_NOTARY_PROFILE=YourStoredNotaryProfile
+scripts/notarize-mac.sh build/CyMalika.app
 ```
 
 The helper submits to Apple, waits for acceptance, staples the ticket, validates it, and assesses the application with Gatekeeper. It does not treat certificate presence as successful notarization.
@@ -38,7 +38,7 @@ The signed build requires signing, then independently checks Authenticode on the
 
 ## Linux
 
-Choose `linux` in the signed-candidate workflow to build, test and attest Linux packages without Apple or Windows credentials. Linux has no Apple-style notarization service. GitHub provenance attestations identify the workflow and repository that produced an artifact; they are separate from Windows/macOS publisher signatures. Linux desktop permissions still apply, especially under Wayland. Distribution repository signing can be added when Cipher maintains its own apt repository.
+Choose `linux` in the signed-candidate workflow to build, test and attest Linux packages without Apple or Windows credentials. Linux has no Apple-style notarization service. GitHub provenance attestations identify the workflow and repository that produced an artifact; they are separate from Windows/macOS publisher signatures. Linux desktop permissions still apply, especially under Wayland. Distribution repository signing can be added when CyMalika maintains its own apt repository.
 
 The signed-candidate workflow produces reviewable build artifacts, not an automatic public release. Publishing must use the verified candidates and matching checksums; do not replace an existing version's assets with different binaries.
 

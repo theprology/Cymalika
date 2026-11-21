@@ -4,21 +4,21 @@ const pending = new Map();
 let seq = 0;
 const rpcSession = crypto.randomUUID();
 const modelCapabilities = new Map();
-const desktopPlatform = window.cipherDesktop?.platform || "darwin";
+const desktopPlatform = window.cymalikaDesktop?.platform || "darwin";
 const desktopComputerSupported = ["darwin", "win32", "linux"].includes(
   desktopPlatform,
 );
-if (window.cipherDesktop) {
+if (window.cymalikaDesktop) {
   window.webkit = {
     messageHandlers: {
-      cipher: {
-        postMessage: (message) => window.cipherDesktop.postMessage(message),
+      cymalika: {
+        postMessage: (message) => window.cymalikaDesktop.postMessage(message),
       },
     },
   };
-  window.cipherDesktop.onReply((message) => window.receiveNative(message));
-  window.cipherDesktop.onStream((message) => window.receiveStream(message));
-  window.cipherDesktop.onStop(() => window.cipherEmergencyStop());
+  window.cymalikaDesktop.onReply((message) => window.receiveNative(message));
+  window.cymalikaDesktop.onStream((message) => window.receiveStream(message));
+  window.cymalikaDesktop.onStop(() => window.cymalikaEmergencyStop());
 }
 window.receiveNative = (message) => {
   const p = pending.get(message.id);
@@ -30,16 +30,16 @@ function native(action, args = {}) {
   return new Promise((resolve, reject) => {
     const id = "rpc_" + rpcSession + "_" + ++seq;
     pending.set(id, { resolve, reject });
-    if (!window.webkit?.messageHandlers?.cipher) {
+    if (!window.webkit?.messageHandlers?.cymalika) {
       pending.delete(id);
-      reject(Error("Open the Cipher desktop app to use project tools."));
+      reject(Error("Open the CyMalika desktop app to use project tools."));
       return;
     }
-    window.webkit.messageHandlers.cipher.postMessage({ id, action, args });
+    window.webkit.messageHandlers.cymalika.postMessage({ id, action, args });
   });
 }
 const defaults = {
-  assistantName: "Cipher",
+  assistantName: "CyMalika",
   activeProfile: "",
   keepAlive: "5m",
   maxLoaded: 3,
@@ -635,7 +635,7 @@ function updateContext() {
       ? "Local Ollama connection"
       : "API: " + settings.endpoint.replace(/^https?:\/\//, "");
   $("capabilityHint").textContent = access.computerAccess
-    ? "Computer access stays on until you turn it off or quit Cipher"
+    ? "Computer access stays on until you turn it off or quit CyMalika"
     : connectedApp && access.computer
       ? "Connected app content is available to the model"
       : "Project files are discovered automatically";
@@ -1568,7 +1568,7 @@ async function send() {
         settings.context,
       );
       system = system.replace(
-        "You are Cipher,",
+        "You are CyMalika,",
         "You are " + JSON.stringify(assistantName()) + ",",
       );
       system += extraSystem();
@@ -1622,7 +1622,7 @@ async function send() {
           );
           record(
             "notice",
-            "This API rejected native tools. Cipher is trying text-action compatibility with the same model.",
+            "This API rejected native tools. CyMalika is trying text-action compatibility with the same model.",
           );
           round--;
           continue;
@@ -1664,7 +1664,7 @@ async function send() {
             content:
               "The requested computer task is not complete. Outstanding steps: " +
               desktopProgress.missing.join(" ") +
-              " Continue using the available tools. A target website not being open is not a blocker: navigate there yourself. Use browser_open then browser_read for a new Cipher Browser session. To use an existing signed-in browser, discover its ID then call computer_navigate to open the URL in a new tab; call computer_read afterward to verify. Do not retry rejected actions. For sensitive actions, include a clear per-action confirmation question and proceed only after explicit approval. Use password_fill for password fields and computer_permission for exposed permission controls; protected OS authentication still requires direct input. If you encountered an actual error or need a specific missing detail, explain that accurately.",
+              " Continue using the available tools. A target website not being open is not a blocker: navigate there yourself. Use browser_open then browser_read for a new CyMalika Browser session. To use an existing signed-in browser, discover its ID then call computer_navigate to open the URL in a new tab; call computer_read afterward to verify. Do not retry rejected actions. For sensitive actions, include a clear per-action confirmation question and proceed only after explicit approval. Use password_fill for password fields and computer_permission for exposed permission controls; protected OS authentication still requires direct input. If you encountered an actual error or need a specific missing detail, explain that accurately.",
           });
           addActivity(
             "Continuing computer task",
@@ -1969,7 +1969,7 @@ async function testCompatibility() {
   if (!settings.model) return settingsOpen();
   cancelled = false;
   busyState(true, "Checking model tool support…");
-  const token = "cipher-" + Math.random().toString(36).slice(2, 10);
+  const token = "cymalika-" + Math.random().toString(36).slice(2, 10);
   const t = {
     name: "compatibility_echo",
     description: "Return the exact probe token.",
@@ -2255,6 +2255,8 @@ async function init() {
     const stored = await native("loadState");
     featureInit(stored);
     settings = { ...defaults, ...stored.settings, apiKey: "" };
+    if (settings.assistantName === "Cipher")
+      settings.assistantName = "CyMalika";
     initModelLibrary();
     await initCoffee();
     resizeExplorer(Number(settings.explorerWidth) || 300);

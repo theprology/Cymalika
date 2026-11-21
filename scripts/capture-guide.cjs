@@ -11,9 +11,9 @@ const { spawn } = require("node:child_process");
   );
   await fs.mkdir(out, { recursive: true });
   const runtime = await fs.mkdtemp(
-    path.join(os.tmpdir(), "cipher-guide-runtime-"),
+    path.join(os.tmpdir(), "cymalika-guide-runtime-"),
   );
-  const data = await fs.mkdtemp(path.join(os.tmpdir(), "cipher-guide-data-"));
+  const data = await fs.mkdtemp(path.join(os.tmpdir(), "cymalika-guide-data-"));
   await fs.cp(path.join(root, "desktop"), path.join(runtime, "desktop"), {
     recursive: true,
   });
@@ -30,7 +30,7 @@ const { spawn } = require("node:child_process");
   );
   await fs.cp(
     path.join(root, "docs/tutorial-project"),
-    path.join(data, "Cipher-practice"),
+    path.join(data, "CyMalika-practice"),
     { recursive: true },
   );
   let main = await fs.readFile(path.join(runtime, "desktop/main.cjs"), "utf8");
@@ -43,12 +43,12 @@ const { spawn } = require("node:child_process");
     )
     .replace(
       "const result = await verifyStartup();",
-      'const result = await require("./guide-runner.cjs")({win,workspace,modelLibrary,out:process.env.CIPHER_GUIDE_OUT,data:process.env.CIPHER_SMOKE_DATA});',
+      'const result = await require("./guide-runner.cjs")({win,workspace,modelLibrary,out:process.env.CYMALIKA_GUIDE_OUT,data:process.env.CYMALIKA_SMOKE_DATA});',
     );
   await fs.writeFile(path.join(runtime, "desktop/main.cjs"), main);
   const child = spawn(require("electron"), [runtime, "--smoke-test"], {
     stdio: "inherit",
-    env: { ...process.env, CIPHER_SMOKE_DATA: data, CIPHER_GUIDE_OUT: out },
+    env: { ...process.env, CYMALIKA_SMOKE_DATA: data, CYMALIKA_GUIDE_OUT: out },
   });
   const code = await new Promise((resolve, reject) => {
     child.on("error", reject);

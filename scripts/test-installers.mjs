@@ -15,7 +15,7 @@ if (process.platform === "win32") {
   console.log("PASS: Windows installer syntax and no-download WhatIf mode.");
 } else {
   assert.equal(run("bash", ["-n", "install.sh"]).status, 0);
-  const fixture = await mkdtemp(path.join(tmpdir(), "cipher-installer-"));
+  const fixture = await mkdtemp(path.join(tmpdir(), "cymalika-installer-"));
   try {
     const bin = path.join(fixture, "bin");
     await mkdir(bin);
@@ -31,21 +31,21 @@ out='';url=''
 while [ "$#" -gt 0 ]; do
  case "$1" in --output|-o) out="$2";shift 2;; -*) shift;; *) url="$1";shift;; esac
 done
-case "$url" in */SHA256SUMS.txt) cp "$CIPHER_INSTALL_TEST/sums" "$out";; *) cp "$CIPHER_INSTALL_TEST/payload" "$out";; esac
+case "$url" in */SHA256SUMS.txt) cp "$CYMALIKA_INSTALL_TEST/sums" "$out";; *) cp "$CYMALIKA_INSTALL_TEST/payload" "$out";; esac
 `,
       { mode: 0o755 },
     );
-    const payload = "Cipher installer checksum fixture\n",
+    const payload = "CyMalika installer checksum fixture\n",
       digest = createHash("sha256").update(payload).digest("hex");
     await writeFile(path.join(fixture, "payload"), payload);
     await writeFile(
       path.join(fixture, "sums"),
-      digest + "  Cipher-0.3.0-x86_64.AppImage\n",
+      digest + "  CyMalika-0.3.0-x86_64.AppImage\n",
     );
     const env = {
       ...process.env,
       PATH: bin + path.delimiter + process.env.PATH,
-      CIPHER_INSTALL_TEST: fixture,
+      CYMALIKA_INSTALL_TEST: fixture,
     };
     let r = run(
       "bash",

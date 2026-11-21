@@ -45,7 +45,7 @@ const { Computer } = require("./computer.cjs");
     operation: "set_text",
     snapshot: first.snapshot,
     element: "0",
-    text: "Cipher",
+    text: "CyMalika",
   });
   assert.deepEqual(calls.at(-1).locator, { runtime: "42" });
   await assert.rejects(

@@ -13,7 +13,7 @@ const {
 } = require("./model-library.cjs");
 (async () => {
   const root = await fs.mkdtemp(
-    path.join(os.tmpdir(), "cipher-model-library-"),
+    path.join(os.tmpdir(), "cymalika-model-library-"),
   );
   let mode = "success",
     installed = [],

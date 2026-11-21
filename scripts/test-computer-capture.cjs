@@ -14,7 +14,7 @@ app
   .whenReady()
   .then(async () => {
     const data = await fs.mkdtemp(
-      path.join(os.tmpdir(), "cipher-capture-test-"),
+      path.join(os.tmpdir(), "cymalika-capture-test-"),
     );
     try {
       const workspace = new Workspace(data);

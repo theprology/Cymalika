@@ -11,10 +11,10 @@ final class SecurePasswordPrompt {
   func cancel() { if let active { active.window.sheetParent?.endSheet(active.window, returnCode: .abort) } }
   func request(_ target: String, completion: @escaping (String?) -> Void) {
     guard active == nil,
-      let host = NSApp.windows.first(where: { $0.title.hasPrefix("Cipher —") }) else { completion(nil); return }
+      let host = NSApp.windows.first(where: { $0.title.hasPrefix("CyMalika —") }) else { completion(nil); return }
     let alert = NSAlert()
     alert.messageText = "Allow password entry?"
-    alert.informativeText = String(target.prefix(1000)) + "\n\nThe password goes directly to this field. It is not sent to the AI, saved in chat or placed on the clipboard. Cipher will not press Sign in; the website/app can react to input."
+    alert.informativeText = String(target.prefix(1000)) + "\n\nThe password goes directly to this field. It is not sent to the AI, saved in chat or placed on the clipboard. CyMalika will not press Sign in; the website/app can react to input."
     alert.addButton(withTitle: "Approve & fill password")
     alert.addButton(withTitle: "Cancel")
     let field = NSSecureTextField(frame: NSRect(x: 0, y: 0, width: 420, height: 28))
@@ -99,7 +99,7 @@ final class ComputerController {
     try policy.require("computer")
     guard !["com.apple.SecurityAgent", "com.apple.authorizationhost", "com.apple.loginwindow", "com.apple.LocalAuthentication.UIAgent"].contains(id) else { throw Failure("Protected system authentication requires direct input.") }
     guard id != Bundle.main.bundleIdentifier else {
-      throw Failure("Cipher cannot control its own approval window.")
+      throw Failure("CyMalika cannot control its own approval window.")
     }
     guard policy.fullComputer || policy.apps.contains(id) else { throw Failure("This app is not allowed in Access.") }
     guard let app = NSRunningApplication.runningApplications(withBundleIdentifier: id).first else {
@@ -142,7 +142,7 @@ final class ComputerController {
   func snapshot(_ id: String, includeMenus: Bool = false) throws -> [String: Any] {
     let app = try target(id)
     guard AXIsProcessTrusted() else {
-      throw Failure("Enable Cipher in macOS Accessibility settings using Access → Accessibility.")
+      throw Failure("Enable CyMalika in macOS Accessibility settings using Access → Accessibility.")
     }
     let root = AXUIElementCreateApplication(app.processIdentifier)
     elements = [:]
@@ -252,7 +252,7 @@ final class ComputerController {
   func screenshotLegacy(_ id: String) throws -> [String: Any] {
     let app = try target(id)
     guard CGPreflightScreenCaptureAccess() else {
-      throw Failure("Enable Screen Recording for Cipher in macOS Settings first.")
+      throw Failure("Enable Screen Recording for CyMalika in macOS Settings first.")
     }
     let (number, rect) = try window(app)
     guard
@@ -272,10 +272,10 @@ final class ComputerController {
   }
   func capture(_ id: String, completion: @escaping (Result<Any, Error>) -> Void) {
     do {
-      guard secrets.isEmpty else { throw Failure("Use redacted text observations after password entry; restart Cipher before requesting images.") }
+      guard secrets.isEmpty else { throw Failure("Use redacted text observations after password entry; restart CyMalika before requesting images.") }
       let app = try target(id)
       guard CGPreflightScreenCaptureAccess() else {
-        throw Failure("Enable Screen Recording for Cipher in macOS Settings first.")
+        throw Failure("Enable Screen Recording for CyMalika in macOS Settings first.")
       }
       if #available(macOS 14.0, *) {
         let (number, bounds) = try window(app)
@@ -425,7 +425,7 @@ final class ComputerController {
         || NSWorkspace.shared.frontmostApplication?.processIdentifier == app.processIdentifier
     else {
       throw Failure(
-        "Activate the allowed app, inspect it, and retry. Cipher will not type into another app.")
+        "Activate the allowed app, inspect it, and retry. CyMalika will not type into another app.")
     }
     if ["press", "set_text"].contains(op) {
       guard args["snapshot"] as? String == snapshotID, lastApp == id,
@@ -556,10 +556,10 @@ final class BrowserController: NSObject, WKNavigationDelegate, WKUIDelegate, NST
         styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered,
         defer: false)
       win.tabbingMode = .disallowed
-      win.title = "Cipher Browser"
+      win.title = "CyMalika Browser"
       win.contentView = w
       win.isReleasedWhenClosed = false
-      let toolbar = NSToolbar(identifier: "CipherBrowserToolbar")
+      let toolbar = NSToolbar(identifier: "CyMalikaBrowserToolbar")
       toolbar.delegate = self
       toolbar.displayMode = .iconAndLabel
       win.toolbar = toolbar
@@ -641,7 +641,7 @@ final class BrowserController: NSObject, WKNavigationDelegate, WKUIDelegate, NST
   @objc func browserToolbarAction(_ sender: NSButton) {
     switch sender.identifier?.rawValue {
     case "workspace":
-      NSApp.windows.first(where: { $0.title.hasPrefix("Cipher —") })?.makeKeyAndOrderFront(nil)
+      NSApp.windows.first(where: { $0.title.hasPrefix("CyMalika —") })?.makeKeyAndOrderFront(nil)
     case "back": view?.goBack()
     case "forward": view?.goForward()
     case "reload":
@@ -698,14 +698,14 @@ final class BrowserController: NSObject, WKNavigationDelegate, WKUIDelegate, NST
     do {
       try policy.require("browser")
       guard let view, let url = view.url else {
-        throw Failure("Open an approved URL in Cipher Browser first.")
+        throw Failure("Open an approved URL in CyMalika Browser first.")
       }
       _ = try policy.checkURL(url.absoluteString)
       let token = UUID().uuidString
       snapshotID = token
       view.evaluateJavaScript(
         """
-        (()=>{const candidates=[...document.querySelectorAll('a[href],button,input:not([type=hidden]),textarea,select')].slice(0,180); const items=candidates.map((e,i)=>{e.setAttribute('data-cipher-ref','\(token)-'+i);return {id:String(i),tag:e.tagName.toLowerCase(),label:(e.innerText||e.getAttribute('aria-label')||e.placeholder||'').slice(0,180),type:e.type||'',secure:e.type==='password',filled:e.type==='password'?!!e.value:undefined,value:e.type==='password'?'[redacted]':(e.value||'').slice(0,200)}});return {url:location.href,title:document.title,text:document.body.innerText.slice(0,28000),elements:items,snapshot:'\(token)'}})()
+        (()=>{const candidates=[...document.querySelectorAll('a[href],button,input:not([type=hidden]),textarea,select')].slice(0,180); const items=candidates.map((e,i)=>{e.setAttribute('data-cymalika-ref','\(token)-'+i);return {id:String(i),tag:e.tagName.toLowerCase(),label:(e.innerText||e.getAttribute('aria-label')||e.placeholder||'').slice(0,180),type:e.type||'',secure:e.type==='password',filled:e.type==='password'?!!e.value:undefined,value:e.type==='password'?'[redacted]':(e.value||'').slice(0,200)}});return {url:location.href,title:document.title,text:document.body.innerText.slice(0,28000),elements:items,snapshot:'\(token)'}})()
         """
       ) { result, error in
         if let error { completion(.failure(error)) } else {
@@ -733,7 +733,7 @@ final class BrowserController: NSObject, WKNavigationDelegate, WKUIDelegate, NST
       let keyData = try JSONSerialization.data(withJSONObject: [ref])
       let keyJSON = String(data: keyData, encoding: .utf8)!
       let epoch = policy.epoch
-      view.evaluateJavaScript("(()=>{const e=document.querySelector('[data-cipher-ref=\"'+\(keyJSON)[0]+'\"]');return !!(e&&e.type==='password'&&e.getClientRects().length)})()") { value, error in
+      view.evaluateJavaScript("(()=>{const e=document.querySelector('[data-cymalika-ref=\"'+\(keyJSON)[0]+'\"]');return !!(e&&e.type==='password'&&e.getClientRects().length)})()") { value, error in
         guard error == nil, value as? Bool == true, self.snapshotID == token else { completion(.failure(Failure("Choose a visible password field."))); return }
         SecurePasswordPrompt.shared.request("Website: " + url.absoluteString + "\nField: Password") { secret in
           guard let secret else { completion(.success(["status": "rejected"])); return }
@@ -743,7 +743,7 @@ final class BrowserController: NSObject, WKNavigationDelegate, WKUIDelegate, NST
           self.secrets.insert(secret)
           guard let data = try? JSONSerialization.data(withJSONObject: [ref, secret, url.absoluteString]),
             let json = String(data: data, encoding: .utf8) else { completion(.failure(Failure("Secure entry encoding failed."))); return }
-          view.evaluateJavaScript("(()=>{const [key,value,url]=\(json);if(location.href!==url)throw Error('Target changed');const e=document.querySelector('[data-cipher-ref=\"'+key+'\"]');if(!e||e.type!=='password'||!e.getClientRects().length)throw Error('Field changed');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,value);e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));return {status:'filled',submitted:false}})()") { _, error in
+          view.evaluateJavaScript("(()=>{const [key,value,url]=\(json);if(location.href!==url)throw Error('Target changed');const e=document.querySelector('[data-cymalika-ref=\"'+key+'\"]');if(!e||e.type!=='password'||!e.getClientRects().length)throw Error('Field changed');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,value);e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));return {status:'filled',submitted:false}})()") { _, error in
             if error != nil { completion(.failure(Failure("Password entry failed: the field or page changed. Inspect it again."))) }
             else { completion(.success(["status": "filled", "submitted": false])) }
           }
@@ -771,7 +771,7 @@ final class BrowserController: NSObject, WKNavigationDelegate, WKUIDelegate, NST
       snapshotID = ""
       view.evaluateJavaScript(
         """
-        (()=>{const [key,op,text]=\(json);const e=document.querySelector('[data-cipher-ref="'+key+'"]');if(!e)throw Error('Element changed; read the page again.');if(e.type==='password'||e.type==='file')throw Error('Use password_fill for passwords; file fields require direct input.');if(op==='click'){e.click()}else{if(!['INPUT','TEXTAREA','SELECT'].includes(e.tagName))throw Error('This element is not editable.');const proto=e.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:e.tagName==='SELECT'?HTMLSelectElement.prototype:HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(proto,'value').set.call(e,text);e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}))}return {status:'performed',operation:op,next:'Read the page again to verify.'}})()
+        (()=>{const [key,op,text]=\(json);const e=document.querySelector('[data-cymalika-ref="'+key+'"]');if(!e)throw Error('Element changed; read the page again.');if(e.type==='password'||e.type==='file')throw Error('Use password_fill for passwords; file fields require direct input.');if(op==='click'){e.click()}else{if(!['INPUT','TEXTAREA','SELECT'].includes(e.tagName))throw Error('This element is not editable.');const proto=e.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:e.tagName==='SELECT'?HTMLSelectElement.prototype:HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(proto,'value').set.call(e,text);e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}))}return {status:'performed',operation:op,next:'Read the page again to verify.'}})()
         """
       ) { result, error in
         if let error { completion(.failure(error)) } else { completion(.success(result ?? [:])) }

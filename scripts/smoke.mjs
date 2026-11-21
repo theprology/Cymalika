@@ -4,14 +4,14 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 const executable = process.argv[2];
 if (!executable) throw Error("Pass the packaged executable path.");
-const data = await mkdtemp(path.join(tmpdir(), "cipher-startup-"));
+const data = await mkdtemp(path.join(tmpdir(), "cymalika-startup-"));
 try {
   const result = spawnSync(path.resolve(executable), ["--smoke-test"], {
     stdio: "inherit",
     timeout: 45000,
     env: {
       ...process.env,
-      CIPHER_SMOKE_DATA: data,
+      CYMALIKA_SMOKE_DATA: data,
       ELECTRON_ENABLE_LOGGING: "1",
       ELECTRON_LOG_FILE: path.join(data, "electron.log"),
     },

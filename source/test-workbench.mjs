@@ -72,7 +72,7 @@ const context = vm.createContext({
   document: doc,
   window: {
     webkit: {
-      messageHandlers: { cipher: { postMessage: (m) => posted.push(m) } },
+      messageHandlers: { cymalika: { postMessage: (m) => posted.push(m) } },
     },
   },
   crypto: webcrypto,
@@ -581,7 +581,7 @@ console.log(
 );
 let sensitiveRuns = 0;
 const confirmation =
-  "Delete the named disposable fixture permanently? It cannot be restored by Cipher.";
+  "Delete the named disposable fixture permanently? It cannot be restored by CyMalika.";
 const rejectedConfirmation = api.reviewReal(
   "Fixture confirmation",
   { confirmation },
@@ -999,7 +999,7 @@ assert.equal(
   "Names remain text rather than HTML",
 );
 vm.runInContext(`settings.assistantName = "Nova\\nInjected";`, context);
-assert.equal(vm.runInContext("assistantName()", context), "Cipher");
+assert.equal(vm.runInContext("assistantName()", context), "CyMalika");
 vm.runInContext(
   `settings.assistantName = "Nova"; settings.apiKey="session-key"; settings.theme="hacker";`,
   context,

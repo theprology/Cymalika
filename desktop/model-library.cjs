@@ -129,7 +129,7 @@ class ModelLibrary {
     const name = assetName(this.platform, this.arch);
     const r = await this.json(
       "https://api.github.com/repos/ollama/ollama/releases/latest",
-      { headers: { "User-Agent": "Cipher-model-library" } },
+      { headers: { "User-Agent": "CyMalika-model-library" } },
     );
     const asset = r.assets?.find((a) => a.name === name);
     if (

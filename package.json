@@ -1,6 +1,6 @@
 {
-  "name": "cipher-workspace",
-  "version": "0.6.0",
+  "name": "cymalika-workspace",
+  "version": "0.6.1",
   "description": "An open-source coding workspace for local models and compatible APIs",
   "author": "theprology",
   "license": "MIT",
@@ -24,7 +24,7 @@
   },
   "build": {
     "appId": "dev.theprology.cipher",
-    "productName": "Cipher",
+    "productName": "CyMalika",
     "directories": {
       "output": "dist"
     },
@@ -39,8 +39,8 @@
         "nsis",
         "portable"
       ],
-      "artifactName": "Cipher-${version}-${arch}-setup.${ext}",
-      "icon": "source/Cipher.ico",
+      "artifactName": "CyMalika-${version}-${arch}-setup.${ext}",
+      "icon": "source/CyMalika.ico",
       "signExecutable": true
     },
     "nsis": {
@@ -55,12 +55,12 @@
       ],
       "category": "Development",
       "maintainer": "theprology",
-      "artifactName": "Cipher-${version}-${arch}.${ext}",
+      "artifactName": "CyMalika-${version}-${arch}.${ext}",
       "icon": "source/Icon.png",
       "syncDesktopName": true
     },
     "portable": {
-      "artifactName": "Cipher-${version}-${arch}-portable.${ext}"
+      "artifactName": "CyMalika-${version}-${arch}-portable.${ext}"
     },
     "deb": {
       "compression": "gz",
@@ -87,10 +87,10 @@
       "desktop/native/**"
     ]
   },
-  "homepage": "https://github.com/theprology/cipher",
+  "homepage": "https://github.com/theprology/Cymalika",
   "repository": {
     "type": "git",
-    "url": "https://github.com/theprology/cipher.git"
+    "url": "https://github.com/theprology/Cymalika.git"
   },
-  "desktopName": "cipher-workspace.desktop"
+  "desktopName": "cymalika-workspace.desktop"
 }

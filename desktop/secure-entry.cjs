@@ -11,7 +11,7 @@ class SecureEntry {
   }
   request(target) {
     if (this.active) throw Error("Finish the pending secure entry first.");
-    const channel = "cipher-secret-" + randomUUID();
+    const channel = "cymalika-secret-" + randomUUID();
     const parent = this.parent();
     return new Promise((resolve) => {
       const window = new BrowserWindow({
@@ -20,16 +20,16 @@ class SecureEntry {
         width: 560,
         height: 430,
         resizable: false,
-        title: "Cipher · Secure password entry",
+        title: "CyMalika · Secure password entry",
         webPreferences: {
           preload: path.join(__dirname, "secure-entry-preload.cjs"),
-          partition: "cipher-secure-" + randomUUID(),
+          partition: "cymalika-secure-" + randomUUID(),
           devTools: false,
           spellcheck: false,
           nodeIntegration: false,
           contextIsolation: true,
           sandbox: true,
-          additionalArguments: ["--cipher-secret-channel=" + channel],
+          additionalArguments: ["--cymalika-secret-channel=" + channel],
         },
       });
       let done = false;

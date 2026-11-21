@@ -1,10 +1,10 @@
 const { contextBridge, ipcRenderer } = require("electron");
-contextBridge.exposeInMainWorld("cipherDesktop", {
+contextBridge.exposeInMainWorld("cymalikaDesktop", {
   platform: process.platform,
-  postMessage: (message) => ipcRenderer.send("cipher:request", message),
+  postMessage: (message) => ipcRenderer.send("cymalika:request", message),
   onReply: (callback) =>
-    ipcRenderer.on("cipher:reply", (_event, message) => callback(message)),
+    ipcRenderer.on("cymalika:reply", (_event, message) => callback(message)),
   onStream: (callback) =>
-    ipcRenderer.on("cipher:stream", (_event, message) => callback(message)),
-  onStop: (callback) => ipcRenderer.on("cipher:stop", () => callback()),
+    ipcRenderer.on("cymalika:stream", (_event, message) => callback(message)),
+  onStop: (callback) => ipcRenderer.on("cymalika:stop", () => callback()),
 });

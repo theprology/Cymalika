@@ -37,9 +37,9 @@ const stopShortcut =
     : "Control+Alt+Shift+F12";
 const smokeTest = process.argv.includes("--smoke-test");
 if (smokeTest) {
-  if (!process.env.CIPHER_SMOKE_DATA)
+  if (!process.env.CYMALIKA_SMOKE_DATA)
     throw Error("Set an isolated smoke-test data directory.");
-  app.setPath("userData", path.resolve(process.env.CIPHER_SMOKE_DATA));
+  app.setPath("userData", path.resolve(process.env.CYMALIKA_SMOKE_DATA));
 }
 const tasks = new Map();
 const page = path.resolve(__dirname, "../web/index.html");
@@ -59,7 +59,7 @@ function isWorkspacePage(url) {
 }
 const reply = (id, result = null, error = null) => {
   if (win && !win.isDestroyed())
-    win.webContents.send("cipher:reply", { id, result, error });
+    win.webContents.send("cymalika:reply", { id, result, error });
 };
 function cancel() {
   secureEntry.cancel();
@@ -172,7 +172,7 @@ async function handle(action, a, id) {
           a,
           c.signal,
           action === "stream"
-            ? (line) => win.webContents.send("cipher:stream", { id, line })
+            ? (line) => win.webContents.send("cymalika:stream", { id, line })
             : null,
         );
       } finally {
@@ -350,7 +350,7 @@ async function handle(action, a, id) {
     }
     case "exportChat": {
       const r = await dialog.showSaveDialog(win, {
-        defaultPath: "Cipher-conversation.md",
+        defaultPath: "CyMalika-conversation.md",
       });
       if (r.canceled) return false;
       await fs.writeFile(r.filePath, String(a.content || ""));
@@ -377,6 +377,13 @@ async function handle(action, a, id) {
   }
 }
 async function createWindow() {
+  if (!smokeTest) {
+    const { migrateProfile } = require("./migration.cjs");
+    await migrateProfile(app.getPath("userData"), [
+      path.join(app.getPath("appData"), "cipher-workspace"),
+      path.join(app.getPath("appData"), "Cipher"),
+    ]);
+  }
   modelLibrary = new ModelLibrary(
     path.join(app.getPath("userData"), "local-models"),
   );
@@ -387,7 +394,7 @@ async function createWindow() {
     height: 940,
     minWidth: 900,
     minHeight: 650,
-    title: "Cipher",
+    title: "CyMalika",
     backgroundColor: "#111214",
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
@@ -411,7 +418,7 @@ async function createWindow() {
     win
       .loadFile(page)
       .catch((error) =>
-        dialog.showErrorBox("Cipher could not reload", error.message),
+        dialog.showErrorBox("CyMalika could not reload", error.message),
       );
   });
   win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
@@ -421,7 +428,7 @@ async function createWindow() {
     cb(false),
   );
   win.webContents.session.setPermissionCheckHandler(() => false);
-  ipcMain.on("cipher:request", async (event, message) => {
+  ipcMain.on("cymalika:request", async (event, message) => {
     if (
       event.sender !== win.webContents ||
       event.senderFrame !== win.webContents.mainFrame ||
@@ -473,18 +480,18 @@ async function createWindow() {
   await win.loadFile(page);
   stopShortcutRegistered = globalShortcut.register(stopShortcut, () => {
     cancel();
-    win.webContents.send("cipher:stop");
+    win.webContents.send("cymalika:stop");
   });
 }
 async function verifyStartup() {
   for (let attempt = 0; attempt < 100; attempt++) {
     const ready = await win.webContents.executeJavaScript(
-      'Boolean(window.cipherDesktop && document.getElementById("tourDialog")?.open)',
+      'Boolean(window.cymalikaDesktop && document.getElementById("tourDialog")?.open)',
     );
     if (ready) break;
     if (attempt === 99) {
       const state = await win.webContents.executeJavaScript(
-        "({url:location.href,bridge:Boolean(window.cipherDesktop),text:document.body.innerText.slice(-3500)})",
+        "({url:location.href,bridge:Boolean(window.cymalikaDesktop),text:document.body.innerText.slice(-3500)})",
       );
       throw Error("First-run tour did not open: " + JSON.stringify(state));
     }
@@ -503,7 +510,7 @@ async function verifyStartup() {
     '({title:document.title,help:document.getElementById("helpButton").textContent,steps:tourSteps.length})',
   );
   if (
-    controls.title !== "Cipher" ||
+    controls.title !== "CyMalika" ||
     !controls.help.includes("Getting started") ||
     controls.steps !== 9
   )

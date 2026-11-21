@@ -1,4 +1,4 @@
-# Where Cipher can go next
+# Where CyMalika can go next
 
 The following are proposals, not claims about shipped functionality.
 

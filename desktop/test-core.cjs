@@ -5,7 +5,7 @@ const os = require("node:os");
 const http = require("node:http");
 const { Workspace, apiURL, request } = require("./core.cjs");
 (async () => {
-  const base = await fs.mkdtemp(path.join(os.tmpdir(), "cipher-")),
+  const base = await fs.mkdtemp(path.join(os.tmpdir(), "cymalika-")),
     root = path.join(base, "project");
   await fs.mkdir(root);
   const w = new Workspace(path.join(base, "state"));
@@ -92,7 +92,7 @@ const { Workspace, apiURL, request } = require("./core.cjs");
     w.cancel();
     await assert.rejects(w.command("cancelled"));
     await w.git(["init"]);
-    await w.git(["config", "user.name", "Cipher test"]);
+    await w.git(["config", "user.name", "CyMalika test"]);
     await w.git(["config", "user.email", "test@example.invalid"]);
     const commit = await w.gitChange({
       operation: "commit",
@@ -102,7 +102,7 @@ const { Workspace, apiURL, request } = require("./core.cjs");
     assert.equal(commit.exit_code, 0, commit.output);
     assert.match((await w.gitRead("log")).output, /Add math/);
     assert.equal(
-      (await w.gitChange({ operation: "branch", branch: "cipher/check" }))
+      (await w.gitChange({ operation: "branch", branch: "cymalika/check" }))
         .exit_code,
       0,
     );

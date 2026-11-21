@@ -12,7 +12,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 server=http.server.ThreadingHTTPServer(('127.0.0.1',0),Handler)
 threading.Thread(target=server.serve_forever,daemon=True).start()
 repo=pathlib.Path(__file__).resolve().parent.parent
-with tempfile.TemporaryDirectory(prefix='cipher-native-models-') as tmp:
+with tempfile.TemporaryDirectory(prefix='cymalika-native-models-') as tmp:
  p=pathlib.Path(tmp)
  (p/'main.swift').write_text('''import Foundation
 struct Failure: LocalizedError { let message:String; init(_ message:String){self.message=message};var errorDescription:String? {message} }

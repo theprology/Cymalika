@@ -37,7 +37,7 @@ try {
     const apps = await computer.runningApps();
     app = apps.find(
       (a) =>
-        a.name.includes("Cipher computer fixture") ||
+        a.name.includes("CyMalika computer fixture") ||
         a.name.includes("computer-fixture"),
     );
     if (app) break;
@@ -57,7 +57,7 @@ try {
   const field = snapshot.elements.find(
     (e) =>
       e.editable &&
-      (e.value === "before" || e.label === "Cipher fixture entry"),
+      (e.value === "before" || e.label === "CyMalika fixture entry"),
   );
   if (!field) console.log(JSON.stringify(snapshot));
   assert.ok(field, "Find actual editable fixture field.");
@@ -66,12 +66,12 @@ try {
     operation: "set_text",
     snapshot: snapshot.snapshot,
     element: field.id,
-    text: "Cipher",
+    text: "CyMalika",
   });
   snapshot = await computer.read({ app: app.id });
   console.log(JSON.stringify(snapshot));
   assert.ok(
-    snapshot.elements.some((e) => e.value === "Cipher"),
+    snapshot.elements.some((e) => e.value === "CyMalika"),
     "Read actual replacement text.",
   );
   const button = snapshot.elements.find(
@@ -88,12 +88,12 @@ try {
   console.log(JSON.stringify(snapshot));
   assert.ok(
     snapshot.elements.some(
-      (e) => e.label === "Applied Cipher" || e.value === "Applied Cipher",
+      (e) => e.label === "Applied CyMalika" || e.value === "Applied CyMalika",
     ),
     "Observe actual button effect.",
   );
   const entryAgain = snapshot.elements.find(
-    (e) => e.editable && e.value === "Cipher",
+    (e) => e.editable && e.value === "CyMalika",
   );
   await computer.action({
     app: app.id,
@@ -155,7 +155,7 @@ try {
   snapshot = await computer.read({ app: app.id });
   const secureField = snapshot.elements.find((e) => e.secure);
   assert(secureField?.id, "Password field has a redacted target reference.");
-  computer.passwordPrompt = async () => "cipher-public-password-fixture";
+  computer.passwordPrompt = async () => "cymalika-public-password-fixture";
   const filled = await computer.fillPassword({
     app: app.id,
     snapshot: snapshot.snapshot,
@@ -164,7 +164,9 @@ try {
   });
   assert.equal(filled.status, "filled");
   snapshot = await computer.read({ app: app.id });
-  assert(!JSON.stringify(snapshot).includes("cipher-public-password-fixture"));
+  assert(
+    !JSON.stringify(snapshot).includes("cymalika-public-password-fixture"),
+  );
   assert(
     snapshot.elements.some(
       (e) =>

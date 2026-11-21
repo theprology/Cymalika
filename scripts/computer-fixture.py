@@ -1,14 +1,14 @@
 import gi
 gi.require_version('Gtk','3.0')
 from gi.repository import Gtk
-window=Gtk.Window(title='Cipher computer fixture')
+window=Gtk.Window(title='CyMalika computer fixture')
 box=Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-entry=Gtk.Entry();entry.set_text('before');entry.get_accessible().set_name('Cipher fixture entry')
+entry=Gtk.Entry();entry.set_text('before');entry.get_accessible().set_name('CyMalika fixture entry')
 button=Gtk.Button(label='Apply fixture');label=Gtk.Label(label='not applied')
 password=Gtk.Entry();password.set_visibility(False);password.set_text('fixture-secret-never-read')
 button.connect('clicked',lambda _:label.set_text('Applied '+entry.get_text()))
 password_status=Gtk.Label(label='Password entry not tested')
-password.connect('changed',lambda e:password_status.set_text('Password fixture filled' if e.get_text()=='cipher-public-password-fixture' else 'Password entry not tested'))
+password.connect('changed',lambda e:password_status.set_text('Password fixture filled' if e.get_text()=='cymalika-public-password-fixture' else 'Password entry not tested'))
 permission=Gtk.CheckButton(label='Allow demo feature');permission_status=Gtk.Label(label='Demo permission: denied')
 permission.connect('toggled',lambda e:permission_status.set_text('Demo permission: allowed' if e.get_active() else 'Demo permission: denied'))
 for widget in (entry,button,label,password,password_status,permission,permission_status): box.pack_start(widget,True,True,0)

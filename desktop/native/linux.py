@@ -51,7 +51,7 @@ def main(a):
     if op=='status': return {'accessibility':True,'screenRecording':os.environ.get('XDG_SESSION_TYPE')!='wayland','detail':'AT-SPI accessibility. Pointer/key input and window capture require X11; Wayland supports exposed accessibility actions.'}
     if op in ('installed','launch'):
         from gi.repository import Gio
-        known={entry.get_id():entry for entry in Gio.AppInfo.get_all() if entry.get_id() and entry.should_show() and not entry.get_id().startswith('dev.theprology.cipher') and entry.get_display_name()!='Cipher'}
+        known={entry.get_id():entry for entry in Gio.AppInfo.get_all() if entry.get_id() and entry.should_show() and not entry.get_id().startswith('dev.theprology.cymalika') and entry.get_display_name()!='CyMalika'}
         if op=='installed': return [{'id':key,'name':entry.get_display_name()} for key,entry in sorted(known.items(),key=lambda item:item[1].get_display_name())][:250]
         entry=known.get(a.get('app'))
         if entry is None: fail('Choose an installed app ID from computer_apps.')

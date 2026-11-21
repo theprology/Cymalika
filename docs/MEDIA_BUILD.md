@@ -2,7 +2,7 @@
 
 The public tutorial uses the current shared renderer in a separate temporary Electron profile. It does not record the user’s desktop or copy their app state. The first-install view and teaching requests are explicitly labelled illustrations. No AI inference or real runtime/model download is performed. File saves and the two-test command run against a disposable copy of `docs/tutorial-project`.
 
-The checked guide was produced on macOS with an already-running local Ollama, Node/Electron, Python 3.9–3.12, Pillow, imageio-ffmpeg, ReportLab, and the installed Samantha system voice. These are documentation-production dependencies, not requirements for Cipher users. Python 3 is used for the optional example’s tests.
+The checked guide was produced on macOS with an already-running local Ollama, Node/Electron, Python 3.9–3.12, Pillow, imageio-ffmpeg, ReportLab, and the installed Samantha system voice. These are documentation-production dependencies, not requirements for CyMalika users. Python 3 is used for the optional example’s tests.
 
 From the repository root:
 

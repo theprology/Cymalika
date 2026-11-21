@@ -77,7 +77,7 @@ const context = vm.createContext({
   document: doc,
   window: {
     webkit: {
-      messageHandlers: { cipher: { postMessage: (m) => posted.push(m) } },
+      messageHandlers: { cymalika: { postMessage: (m) => posted.push(m) } },
     },
   },
   crypto: webcrypto,
@@ -118,7 +118,7 @@ script +=
   "\nconst actualSendForTest=send;globalThis.api={sendReal:actualSendForTest,queueImage,init:featureInit,tool:advancedTool,persisted,runGoal,getDesk:()=>desk,getCurrent:()=>current,setCurrent:c=>current=c,setProject:p=>project=p,setSettings:s=>settings={...settings,...s},setReview:fn=>reviewAction=fn,setSend:fn=>send=fn,setNative:fn=>native=fn,nextEpoch:()=>taskEpoch++,pendingImages:()=>pendingComputerImages,extraSystem,allTools,openTour,getTourStep:()=>tourStep,tourCount:()=>tourSteps.length};";
 vm.runInContext(script, context);
 
-const root = fs.mkdtempSync(path.join(os.tmpdir(), "cipher-live-computer-"));
+const root = fs.mkdtempSync(path.join(os.tmpdir(), "cymalika-live-computer-"));
 const home = path.join(root, "home");
 fs.mkdirSync(path.join(home, "Documents"), { recursive: true });
 fs.writeFileSync(

@@ -18,7 +18,7 @@ permissions:
   contents: write
   actions: read
 concurrency:
-  group: cipher-desktop-publish
+  group: cymalika-desktop-publish
   cancel-in-progress: false
 jobs:
   publish:
@@ -28,7 +28,7 @@ jobs:
       REPOSITORY: ${{ github.repository }}
       CI_RUN: ${{ inputs.run_id }}
       SOURCE_SHA: ${{ inputs.source_sha }}
-      CIPHER_RELEASE_ID: ${{ inputs.release_id }}
+      CYMALIKA_RELEASE_ID: ${{ inputs.release_id }}
       MAC_SHA256: ${{ inputs.mac_sha256 }}
     steps:
       - name: Verify source build
@@ -36,7 +36,7 @@ jobs:
         run: |
           set -euo pipefail
           [[ "$CI_RUN" =~ ^[0-9]+$ ]]
-          [[ "$CIPHER_RELEASE_ID" =~ ^[0-9]+$ ]]
+          [[ "$CYMALIKA_RELEASE_ID" =~ ^[0-9]+$ ]]
           [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
           [[ "$MAC_SHA256" =~ ^[0-9a-f]{64}$ ]]
           gh api "repos/$REPOSITORY/actions/runs/$CI_RUN" > /tmp/source-build.json
@@ -54,7 +54,7 @@ jobs:
         with:
           github-token: ${{ github.token }}
           run-id: ${{ inputs.run_id }}
-          pattern: cipher-*
+          pattern: cymalika-*
           merge-multiple: true
           path: release-files
       - name: Prepare and verify release
@@ -64,26 +64,26 @@ jobs:
           version=$(node -p 'require("./package.json").version')
           [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
           tag="v$version"
-          export CIPHER_VERSION="$version" CIPHER_TAG="$tag"
-          gh api "repos/$REPOSITORY/releases/$CIPHER_RELEASE_ID" > /tmp/draft.json
+          export CYMALIKA_VERSION="$version" CYMALIKA_TAG="$tag"
+          gh api "repos/$REPOSITORY/releases/$CYMALIKA_RELEASE_ID" > /tmp/draft.json
           python3 - <<'PY'
           import json, os
           release=json.load(open('/tmp/draft.json'))
           assert release['draft'], 'Only an unpublished draft may be updated'
           assert release['target_commitish']==os.environ['SOURCE_SHA'], 'Draft source does not match verified build'
           PY
-          mac_asset=$(python3 -c 'import json,os; print(next(a["id"] for a in json.load(open("/tmp/draft.json"))["assets"] if a["name"]=="Cipher-"+os.environ["CIPHER_VERSION"]+"-mac-arm64.dmg"))')
-          gh api "repos/$REPOSITORY/releases/assets/$mac_asset" -H 'Accept: application/octet-stream' > "release-files/Cipher-$version-mac-arm64.dmg"
-          printf '%s  %s\n' "$MAC_SHA256" "release-files/Cipher-$version-mac-arm64.dmg" | sha256sum -c -
-          cp install.sh install.ps1 docs/Cipher-Beginners-Handbook.pdf release-files/
-          cp docs/media/cipher-walkthrough.mp4 release-files/Cipher-Quickstart.mp4
-          cp docs/media/cipher-walkthrough.gif release-files/Cipher-Quickstart.gif
-          cp docs/Cipher-Getting-Started.zip release-files/Cipher-Getting-Started.zip
-          git archive --format=zip --prefix=Cipher/ -o "release-files/Cipher-source-$version.zip" HEAD
+          mac_asset=$(python3 -c 'import json,os; print(next(a["id"] for a in json.load(open("/tmp/draft.json"))["assets"] if a["name"]=="CyMalika-"+os.environ["CYMALIKA_VERSION"]+"-mac-arm64.dmg"))')
+          gh api "repos/$REPOSITORY/releases/assets/$mac_asset" -H 'Accept: application/octet-stream' > "release-files/CyMalika-$version-mac-arm64.dmg"
+          printf '%s  %s\n' "$MAC_SHA256" "release-files/CyMalika-$version-mac-arm64.dmg" | sha256sum -c -
+          cp install.sh install.ps1 docs/CyMalika-Beginners-Handbook.pdf release-files/
+          cp docs/media/cymalika-walkthrough.mp4 release-files/CyMalika-Quickstart.mp4
+          cp docs/media/cymalika-walkthrough.gif release-files/CyMalika-Quickstart.gif
+          cp docs/CyMalika-Getting-Started.zip release-files/CyMalika-Getting-Started.zip
+          git archive --format=zip --prefix=CyMalika/ -o "release-files/CyMalika-source-$version.zip" HEAD
           python3 - <<'PY'
           import hashlib,json,os,pathlib
-          root=pathlib.Path('release-files');v=os.environ['CIPHER_VERSION']
-          names=[f'Cipher-{v}-x64-setup.exe',f'Cipher-{v}-x64-portable.exe',f'Cipher-{v}-amd64.deb',f'Cipher-{v}-x86_64.AppImage',f'Cipher-{v}-mac-arm64.dmg',f'Cipher-source-{v}.zip','install.sh','install.ps1','Cipher-Beginners-Handbook.pdf','Cipher-Quickstart.mp4','Cipher-Quickstart.gif','Cipher-Getting-Started.zip']
+          root=pathlib.Path('release-files');v=os.environ['CYMALIKA_VERSION']
+          names=[f'CyMalika-{v}-x64-setup.exe',f'CyMalika-{v}-x64-portable.exe',f'CyMalika-{v}-amd64.deb',f'CyMalika-{v}-x86_64.AppImage',f'CyMalika-{v}-mac-arm64.dmg',f'CyMalika-source-{v}.zip','install.sh','install.ps1','CyMalika-Beginners-Handbook.pdf','CyMalika-Quickstart.mp4','CyMalika-Quickstart.gif','CyMalika-Getting-Started.zip']
           sums={}
           for name in names:
               p=root/name
@@ -96,7 +96,7 @@ jobs:
           (pathlib.Path('/tmp/asset-names.json')).write_text(json.dumps(names+['SHA256SUMS.txt']))
           notes=pathlib.Path('docs/RELEASE_NOTES.md').read_text().split('## '+v+'\n',1)[1].split('\n## ',1)[0].strip()+f'''
 
-          Coffee keeps the computer and display awake on Windows/Linux. On Mac it also prevents disk idle sleep, matching caffeinate -dim while Cipher is open. No AI model is bundled or downloaded automatically. Use Models & downloads to choose a model download inside Cipher.
+          Coffee keeps the computer and display awake on Windows/Linux. On Mac it also prevents disk idle sleep, matching caffeinate -dim while CyMalika is open. No AI model is bundled or downloaded automatically. Use Models & downloads to choose a model download inside CyMalika.
 
           Validation: Windows setup and portable installation, Linux package installation, packaged UI/native IPC checks for Coffee, colours, keyboard, file tabs and draft isolation, plus native computer-control fixtures and the shared test suite. Build: https://github.com/{os.environ['REPOSITORY']}/actions/runs/{os.environ['CI_RUN']} .
 
@@ -117,9 +117,9 @@ jobs:
                   assert existing[name]['digest']=='sha256:'+h.hexdigest(), 'Existing draft asset differs: '+name
                   continue
               c=http.client.HTTPSConnection('uploads.github.com',timeout=120)
-              target='/repos/'+os.environ['REPOSITORY']+'/releases/'+os.environ['CIPHER_RELEASE_ID']+'/assets?name='+urllib.parse.quote(name)
+              target='/repos/'+os.environ['REPOSITORY']+'/releases/'+os.environ['CYMALIKA_RELEASE_ID']+'/assets?name='+urllib.parse.quote(name)
               c.putrequest('POST',target)
-              for k,v in {'Authorization':'Bearer '+os.environ['GH_TOKEN'],'User-Agent':'Cipher-release','Accept':'application/vnd.github+json','Content-Type':'application/octet-stream','Content-Length':str(p.stat().st_size)}.items():c.putheader(k,v)
+              for k,v in {'Authorization':'Bearer '+os.environ['GH_TOKEN'],'User-Agent':'CyMalika-release','Accept':'application/vnd.github+json','Content-Type':'application/octet-stream','Content-Length':str(p.stat().st_size)}.items():c.putheader(k,v)
               c.endheaders()
               with p.open('rb') as f:
                   for chunk in iter(lambda:f.read(1024*1024),b''):c.send(chunk)
@@ -127,7 +127,7 @@ jobs:
               assert status==201, (name,status,result.get('message'))
               print('Uploaded '+name)
           PY
-          gh api "repos/$REPOSITORY/releases/$CIPHER_RELEASE_ID" > /tmp/uploaded-release.json
+          gh api "repos/$REPOSITORY/releases/$CYMALIKA_RELEASE_ID" > /tmp/uploaded-release.json
           python3 - <<'PY'
           import hashlib,json,pathlib
           release=json.load(open('/tmp/uploaded-release.json'));assert release['draft']
@@ -143,9 +143,9 @@ jobs:
           PY
           python3 - <<'PY'
           import json,os,pathlib
-          pathlib.Path('/tmp/publish-request.json').write_text(json.dumps({'draft':False,'make_latest':'true','name':'Cipher '+os.environ['CIPHER_VERSION'],'body':pathlib.Path('/tmp/release-notes.md').read_text()}))
+          pathlib.Path('/tmp/publish-request.json').write_text(json.dumps({'draft':False,'make_latest':'true','name':'CyMalika '+os.environ['CYMALIKA_VERSION'],'body':pathlib.Path('/tmp/release-notes.md').read_text()}))
           PY
-          gh api --method PATCH "repos/$REPOSITORY/releases/$CIPHER_RELEASE_ID" --input /tmp/publish-request.json --jq .html_url
+          gh api --method PATCH "repos/$REPOSITORY/releases/$CYMALIKA_RELEASE_ID" --input /tmp/publish-request.json --jq .html_url
       - name: Keep only the latest verified public release
         shell: bash
         run: |
@@ -154,7 +154,7 @@ jobs:
           python3 - <<'PYCODE'
           import json,os,subprocess
           latest=json.load(open('/tmp/latest-release.json'))
-          assert str(latest['id'])==os.environ['CIPHER_RELEASE_ID'], 'Another release is latest; no cleanup performed'
+          assert str(latest['id'])==os.environ['CYMALIKA_RELEASE_ID'], 'Another release is latest; no cleanup performed'
           assert not latest['draft'] and not latest['prerelease']
           expected=set(json.load(open('/tmp/asset-names.json')))
           assert expected=={a['name'] for a in latest['assets']}, 'Latest assets differ; no cleanup performed'

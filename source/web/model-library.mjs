@@ -33,7 +33,7 @@ function assistantName() {
   const name = String(settings.assistantName || "").trim();
   return name && name.length <= 48 && !/[\u0000-\u001f\u007f]/.test(name)
     ? name
-    : "Cipher";
+    : "CyMalika";
 }
 function paintIdentity() {
   const name = assistantName();
@@ -620,7 +620,7 @@ function renderLibraryEngine() {
     elem(
       "p",
       "muted",
-      "Models downloaded into a Cipher-managed runtime stay on disk when you quit. Only the engine process started by Cipher is stopped on exit. External Ollama processes are never stopped. Linux runtime extraction needs tar and zstd; GPU drivers are supplied by your system.",
+      "Models downloaded into a CyMalika-managed runtime stay on disk when you quit. Only the engine process started by CyMalika is stopped on exit. External Ollama processes are never stopped. Linux runtime extraction needs tar and zstd; GPU drivers are supplied by your system.",
     ),
   );
 }

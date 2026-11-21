@@ -28,12 +28,12 @@ class Browser {
       const win = (this.window = new BrowserWindow({
         width: 1100,
         height: 800,
-        title: "Cipher Browser",
+        title: "CyMalika Browser",
         webPreferences: {
           nodeIntegration: false,
           contextIsolation: true,
           sandbox: true,
-          partition: "cipher-browser-" + randomUUID(),
+          partition: "cymalika-browser-" + randomUUID(),
         },
       }));
       const wc = win.webContents;
@@ -113,7 +113,7 @@ class Browser {
     const wc = this.page();
     this.snapshot = randomUUID();
     const data = await wc.executeJavaScript(
-      `(()=>{const nodes=[...document.querySelectorAll('button,a,input,textarea,select,[role="button"]')].filter(e=>e.getClientRects().length).slice(0,100);window.__cipherBrowserElements=nodes;const secrets=[...document.querySelectorAll('input[type=password]')].map(e=>e.value).filter(Boolean);const redact=s=>secrets.reduce((v,p)=>v.split(p).join('[redacted]'),String(s));return {url:location.href,title:document.title,text:redact(document.body.innerText).slice(0,12000),elements:nodes.map((e,i)=>({id:String(i),role:e.tagName.toLowerCase(),label:redact(e.getAttribute('aria-label')||e.innerText||e.getAttribute('placeholder')||'').slice(0,200),secure:e.type==='password',filled:e.type==='password'?!!e.value:undefined,value:e.type==='password'?'[redacted]':String(e.value||'').slice(0,500)}))}})()`,
+      `(()=>{const nodes=[...document.querySelectorAll('button,a,input,textarea,select,[role="button"]')].filter(e=>e.getClientRects().length).slice(0,100);window.__cymalikaBrowserElements=nodes;const secrets=[...document.querySelectorAll('input[type=password]')].map(e=>e.value).filter(Boolean);const redact=s=>secrets.reduce((v,p)=>v.split(p).join('[redacted]'),String(s));return {url:location.href,title:document.title,text:redact(document.body.innerText).slice(0,12000),elements:nodes.map((e,i)=>({id:String(i),role:e.tagName.toLowerCase(),label:redact(e.getAttribute('aria-label')||e.innerText||e.getAttribute('placeholder')||'').slice(0,200),secure:e.type==='password',filled:e.type==='password'?!!e.value:undefined,value:e.type==='password'?'[redacted]':String(e.value||'').slice(0,500)}))}})()`,
     );
     const safe = JSON.parse(
       JSON.stringify(data, (_k, v) =>
@@ -155,7 +155,7 @@ class Browser {
     });
     this.snapshot = "";
     return wc.executeJavaScript(
-      `(()=>{const a=${args},e=window.__cipherBrowserElements?.[a.element];if(!e||!e.isConnected||!e.getClientRects().length||e.type==='password'||e.type==='file')throw Error('Choose a visible non-sensitive element from a fresh snapshot.');if(a.operation==='fill'){if(!['INPUT','TEXTAREA'].includes(e.tagName))throw Error('Choose a text field.');const setter=Object.getOwnPropertyDescriptor(e.tagName==='INPUT'?HTMLInputElement.prototype:HTMLTextAreaElement.prototype,'value').set;setter.call(e,a.text);e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));}else e.click();return {status:'performed',url:location.href}})()`,
+      `(()=>{const a=${args},e=window.__cymalikaBrowserElements?.[a.element];if(!e||!e.isConnected||!e.getClientRects().length||e.type==='password'||e.type==='file')throw Error('Choose a visible non-sensitive element from a fresh snapshot.');if(a.operation==='fill'){if(!['INPUT','TEXTAREA'].includes(e.tagName))throw Error('Choose a text field.');const setter=Object.getOwnPropertyDescriptor(e.tagName==='INPUT'?HTMLInputElement.prototype:HTMLTextAreaElement.prototype,'value').set;setter.call(e,a.text);e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));}else e.click();return {status:'performed',url:location.href}})()`,
     );
   }
   denyPermissions(clearGrants = true) {
@@ -213,7 +213,7 @@ class Browser {
       throw Error("Read a fresh browser snapshot first.");
     const element = Number(a.element);
     const valid = await wc.executeJavaScript(
-      `(()=>{const e=window.__cipherBrowserElements?.[${element}];return !!(e&&e.isConnected&&e.type==='password'&&e.getClientRects().length)})()`,
+      `(()=>{const e=window.__cymalikaBrowserElements?.[${element}];return !!(e&&e.isConnected&&e.type==='password'&&e.getClientRects().length)})()`,
     );
     if (!valid) throw Error("Choose an inspected password field.");
     let secret = await this.passwordPrompt?.(
@@ -236,7 +236,7 @@ class Browser {
       this.snapshot = "";
       this.secrets.add(secret);
       const result = await wc.executeJavaScript(
-        `(()=>{if(location.href!==${JSON.stringify(url)})throw Error('Target changed');const e=window.__cipherBrowserElements?.[${element}];if(!e||!e.isConnected||e.type!=='password'||!e.getClientRects().length)throw Error('Field changed');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,${JSON.stringify(secret)});e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));return {status:'filled',submitted:false}})()`,
+        `(()=>{if(location.href!==${JSON.stringify(url)})throw Error('Target changed');const e=window.__cymalikaBrowserElements?.[${element}];if(!e||!e.isConnected||e.type!=='password'||!e.getClientRects().length)throw Error('Field changed');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,${JSON.stringify(secret)});e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));return {status:'filled',submitted:false}})()`,
       );
       return result;
     } catch {

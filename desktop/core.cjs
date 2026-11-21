@@ -208,7 +208,7 @@ class Workspace {
     const epoch = this.epoch,
       old = await this.existing(p.path);
     if (old.exists !== p.existed || old.hash !== p.beforeHash)
-      throw Error("File changed outside Cipher. Read it again.");
+      throw Error("File changed outside CyMalika. Read it again.");
     const dest = await this.resolve(p.path);
     if (epoch !== this.epoch) throw Error("Save cancelled.");
     this.revisions.push(p);

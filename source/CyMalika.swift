@@ -129,7 +129,7 @@ final class Workspace {
     let exists = fm.fileExists(atPath: url.path)
     let current = exists ? try read(path)["content"] as! String : ""
     guard exists == (p["existed"] as! Bool), digest(current) == p["beforeHash"] as! String else {
-      throw Failure("The file changed outside Cipher. Request a fresh edit.")
+      throw Failure("The file changed outside CyMalika. Request a fresh edit.")
     }
     revisions.append(p)
     try persistRevisions()
@@ -183,7 +183,7 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
   lazy var browser = BrowserController(policy)
   lazy var personalFiles = PersonalFiles(storage: workspace.storage.appendingPathComponent("computer-files"))
   var commandDirectories: [String: URL] = [:]
-  let computerIOQueue = DispatchQueue(label: "CipherComputerFiles", qos: .userInitiated)
+  let computerIOQueue = DispatchQueue(label: "CyMalikaComputerFiles", qos: .userInitiated)
   var computerOperations: [String: ComputerOperationCancellation] = [:]
   var computerBaseGrants: Set<String> = ["files", "edits", "commands", "git"]
   var streams: [String: ModelStream] = [:]
@@ -225,7 +225,7 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         let data = try? Data(contentsOf: workspace.storage.appendingPathComponent("state.json"))
         var state = (data.flatMap { try? JSONSerialization.jsonObject(with: $0) }) as? [String: Any] ?? [:]
         if rendererRecoveryPending {
-          state["runtimeNotice"] = "Cipher recovered after its interface stopped. Pending work was cancelled; app access was disconnected. Saved conversations are in Chats. Reopen your project or reconnect an app before starting a new task."
+          state["runtimeNotice"] = "CyMalika recovered after its interface stopped. Pending work was cancelled; app access was disconnected. Saved conversations are in Chats. Reopen your project or reconnect an app before starting a new task."
           rendererRecoveryPending = false
         }
         reply(id, state)
@@ -241,7 +241,7 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
-        panel.message = "Choose the project Cipher may work in."
+        panel.message = "Choose the project CyMalika may work in."
         if panel.runModal() == .OK, let url = panel.url {
           workspace.select(url)
           reply(
@@ -442,7 +442,7 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = false
         panel.message =
-          "Import a text reference or reusable skill. It stays in Cipher until you enable it for a model."
+          "Import a text reference or reusable skill. It stays in CyMalika until you enable it for a model."
         if panel.runModal() == .OK, let u = panel.url {
           guard !u.lastPathComponent.hasPrefix(".env"),
             !["key", "pem"].contains(u.pathExtension.lowercased()),
@@ -519,7 +519,7 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         }
       case "exportChat":
         let panel = NSSavePanel()
-        panel.nameFieldStringValue = "Cipher-conversation.md"
+        panel.nameFieldStringValue = "CyMalika-conversation.md"
         if panel.runModal() == .OK, let u = panel.url {
           try (args["content"] as? String ?? "").write(to: u, atomically: true, encoding: .utf8)
           reply(id, true)
@@ -704,7 +704,7 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         == root.resolvingSymlinksInPath().standardizedFileURL.path
     else {
       throw Failure(
-        "Open the Git repository's top-level folder first. Cipher does not inspect a parent repository outside the selected project."
+        "Open the Git repository's top-level folder first. CyMalika does not inspect a parent repository outside the selected project."
       )
     }
   }
@@ -732,7 +732,7 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         self.reply(
           id,
           error:
-            "The staging area already has changes. Commit or unstage them before asking Cipher to commit selected files."
+            "The staging area already has changes. Commit or unstage them before asking CyMalika to commit selected files."
         )
         return
       }
@@ -922,10 +922,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     NSWindow.allowsAutomaticWindowTabbing = false
     let storage = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[
       0
-    ].appendingPathComponent("Cipher")
+    ].appendingPathComponent("CyMalika")
+    let legacyStorage = storage.deletingLastPathComponent().appendingPathComponent("Cipher")
+    if !FileManager.default.fileExists(atPath: storage.path),
+       FileManager.default.fileExists(atPath: legacyStorage.path) {
+      let staging = storage.appendingPathExtension("upgrade")
+      do {
+        if FileManager.default.fileExists(atPath: staging.path) { try FileManager.default.removeItem(at: staging) }
+        try FileManager.default.copyItem(at: legacyStorage, to: staging)
+        try FileManager.default.moveItem(at: staging, to: storage)
+      } catch {
+        let alert = NSAlert()
+        alert.messageText = "Your saved workspace could not be upgraded"
+        alert.informativeText = "Your original data is unchanged. " + error.localizedDescription
+        alert.runModal()
+        NSApp.terminate(nil)
+        return
+      }
+    }
     bridge = Bridge(storage: storage)
     let config = WKWebViewConfiguration()
-    config.userContentController.add(bridge, name: "cipher")
+    config.userContentController.add(bridge, name: "cymalika")
     let web = WKWebView(frame: .zero, configuration: config)
     workspaceWeb = web
     bridge.web = web
@@ -936,7 +953,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
       styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false
     )
     window.tabbingMode = .disallowed
-    window.title = "Cipher — Your models. Your workspace."
+    window.title = "CyMalika — Your models. Your workspace."
     window.minSize = NSSize(width: 1024, height: 700)
     window.center()
     window.contentView = web
@@ -947,11 +964,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     menu.addItem(item)
     let appMenu = NSMenu()
     appMenu.addItem(
-      withTitle: "About Cipher", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)),
+      withTitle: "About CyMalika", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)),
       keyEquivalent: "")
     appMenu.addItem(NSMenuItem.separator())
     appMenu.addItem(
-      withTitle: "Quit Cipher", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+      withTitle: "Quit CyMalika", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
     item.submenu = appMenu
     let editItem = NSMenuItem()
     menu.addItem(editItem)
@@ -981,7 +998,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
           if kill(-p.processIdentifier, SIGTERM) != 0 { p.terminate() }
         }
         web.evaluateJavaScript(
-          "window.cipherEmergencyStop && window.cipherEmergencyStop()", completionHandler: nil)
+          "window.cymalikaEmergencyStop && window.cymalikaEmergencyStop()", completionHandler: nil)
         return true
       }
       return false
@@ -1008,7 +1025,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 }
 func selfTest() throws {
   let base = FileManager.default.temporaryDirectory.appendingPathComponent(
-    "cipher-test-" + UUID().uuidString)
+    "cymalika-test-" + UUID().uuidString)
   defer { try? FileManager.default.removeItem(at: base) }
   try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
   let ws = Workspace(storage: base.appendingPathComponent("storage"))
@@ -1044,13 +1061,13 @@ func selfTest() throws {
   let worker = Process()
   let pipe = Pipe()
   worker.executableURL = URL(fileURLWithPath: CommandLine.arguments[0])
-  worker.arguments = ["--command-worker", "printf cipher-worker-ok"]
+  worker.arguments = ["--command-worker", "printf cymalika-worker-ok"]
   worker.standardOutput = pipe
   worker.standardError = pipe
   try worker.run()
   worker.waitUntilExit()
   let workerOutput = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)
-  guard worker.terminationStatus == 0 && workerOutput == "cipher-worker-ok" else {
+  guard worker.terminationStatus == 0 && workerOutput == "cymalika-worker-ok" else {
     throw Failure("Command worker failed: " + (workerOutput ?? ""))
   }
   let recoveryBridge = Bridge(storage: base.appendingPathComponent("recovery-state"))
@@ -1134,12 +1151,12 @@ func selfTest() throws {
   guard bridge.gitSync(root, ["init", "-q"]).0 == 0 else {
     throw Failure("Git fixture init failed")
   }
-  _ = bridge.gitSync(root, ["config", "user.name", "Cipher Test"])
-  _ = bridge.gitSync(root, ["config", "user.email", "cipher-test@example.invalid"])
+  _ = bridge.gitSync(root, ["config", "user.name", "CyMalika Test"])
+  _ = bridge.gitSync(root, ["config", "user.email", "cymalika-test@example.invalid"])
   _ = bridge.gitSync(root, ["add", "--", "a.txt"])
   guard bridge.gitSync(root, ["-c", "commit.gpgsign=false", "commit", "-qm", "fixture"]).0 == 0
   else { throw Failure("Git fixture commit failed") }
-  guard bridge.gitSync(root, ["switch", "-c", "cipher/test"]).0 == 0 else {
+  guard bridge.gitSync(root, ["switch", "-c", "cymalika/test"]).0 == 0 else {
     throw Failure("Git branch test failed")
   }
   guard bridge.gitSync(root, ["status", "--short"]).1.isEmpty else {

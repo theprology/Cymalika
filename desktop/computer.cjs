@@ -289,7 +289,7 @@ class Computer {
   async screenshot(a) {
     if (this.secrets.size)
       throw Error(
-        "Use redacted text snapshots after password entry; restart Cipher before requesting images.",
+        "Use redacted text snapshots after password entry; restart CyMalika before requesting images.",
       );
     this.require(a.app);
     const epoch = this.epoch;

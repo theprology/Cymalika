@@ -72,11 +72,11 @@ module.exports = async ({ win, workspace, modelLibrary, out, data }) => {
   await ui(
     `settings.assistantName='Atlas';paintIdentity();$('settingsDialog').close();`,
   );
-  const fixture = path.join(data, "Cipher-practice");
+  const fixture = path.join(data, "CyMalika-practice");
   await workspace.select(fixture);
   const files = await workspace.files();
   await ui(
-    `await activateProject(${JSON.stringify({ path: fixture, name: "Cipher-practice", files })});await preview('src/pricing.py');`,
+    `await activateProject(${JSON.stringify({ path: fixture, name: "CyMalika-practice", files })});await preview('src/pricing.py');`,
   );
   await capture("08-explorer", "Open and view your project");
   await ui(
@@ -186,7 +186,7 @@ module.exports = async ({ win, workspace, modelLibrary, out, data }) => {
   );
   await capture("18-connections", "Switch saved model connections");
   await ui(
-    `$('modelLibraryDialog').close();settings.assistantName='Cipher';paintIdentity();chooseCoffeeColour(2);`,
+    `$('modelLibraryDialog').close();settings.assistantName='CyMalika';paintIdentity();chooseCoffeeColour(2);`,
   );
   await capture("19-colours", "Choose your app colour");
   await ui(`$('coffeeSwitch').checked=true;await toggleCoffee();`);
@@ -202,7 +202,7 @@ module.exports = async ({ win, workspace, modelLibrary, out, data }) => {
     JSON.stringify(
       {
         version: require("../package.json").version,
-        source: "Isolated copy of the actual Cipher renderer",
+        source: "Isolated copy of the actual CyMalika renderer",
         modelDownloads: 0,
         runtimeDownloads: 0,
         modelInference: false,

@@ -6,7 +6,7 @@ try {
     Add-Type @'
 using System;
 using System.Runtime.InteropServices;
-public static class CipherWindow {
+public static class CyMalikaWindow {
   [DllImport("user32.dll")] public static extern bool SetProcessDpiAwarenessContext(IntPtr context);
   public delegate bool EnumProc(IntPtr hwnd, IntPtr parameter);
   [DllImport("user32.dll")] public static extern bool EnumWindows(EnumProc callback, IntPtr parameter);
@@ -23,15 +23,15 @@ public static class CipherWindow {
   public struct Rect { public int Left, Top, Right, Bottom; }
 }
 '@
-    [void][CipherWindow]::SetProcessDpiAwarenessContext([IntPtr](-4))
+    [void][CyMalikaWindow]::SetProcessDpiAwarenessContext([IntPtr](-4))
     $ownExecutable = (Get-Process -Id $request.ownPid -ErrorAction Stop).Path
     function App-Identity($process) { return "$($process.Id):$($process.StartTime.ToUniversalTime().Ticks)" }
     function Running-Apps {
         $result = New-Object System.Collections.Generic.List[object]
-        $callback = [CipherWindow+EnumProc]{ param($handle, $parameter)
-            if ([CipherWindow]::IsWindowVisible($handle)) {
+        $callback = [CyMalikaWindow+EnumProc]{ param($handle, $parameter)
+            if ([CyMalikaWindow]::IsWindowVisible($handle)) {
                 [uint32]$targetPid = 0
-                [void][CipherWindow]::GetWindowThreadProcessId($handle, [ref]$targetPid)
+                [void][CyMalikaWindow]::GetWindowThreadProcessId($handle, [ref]$targetPid)
                 if ($targetPid -ne $request.ownPid) {
                     try {
                         $process = Get-Process -Id $targetPid -ErrorAction Stop
@@ -43,16 +43,16 @@ public static class CipherWindow {
             }
             return $true
         }
-        [void][CipherWindow]::EnumWindows($callback, [IntPtr]::Zero)
+        [void][CyMalikaWindow]::EnumWindows($callback, [IntPtr]::Zero)
         return $result.ToArray()
     }
     $operation = $request.operation
     if ($operation -eq 'status') {
         $result = @{accessibility=$true; screenRecording=$true; detail='Windows UI Automation. Protected and elevated windows require their normal OS permissions.'}
     } elseif ($operation -eq 'installed') {
-        $result = @(Get-StartApps | Where-Object { $_.Name -ne 'Cipher' } | Sort-Object Name | Select-Object -First 250 | ForEach-Object { @{id=$_.AppID; name=$_.Name} })
+        $result = @(Get-StartApps | Where-Object { $_.Name -ne 'CyMalika' } | Sort-Object Name | Select-Object -First 250 | ForEach-Object { @{id=$_.AppID; name=$_.Name} })
     } elseif ($operation -eq 'launch') {
-        $known = @(Get-StartApps | Where-Object { $_.AppID -eq $request.app -and $_.Name -ne 'Cipher' }) | Select-Object -First 1
+        $known = @(Get-StartApps | Where-Object { $_.AppID -eq $request.app -and $_.Name -ne 'CyMalika' }) | Select-Object -First 1
         if (-not $known) { throw 'Choose an installed app ID from computer_apps.' }
         Start-Process -FilePath 'explorer.exe' -ArgumentList ('shell:AppsFolder\' + $known.AppID)
         $result = @{status='opened'; app=$request.app; next='Call computer_apps to discover its running app ID, then computer_read.'}
@@ -114,8 +114,8 @@ public static class CipherWindow {
             }
             $result=@{app=$request.app;warnings=@($warnings.ToArray());elements=@($rows.ToArray());truncated=($visited -ge 350 -or $rows.Count -ge 120)}
         } elseif ($operation -eq 'window') {
-            $rect=New-Object CipherWindow+Rect
-            [void][CipherWindow]::GetWindowRect($handle,[ref]$rect)
+            $rect=New-Object CyMalikaWindow+Rect
+            [void][CyMalikaWindow]::GetWindowRect($handle,[ref]$rect)
             $result=@{window=[string]$app.handle;bounds=@{x=$rect.Left;y=$rect.Top;width=$rect.Right-$rect.Left;height=$rect.Bottom-$rect.Top}}
         }
         elseif ($operation -eq 'fill_password') {
@@ -129,12 +129,12 @@ public static class CipherWindow {
                 $pattern=$null
                 if ($element.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern,[ref]$pattern) -and -not $pattern.Current.IsReadOnly) { $pattern.SetValue($value) }
                 else {
-                    [void][CipherWindow]::SetForegroundWindow($handle)
+                    [void][CyMalikaWindow]::SetForegroundWindow($handle)
                     $element.SetFocus()
                     Start-Sleep -Milliseconds 120
                     foreach ($character in $value.ToCharArray()) {
                         $focused=[System.Windows.Automation.AutomationElement]::FocusedElement
-                        if ([CipherWindow]::GetForegroundWindow() -ne $handle -or -not $focused.Current.IsPassword -or (Element-Locator $focused).runtime -ne $request.locator.runtime) { throw 'Target focus changed.' }
+                        if ([CyMalikaWindow]::GetForegroundWindow() -ne $handle -or -not $focused.Current.IsPassword -or (Element-Locator $focused).runtime -ne $request.locator.runtime) { throw 'Target focus changed.' }
                         $text=[string]$character
                         if ('+^%~()[]{}'.Contains($text)) { $text='{'+$text+'}' }
                         [System.Windows.Forms.SendKeys]::SendWait($text)
@@ -150,20 +150,20 @@ public static class CipherWindow {
             else { $element.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue([string]$request.text) }
             $result=@{status='performed';operation=$operation;app=$request.app}
         } else {
-            if ([CipherWindow]::GetForegroundWindow() -ne $handle) { [void][CipherWindow]::SetForegroundWindow($handle) }
+            if ([CyMalikaWindow]::GetForegroundWindow() -ne $handle) { [void][CyMalikaWindow]::SetForegroundWindow($handle) }
             Start-Sleep -Milliseconds 120
-            if ([CipherWindow]::GetForegroundWindow() -ne $handle) { throw 'Another window is active. No input was sent.' }
+            if ([CyMalikaWindow]::GetForegroundWindow() -ne $handle) { throw 'Another window is active. No input was sent.' }
             if ($operation -eq 'click') {
                 if ($null -eq $request.x -or $null -eq $request.y) { throw 'Click coordinates are required.' }
-                $rect=New-Object CipherWindow+Rect
-                [void][CipherWindow]::GetWindowRect($handle,[ref]$rect)
+                $rect=New-Object CyMalikaWindow+Rect
+                [void][CyMalikaWindow]::GetWindowRect($handle,[ref]$rect)
                 $x=[int]$request.x;$y=[int]$request.y
                 if ($x -lt $rect.Left -or $x -ge $rect.Right -or $y -lt $rect.Top -or $y -ge $rect.Bottom) { throw 'Click must be inside the allowed window.' }
-                $point=New-Object CipherWindow+Point;$point.X=$x;$point.Y=$y
-                $under=[CipherWindow]::GetAncestor([CipherWindow]::WindowFromPoint($point),2)
+                $point=New-Object CyMalikaWindow+Point;$point.X=$x;$point.Y=$y
+                $under=[CyMalikaWindow]::GetAncestor([CyMalikaWindow]::WindowFromPoint($point),2)
                 if ($under -ne $handle) { throw 'Another window covers this point. No click was sent.' }
-                [void][CipherWindow]::SetCursorPos($x,$y)
-                [CipherWindow]::mouse_event(2,0,0,0,[UIntPtr]::Zero);[CipherWindow]::mouse_event(4,0,0,0,[UIntPtr]::Zero)
+                [void][CyMalikaWindow]::SetCursorPos($x,$y)
+                [CyMalikaWindow]::mouse_event(2,0,0,0,[UIntPtr]::Zero);[CyMalikaWindow]::mouse_event(4,0,0,0,[UIntPtr]::Zero)
             } elseif ($operation -eq 'key') {
                 $keys=@{return='{ENTER}';tab='{TAB}';escape='{ESC}';backspace='{BACKSPACE}';left='{LEFT}';right='{RIGHT}';up='{UP}';down='{DOWN}';a='a';c='c';v='v';s='s';z='z';l='l';w='w';t='t'}
                 $mods=@{control='^';shift='+';option='%';alt='%'}
@@ -174,11 +174,11 @@ public static class CipherWindow {
                 [System.Windows.Forms.SendKeys]::SendWait($prefix+$key)
             } elseif ($operation -eq 'scroll') {
                 $amount=[Math]::Max(-20,[Math]::Min(20,[int]$request.amount))
-                $rect=New-Object CipherWindow+Rect;[void][CipherWindow]::GetWindowRect($handle,[ref]$rect)
-                $point=New-Object CipherWindow+Point;$point.X=$rect.Left+30;$point.Y=$rect.Top+30
-                if ([CipherWindow]::GetAncestor([CipherWindow]::WindowFromPoint($point),2) -ne $handle) { throw 'Another window covers this point. No scroll was sent.' }
-                [void][CipherWindow]::SetCursorPos($point.X,$point.Y)
-                [CipherWindow]::mouse_event(0x800,0,0,$amount*120,[UIntPtr]::Zero)
+                $rect=New-Object CyMalikaWindow+Rect;[void][CyMalikaWindow]::GetWindowRect($handle,[ref]$rect)
+                $point=New-Object CyMalikaWindow+Point;$point.X=$rect.Left+30;$point.Y=$rect.Top+30
+                if ([CyMalikaWindow]::GetAncestor([CyMalikaWindow]::WindowFromPoint($point),2) -ne $handle) { throw 'Another window covers this point. No scroll was sent.' }
+                [void][CyMalikaWindow]::SetCursorPos($point.X,$point.Y)
+                [CyMalikaWindow]::mouse_event(0x800,0,0,$amount*120,[UIntPtr]::Zero)
             } elseif ($operation -ne 'activate') { throw 'Use set_text on an inspected editable field for Windows text entry.' }
             $result=@{status='performed';operation=$operation;app=$request.app}
         }

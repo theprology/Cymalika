@@ -14,4 +14,4 @@ for ((attempt=0;attempt<50;attempt++)); do
 done
 if ! $ready; then cat "$log" >&2; echo "The test window manager did not become ready." >&2; exit 1; fi
 "$@"
-' cipher-desktop-tests "$@"
+' cymalika-desktop-tests "$@"

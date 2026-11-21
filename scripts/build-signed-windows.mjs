@@ -10,11 +10,11 @@ const config = {
   forceCodeSigning: true,
   win: { ...base.win, signExecutable: true, signExts: [".ps1"] },
 };
-const azure = process.env.CIPHER_AZURE_ENDPOINT;
+const azure = process.env.CYMALIKA_AZURE_ENDPOINT;
 if (azure) {
   for (const key of [
-    "CIPHER_AZURE_ACCOUNT",
-    "CIPHER_AZURE_PROFILE",
+    "CYMALIKA_AZURE_ACCOUNT",
+    "CYMALIKA_AZURE_PROFILE",
     "AZURE_TENANT_ID",
     "AZURE_CLIENT_ID",
     "AZURE_CLIENT_SECRET",
@@ -22,14 +22,14 @@ if (azure) {
     if (!process.env[key]) throw Error("Missing signing credential: " + key);
   config.win.azureSignOptions = {
     endpoint: azure,
-    codeSigningAccountName: process.env.CIPHER_AZURE_ACCOUNT,
-    certificateProfileName: process.env.CIPHER_AZURE_PROFILE,
+    codeSigningAccountName: process.env.CYMALIKA_AZURE_ACCOUNT,
+    certificateProfileName: process.env.CYMALIKA_AZURE_PROFILE,
   };
 } else if (!process.env.WIN_CSC_LINK)
   throw Error(
     "Configure a Windows publisher certificate or Azure Artifact Signing. Unsigned release builds are refused.",
   );
-const dir = await mkdtemp(path.join(tmpdir(), "cipher-sign-config-"));
+const dir = await mkdtemp(path.join(tmpdir(), "cymalika-sign-config-"));
 try {
   const file = path.join(dir, "sign.json");
   await writeFile(file, JSON.stringify(config), { mode: 0o600 });
@@ -55,7 +55,7 @@ try {
       "-NoProfile",
       "-NonInteractive",
       "-Command",
-      "$ErrorActionPreference='Stop';$files=@(Get-ChildItem dist -Filter *.exe);$files+=Get-Item dist/win-unpacked/Cipher.exe;$files+=Get-Item dist/win-unpacked/resources/app.asar.unpacked/desktop/native/windows.ps1;foreach($file in $files){$signature=Get-AuthenticodeSignature $file.FullName;if($signature.Status -ne 'Valid'){throw ('Invalid Authenticode signature: '+$file.Name)};Write-Output ('Verified publisher signature: '+$file.Name)}",
+      "$ErrorActionPreference='Stop';$files=@(Get-ChildItem dist -Filter *.exe);$files+=Get-Item dist/win-unpacked/CyMalika.exe;$files+=Get-Item dist/win-unpacked/resources/app.asar.unpacked/desktop/native/windows.ps1;foreach($file in $files){$signature=Get-AuthenticodeSignature $file.FullName;if($signature.Status -ne 'Valid'){throw ('Invalid Authenticode signature: '+$file.Name)};Write-Output ('Verified publisher signature: '+$file.Name)}",
     ],
     { stdio: "inherit" },
   );

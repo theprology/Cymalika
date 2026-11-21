@@ -14,9 +14,9 @@ if (process.platform === "darwin" && process.arch !== "arm64") {
 const { version } = JSON.parse(await readFile("package.json", "utf8"));
 const asset =
   process.platform === "darwin"
-    ? `Cipher-${version}-mac-arm64.dmg`
-    : `Cipher-${version}-amd64.deb`;
-const fixture = await mkdtemp(path.join(tmpdir(), "cipher-package-install-"));
+    ? `CyMalika-${version}-mac-arm64.dmg`
+    : `CyMalika-${version}-amd64.deb`;
+const fixture = await mkdtemp(path.join(tmpdir(), "cymalika-package-install-"));
 try {
   await copyFile(source, path.join(fixture, asset));
   const digest = createHash("sha256")
@@ -34,7 +34,7 @@ while [ "$#" -gt 0 ]; do
  case "$1" in --output|-o) out="$2";shift 2;; -*) shift;; *) url="$1";shift;; esac
 done
 name=$(basename "$url")
-case "$name" in SHA256SUMS.txt|Cipher-*) cp "$CIPHER_INSTALL_PACKAGE/$name" "$out";; *) exit 1;; esac
+case "$name" in SHA256SUMS.txt|CyMalika-*) cp "$CYMALIKA_INSTALL_PACKAGE/$name" "$out";; *) exit 1;; esac
 `,
     { mode: 0o755 },
   );
@@ -44,7 +44,7 @@ case "$name" in SHA256SUMS.txt|Cipher-*) cp "$CIPHER_INSTALL_PACKAGE/$name" "$ou
     env: {
       ...process.env,
       PATH: fixture + path.delimiter + process.env.PATH,
-      CIPHER_INSTALL_PACKAGE: fixture,
+      CYMALIKA_INSTALL_PACKAGE: fixture,
     },
   });
   if (result.error) throw result.error;
