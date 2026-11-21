@@ -50,3 +50,13 @@ Enable accessibility in your desktop settings if no apps appear. Applications ne
 Publisher signing identifies who distributed an app and detects modifications. Apple notarization checks the submitted Mac build. Neither grants system permissions, guarantees that every app exposes accessibility controls, nor makes every model reliable. Cipher keeps action review, app selection, cancellation and a visible Stop control.
 
 See [publisher signing](SIGNING.md) and [validation](VALIDATION.md) for release evidence.
+
+## Navigate and save a report
+
+In **Build**, turn on **Computer access** and ask, for example:
+
+> Use Google Chrome to open https://example.com in a new tab. Read the page, save a short report to Documents/Cipher-browser-test/report.txt, and read the saved file back to verify it. Keep existing tabs unchanged.
+
+Create the destination folder first or choose an existing folder. Cipher can discover the running browser and propose one **Open website … (new tab)** review card, rather than asking you to navigate there yourself. It then inspects the loaded page and proposes the report save. Review the URL and file path before approving.
+
+For an existing signed-in website, request the named desktop browser. Cipher Browser is a separate session and does not inherit Chrome or Safari logins. If a site needs a login, CAPTCHA, permission decision or consequential production confirmation, complete that step yourself. Merely finding a running browser does not establish production readiness.

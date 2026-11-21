@@ -140,7 +140,7 @@ def main(a):
             if not same_window_tree(int(pointer['WINDOW']),wid): fail('Another app covers this point. No click was sent.')
             command(['xdotool','click','1'])
         elif op=='key':
-            keys={'return':'Return','tab':'Tab','escape':'Escape','backspace':'BackSpace','left':'Left','right':'Right','up':'Up','down':'Down',**{k:k for k in 'acvszlw'}}
+            keys={'return':'Return','tab':'Tab','escape':'Escape','backspace':'BackSpace','left':'Left','right':'Right','up':'Up','down':'Down',**{k:k for k in 'acvszlwt'}}
             mods={'control':'ctrl','shift':'shift','option':'alt','alt':'alt','command':'super','super':'super'}
             if a.get('key','').lower() not in keys or any(m not in mods for m in a.get('modifiers',[]) or []): fail('Unsupported key or modifier.')
             command(['xdotool','key','--clearmodifiers','+'.join([mods[m] for m in a.get('modifiers',[]) or []]+[keys[a['key'].lower()]])])

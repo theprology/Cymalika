@@ -121,6 +121,23 @@ export const ADVANCED_TOOLS = [
     },
   },
   {
+    name: "computer_navigate",
+    description:
+      "Request approval to open an HTTP(S) URL in a NEW tab of a discovered running Chrome, Safari, Edge, Firefox or similar browser. Preserves its existing signed-in session and tabs. Use this instead of telling the user to open a website or issuing many address-bar actions. Follow with computer_read to verify the actual destination and page content. Does not log in or approve production changes.",
+    parameters: {
+      type: "object",
+      properties: {
+        app: {
+          type: "string",
+          description: "Running browser ID returned by computer_apps.",
+        },
+        url: { type: "string" },
+        reason: { type: "string" },
+      },
+      required: ["app", "url", "reason"],
+    },
+  },
+  {
     name: "computer_files",
     description:
       "Browse folders or read UTF-8 text files in the user's home folder without selecting a coding project. Start with operation list and path empty. Paths can be relative to home or absolute inside home. Use returned paths and hashes. Hidden folders and credential stores are unavailable. Lists are bounded; browse relevant subfolders instead of reading the whole computer.",
@@ -274,7 +291,7 @@ export const ADVANCED_TOOLS = [
   {
     name: "browser_open",
     description:
-      "Request approval to open a URL on a website origin explicitly allowed in Access.",
+      "Open a URL in Cipher Browser when Computer access is on, otherwise request approval for an allowed origin. This is a separate browser session, not the existing Chrome/Safari login. Follow with browser_read to verify navigation.",
     parameters: {
       type: "object",
       properties: { url: { type: "string" }, reason: { type: "string" } },
@@ -300,7 +317,7 @@ export const ADVANCED_TOOLS = [
   {
     name: "computer_read",
     description:
-      "Inspect accessibility text of an explicitly connected running desktop app. Secure text fields are redacted.",
+      "Inspect a discovered running app when Computer access is on, otherwise an explicitly connected app. Returns a snapshot token and element IDs; use these with computer_action to navigate and operate the app. Secure text fields are redacted.",
     parameters: {
       type: "object",
       properties: {
@@ -361,7 +378,7 @@ export const ADVANCED_TOOLS = [
         key: {
           type: "string",
           description:
-            "A single key name such as a, return, tab, escape, backspace, left, right, up, down. Put modifiers in the separate modifiers array; never use cmd+a here.",
+            "A single key name such as a, l, t, return, tab, escape, backspace, left, right, up, down. Put modifiers in the separate modifiers array; never use cmd+a here.",
         },
         modifiers: {
           type: "array",
@@ -417,6 +434,7 @@ export function permittedTools(
 ) {
   const write = new Set([
     "computer_open_app",
+    "computer_navigate",
     "computer_write_file",
     "computer_command",
     "request_edit",
@@ -434,6 +452,7 @@ export function permittedTools(
   const required = {
     computer_apps: "computerAccess",
     computer_open_app: "computerAccess",
+    computer_navigate: "computerAccess",
     computer_files: "computerAccess",
     computer_write_file: "computerAccess",
     computer_command: "computerAccess",

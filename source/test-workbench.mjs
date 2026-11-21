@@ -323,6 +323,154 @@ console.log(
   "PASS: chat-only completion claims trigger bounded recovery; unperformed changes are not presented as success; rejected edits are never retried.",
 );
 
+// Navigation is one reviewed request; every native input still consumes a fresh snapshot.
+vm.runInContext(
+  `
+  access.computerAccess=true; cancelled=false;
+  globalThis.navigationEvents=[]; globalThis.navigationReads=0;
+  native = async (action,args={}) => {
+    navigationEvents.push({action,...args});
+    if(action==="computerApps") return {running:[{id:"chrome-fixture",name:"Google Chrome"}]};
+    if(action==="computerRead") return {snapshot:"nav-"+(++navigationReads),elements:[]};
+    if(action==="computerAction") return {status:"performed"};
+    return {};
+  };
+`,
+  context,
+);
+let navigationReview;
+api.setReview(async (title, args, execute) => {
+  navigationReview = { title, args, execute };
+  return { status: "waiting" };
+});
+await api.tool(
+  {
+    name: "computer_navigate",
+    args: {
+      app: "chrome-fixture",
+      url: "https://example.com",
+      reason: "Open requested page",
+    },
+  },
+  "build",
+);
+assert.equal(
+  context.navigationEvents.filter((e) => e.action === "computerAction").length,
+  0,
+);
+assert.match(navigationReview.title, /new tab/);
+const navResult = await navigationReview.execute();
+assert.equal(navResult.status, "navigation_requested");
+const inputs = context.navigationEvents.filter(
+  (e) => e.action === "computerAction",
+);
+assert.deepEqual(
+  Array.from(inputs, (e) => e.operation),
+  ["key", "key", "type", "key"],
+);
+assert.deepEqual(
+  Array.from(inputs, (e) => e.snapshot),
+  ["nav-1", "nav-2", "nav-3", "nav-4"],
+);
+assert.equal(inputs[0].key, "t");
+assert.equal(inputs[2].text, "https://example.com/");
+await assert.rejects(
+  api.tool(
+    {
+      name: "computer_navigate",
+      args: { app: "chrome-fixture", url: "file:///etc/passwd" },
+    },
+    "build",
+  ),
+  /HTTP/,
+);
+await assert.rejects(
+  api.tool(
+    {
+      name: "computer_navigate",
+      args: { app: "chrome-fixture", url: "https://user:password@example.com" },
+    },
+    "build",
+  ),
+  /credentials/,
+);
+await api.tool(
+  {
+    name: "computer_navigate",
+    args: {
+      app: "chrome-fixture",
+      url: "https://example.com",
+      reason: "fixture",
+    },
+  },
+  "build",
+);
+const beforeRevocation = context.navigationEvents.length;
+vm.runInContext("access.computerAccess=false", context);
+await assert.rejects(navigationReview.execute(), /cancelled/);
+assert.equal(context.navigationEvents.length, beforeRevocation);
+console.log(
+  "PASS: browser navigation waits for approval, preserves tabs, uses fresh snapshots, rejects non-web URLs/credentials and cancels on access revocation.",
+);
+
+// A browser observation must not turn an actionable laptop request into a handoff.
+vm.runInContext(
+  `
+  globalThis.desktopCalls = 0; globalThis.desktopTools = [];
+  const originalToolForDesktopRegression = tool;
+  access.computerAccess = true; access.computer = true; access.browser = true;
+  project = null; files = []; settings = {...defaults, model:"fixture", streaming:false, rounds:12};
+  current = {id:"desktop-recovery",mode:"build",messages:[],display:[],created:Date.now()};
+  native = async () => ({});
+  const toolReply = (name,args={}) => ({message:{content:"",tool_calls:[{function:{name,arguments:args}}]}});
+  const replies = [
+    toolReply("computer_read",{app:"browser",reason:"Inspect browser"}),
+    {message:{content:"The browser is not on the target website. Next step: the user needs to navigate to example.com."}},
+    toolReply("browser_open",{url:"https://example.com",reason:"Read requested website"}),
+    toolReply("browser_read"),
+    {message:{content:"I opened the website. Done."}},
+    toolReply("computer_write_file",{path:"Documents/report.txt",content:"Example Domain",reason:"Save requested report"}),
+    toolReply("computer_files",{operation:"read",path:"Documents/report.txt"}),
+    {message:{content:"Opened the site and verified the saved report."}},
+  ];
+  modelRequest = async () => {desktopCalls++; return replies.shift();};
+  tool = async (t) => {desktopTools.push(t.name);return {status:t.name==="computer_write_file"?"saved":"performed"};};
+  $("prompt").value = "Use my laptop browser to open https://example.com and save a report to Documents/report.txt";
+`,
+  context,
+);
+await api.sendReal();
+assert.equal(context.desktopCalls, 8);
+assert.deepEqual(
+  [...context.desktopTools],
+  [
+    "computer_read",
+    "browser_open",
+    "browser_read",
+    "computer_write_file",
+    "computer_files",
+  ],
+);
+assert(
+  !api
+    .getCurrent()
+    .display.some((m) =>
+      /user needs to navigate|website. Done/.test(m.content),
+    ),
+);
+assert(
+  api
+    .getCurrent()
+    .display.some((m) => /verified the saved report/.test(m.content)),
+);
+vm.runInContext(
+  `tool=originalToolForDesktopRegression; access.computerAccess=false; access.computer=false; access.browser=false;`,
+  context,
+);
+console.log(
+  "PASS: real agent loop continues a laptop navigation request, suppresses premature handoffs, and requires report save and readback.",
+);
+
 vm.runInContext(
   `
   connectedApp = null; access.computerAccess = false; access.computer = false; access.browser = false; access.apps = [];

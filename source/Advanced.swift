@@ -371,11 +371,11 @@ final class ComputerController {
     } else if op == "key" {
       let keys: [String: CGKeyCode] = [
         "return": 36, "tab": 48, "escape": 53, "backspace": 51, "left": 123, "right": 124,
-        "down": 125, "up": 126, "a": 0, "c": 8, "v": 9, "s": 1, "z": 6, "l": 37, "w": 13,
+        "down": 125, "up": 126, "a": 0, "c": 8, "v": 9, "s": 1, "z": 6, "l": 37, "w": 13, "t": 17,
       ]
       guard let code = keys[(args["key"] as? String ?? "").lowercased()] else {
         throw Failure(
-          "Unsupported key. Use return, tab, escape, backspace, arrows, or a/c/v/s/z/l/w with modifiers."
+          "Unsupported key. Use return, tab, escape, backspace, arrows, or a/c/v/s/z/l/w/t with modifiers."
         )
       }
       let mods = args["modifiers"] as? [String] ?? []

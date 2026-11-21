@@ -512,3 +512,96 @@ export function trimHistory(messages, budget, options = {}) {
     );
   return { messages: result, omitted, compacted };
 }
+
+export function desktopTaskProgress(text, mode, enabled, events = []) {
+  const requested = String(text).replace(
+    /\b(?:do not|don’t|don't|never)\b[^.!?\n]*/gi,
+    "",
+  );
+  const active =
+    enabled &&
+    mode === "build" &&
+    /\b(open|visit|navigate|browse|control|use|save|write|create|export)\b/i.test(
+      requested,
+    ) &&
+    /\b(computer|laptop|browser|chrome|safari|website|internet|hostinger|report)\b|https?:\/\//i.test(
+      requested,
+    ) &&
+    !/^\s*(?:explain|describe|how (?:do|can|does|would)|what (?:is|are))\b/i.test(
+      requested,
+    );
+  if (!active) return { active: false, missing: [] };
+  const interrupted = events.some(({ result }) =>
+    ["rejected", "stopped", "cancelled"].includes(result?.status),
+  );
+  const successful = events.filter(
+    ({ result }) =>
+      result &&
+      !result.error &&
+      !["rejected", "stopped", "cancelled"].includes(result.status),
+  );
+  const navigate =
+    /\b(open|visit|navigate|browse|control)\b|\buse (?:my |the |this |your )?(?:laptop|computer|browser)\b/i.test(
+      requested,
+    );
+  const save =
+    /\b(save|write|create|export)\b/i.test(requested) &&
+    /\b(report|file|summary|document)\b|\.(?:txt|md|json|csv)\b/i.test(
+      requested,
+    );
+  const missing = [];
+  const navigationIndex = successful.findLastIndex(
+    ({ name, args }) =>
+      [
+        "browser_open",
+        "browser_search",
+        "browser_action",
+        "computer_navigate",
+      ].includes(name) ||
+      (name === "computer_action" && args?.operation !== "activate"),
+  );
+  if (navigate) {
+    if (navigationIndex < 0)
+      missing.push(
+        "Navigate to the requested website or operate the requested app through an available tool; listing apps or reading the current window alone does not do this.",
+      );
+    else if (
+      !successful
+        .slice(navigationIndex + 1)
+        .some(({ name }) => ["browser_read", "computer_read"].includes(name))
+    )
+      missing.push(
+        "Read the browser/app again to verify the result of the last navigation or action.",
+      );
+  }
+  if (save) {
+    const writeIndex = successful.findLastIndex(
+      ({ name }) => name === "computer_write_file" || name === "request_edit",
+    );
+    if (writeIndex < 0)
+      missing.push(
+        "Save the requested report/file through the reviewed file tool; opening a browser alone does not complete the file save.",
+      );
+    else {
+      const path = String(successful[writeIndex].args?.path || "").replace(
+        /\\/g,
+        "/",
+      );
+      if (
+        !successful
+          .slice(writeIndex + 1)
+          .some(
+            ({ name, args }) =>
+              (name === "read_file" ||
+                (name === "computer_files" && args?.operation === "read")) &&
+              path &&
+              String(args?.path || "").replace(/\\/g, "/") === path,
+          )
+      )
+        missing.push(
+          "Read the saved file back using the same path and verify its contents before reporting success.",
+        );
+    }
+  }
+  return { active: true, interrupted, missing: interrupted ? [] : missing };
+}

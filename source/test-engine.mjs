@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import {
+  desktopTaskProgress,
   TOOLS,
   requestFor,
   responseFrom,
@@ -305,4 +306,93 @@ assert(JSON.stringify(escapedTrimmed.messages).length <= (16384 - 1500) * 2.5);
 assert.equal(JSON.stringify(escapedEvidence), escapedSaved);
 console.log(
   "PASS: large serialized evidence with escaped source fits the actual request budget without mutating saved history.",
+);
+
+const desktopEvent = (name, args = {}, result = { status: "performed" }) => ({
+  name,
+  args,
+  result,
+});
+const desktopTask =
+  "Open https://example.com in my browser and save a report to Documents/report.txt";
+assert.equal(desktopTaskProgress(desktopTask, "ask", true).active, false);
+assert.equal(desktopTaskProgress(desktopTask, "build", false).active, false);
+assert.equal(
+  desktopTaskProgress("How can I use my laptop browser?", "build", true).active,
+  false,
+);
+assert(
+  desktopTaskProgress(
+    "Then use my laptop and control Hostinger for production use",
+    "build",
+    true,
+  ).missing.length,
+);
+let desktopEvents = [
+  desktopEvent("computer_apps"),
+  desktopEvent("computer_read"),
+];
+assert.equal(
+  desktopTaskProgress(desktopTask, "build", true, desktopEvents).missing.length,
+  2,
+);
+desktopEvents.push(desktopEvent("browser_open"));
+assert.equal(
+  desktopTaskProgress(desktopTask, "build", true, desktopEvents).missing.length,
+  2,
+);
+desktopEvents.push(desktopEvent("browser_read"));
+assert.equal(
+  desktopTaskProgress(desktopTask, "build", true, desktopEvents).missing.length,
+  1,
+);
+desktopEvents.push(
+  desktopEvent(
+    "computer_write_file",
+    { path: "Documents/report.txt" },
+    { status: "saved" },
+  ),
+);
+assert.match(
+  desktopTaskProgress(desktopTask, "build", true, desktopEvents).missing.join(),
+  /Read the saved file/,
+);
+desktopEvents.push(
+  desktopEvent("computer_files", {
+    operation: "read",
+    path: "Documents/other.txt",
+  }),
+);
+assert.equal(
+  desktopTaskProgress(desktopTask, "build", true, desktopEvents).missing.length,
+  1,
+);
+desktopEvents.push(
+  desktopEvent("computer_files", {
+    operation: "read",
+    path: "Documents/report.txt",
+  }),
+);
+assert.deepEqual(
+  desktopTaskProgress(desktopTask, "build", true, desktopEvents).missing,
+  [],
+);
+assert(
+  desktopTaskProgress(desktopTask, "build", true, [
+    desktopEvent("browser_open", {}, { error: "offline" }),
+  ]).missing.length,
+);
+assert.deepEqual(
+  desktopTaskProgress(desktopTask, "build", true, [
+    desktopEvent("browser_open", {}, { status: "rejected" }),
+  ]).missing,
+  [],
+);
+assert.deepEqual(
+  desktopTaskProgress("Read the website; do not save a report", "build", true)
+    .missing,
+  [],
+);
+console.log(
+  "PASS: desktop completion distinguishes discovery, navigation, verification, file saves and matching readback; rejected actions stop recovery.",
 );

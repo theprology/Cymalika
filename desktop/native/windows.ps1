@@ -137,7 +137,7 @@ public static class CipherWindow {
                 [void][CipherWindow]::SetCursorPos($x,$y)
                 [CipherWindow]::mouse_event(2,0,0,0,[UIntPtr]::Zero);[CipherWindow]::mouse_event(4,0,0,0,[UIntPtr]::Zero)
             } elseif ($operation -eq 'key') {
-                $keys=@{return='{ENTER}';tab='{TAB}';escape='{ESC}';backspace='{BACKSPACE}';left='{LEFT}';right='{RIGHT}';up='{UP}';down='{DOWN}';a='a';c='c';v='v';s='s';z='z';l='l';w='w'}
+                $keys=@{return='{ENTER}';tab='{TAB}';escape='{ESC}';backspace='{BACKSPACE}';left='{LEFT}';right='{RIGHT}';up='{UP}';down='{DOWN}';a='a';c='c';v='v';s='s';z='z';l='l';w='w';t='t'}
                 $mods=@{control='^';shift='+';option='%';alt='%'}
                 $key=$keys[[string]$request.key]
                 if (-not $key) { throw 'Unsupported key.' }

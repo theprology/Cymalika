@@ -1,5 +1,13 @@
 # Cipher 0.5.0 local candidate
 
+## 0.5.6
+
+- Computer tasks continue past app discovery and browser inspection instead of asking the user to open an ordinary target page.
+- A new reviewed browser-navigation tool opens a website in a new tab of the chosen running browser, preserving its existing session and tabs. Each native input uses a fresh accessibility snapshot; the model must inspect the resulting page.
+- Combined website-and-report tasks check for navigation, observation, a successful file save, and a matching readback before accepting completion. Rejected actions stop recovery.
+- Navigation guidance distinguishes Cipher Browser's separate session from an existing Chrome/Safari login and keeps login, permission and production confirmations with the user.
+- New-tab keyboard support is shared across macOS, Windows and Linux. Existing models and saved settings are preserved.
+
 ## 0.5.5
 
 - Turning Coffee on now shows a brief, non-blocking sip animation over the current chat, then automatically disappears after one sip. Keep-awake remains on.
