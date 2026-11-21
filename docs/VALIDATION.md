@@ -1,5 +1,12 @@
 # Validation
 
+## 0.5.6 desktop browser and report — November 21, 2026
+
+- In the installed, Developer ID signed and Apple-notarized Mac app, the existing `CyberCrew/notmythos-8b:3.8-27b-uncensored` model discovered Google Chrome, requested opening `https://example.com`, and inspected the actual Chrome accessibility output. It contained the correct Example Domain title, URL, and documentation-example purpose. No project or file attachment was provided.
+- After review of the proposed report save, the model created a text report in a disposable Documents folder and read that exact path back. Its returned file hash matched independent disk inspection: `d61ddd42f52f63c3607433974a31ca570ada92af55cb03c8a0edc91c99594b19`. A neighboring sentinel file was unchanged. No model was downloaded or switched, and no Hostinger or production action was performed.
+- Earlier keyboard-based browser-opening attempts returned a foreground-activation error before sending input. Website opening now uses the native Mac URL-opening API in the chosen running browser, followed by a model inspection of the page. This successful test does not establish arbitrary global pointer/keyboard reliability or authenticated deployment readiness.
+- Shared regression checks cover incomplete desktop tasks, navigation versus observation, report save/readback, rejected actions, URL validation, approval gates, and access revocation. Cross-platform [build 44893589748](https://github.com/theprology/cipher/actions/runs/44893589748) passed for runtime source `36b4bb221e66e71880eeac1d43929bb73b0c3e9e`, including packaged Windows/Linux checks and native fixtures. The live browser-and-file model workflow was exercised on Mac only.
+
 ## 0.5.0 computer access — November 19, 2026
 
 - The already-installed `CyberCrew/notmythos-8b:3.8-27b-uncensored` model passed a disposable-user-folder task twice through the actual shared agent loop. It discovered the relevant note without a selected project or attached files and saved a correct summary; the second run used the actual review renderer with an automated fixture-only approval.
