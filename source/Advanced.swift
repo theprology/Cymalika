@@ -266,6 +266,20 @@ final class ComputerController {
       }
     } catch { completion(.failure(error)) }
   }
+  func focus(_ app: NSRunningApplication) {
+    app.unhide()
+    if #available(macOS 14.0, *) {
+      NSApplication.shared.yieldActivation(to: app)
+      _ = app.activate(from: NSRunningApplication.current, options: [.activateAllWindows])
+    } else {
+      _ = app.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
+    }
+    let root = AXUIElementCreateApplication(app.processIdentifier)
+    if let window = attribute(root, kAXFocusedWindowAttribute) {
+      let element = window as! AXUIElement
+      _ = AXUIElementPerformAction(element, kAXRaiseAction as CFString)
+    }
+  }
   func perform(_ args: [String: Any], completion: @escaping (Result<Any, Error>) -> Void) {
     do {
       let app = try target(args["app"] as? String ?? "")
@@ -278,7 +292,7 @@ final class ComputerController {
         lastApp == args["app"] as? String
       else { throw Failure("Read a fresh accessibility snapshot first.") }
       let epoch = policy.epoch
-      app.activate(options: [.activateIgnoringOtherApps])
+      focus(app)
       func attempt(_ remaining: Int) {
         guard self.policy.epoch == epoch else {
           completion(.failure(Failure("Action cancelled.")))
@@ -293,6 +307,7 @@ final class ComputerController {
             .failure(Failure("Could not bring the allowed app forward. No input was sent.")))
           return
         }
+        if remaining == 4 || remaining == 2 { self.focus(app) }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { attempt(remaining - 1) }
       }
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { attempt(6) }
@@ -304,8 +319,8 @@ final class ComputerController {
     let op = args["operation"] as? String ?? ""
     guard AXIsProcessTrusted() else { throw Failure("macOS Accessibility permission is required.") }
     if op == "activate" {
-      app.activate(options: [.activateIgnoringOtherApps])
-      return ["status": "activated", "app": id]
+      focus(app)
+      return ["status": "activation_requested", "app": id, "next": "Read the app and verify its state before sending input."]
     }
     guard args["snapshot"] as? String == snapshotID, !snapshotID.isEmpty, lastApp == id else {
       throw Failure("Read a fresh accessibility snapshot before each action.")
