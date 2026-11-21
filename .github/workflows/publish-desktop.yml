@@ -8,6 +8,9 @@ on:
       source_sha:
         description: Exact source commit built by that run
         required: true
+      release_id:
+        description: Unpublished draft release ID
+        required: true
       mac_sha256:
         description: SHA256 of the notarized Mac image already attached to the draft
         required: true
@@ -22,6 +25,7 @@ jobs:
       REPOSITORY: ${{ github.repository }}
       CI_RUN: ${{ inputs.run_id }}
       SOURCE_SHA: ${{ inputs.source_sha }}
+      CIPHER_RELEASE_ID: ${{ inputs.release_id }}
       MAC_SHA256: ${{ inputs.mac_sha256 }}
     steps:
       - name: Verify source build
@@ -29,6 +33,7 @@ jobs:
         run: |
           set -euo pipefail
           [[ "$CI_RUN" =~ ^[0-9]+$ ]]
+          [[ "$CIPHER_RELEASE_ID" =~ ^[0-9]+$ ]]
           [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
           [[ "$MAC_SHA256" =~ ^[0-9a-f]{64}$ ]]
           gh api "repos/$REPOSITORY/actions/runs/$CI_RUN" > /tmp/source-build.json
@@ -57,14 +62,15 @@ jobs:
           [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
           tag="v$version"
           export CIPHER_VERSION="$version" CIPHER_TAG="$tag"
-          gh api "repos/$REPOSITORY/releases/tags/$tag" > /tmp/draft.json
+          gh api "repos/$REPOSITORY/releases/$CIPHER_RELEASE_ID" > /tmp/draft.json
           python3 - <<'PY'
           import json, os
           release=json.load(open('/tmp/draft.json'))
           assert release['draft'], 'Only an unpublished draft may be updated'
           assert release['target_commitish']==os.environ['SOURCE_SHA'], 'Draft source does not match verified build'
           PY
-          gh release download "$tag" --repo "$REPOSITORY" --pattern "Cipher-$version-mac-arm64.dmg" --dir release-files
+          mac_asset=$(python3 -c 'import json,os; print(next(a["id"] for a in json.load(open("/tmp/draft.json"))["assets"] if a["name"]=="Cipher-"+os.environ["CIPHER_VERSION"]+"-mac-arm64.dmg"))')
+          gh api "repos/$REPOSITORY/releases/assets/$mac_asset" -H 'Accept: application/octet-stream' > "release-files/Cipher-$version-mac-arm64.dmg"
           printf '%s  %s\n' "$MAC_SHA256" "release-files/Cipher-$version-mac-arm64.dmg" | sha256sum -c -
           cp install.sh install.ps1 docs/Cipher-Beginners-Handbook.pdf release-files/
           git archive --format=zip --prefix=Cipher/ -o "release-files/Cipher-source-$version.zip" HEAD
@@ -95,11 +101,27 @@ jobs:
           pathlib.Path('/tmp/release-notes.md').write_text(notes)
           PY
           python3 - <<'PY'
-          import json,os,subprocess
+          import hashlib,http.client,json,os,pathlib,urllib.parse
+          existing={a['name']:a for a in json.load(open('/tmp/draft.json'))['assets']}
           for name in json.load(open('/tmp/asset-names.json')):
-              subprocess.run(['gh','release','upload',os.environ['CIPHER_TAG'],'release-files/'+name,'--repo',os.environ['REPOSITORY'],'--clobber'],check=True)
+              p=pathlib.Path('release-files')/name;h=hashlib.sha256()
+              with p.open('rb') as f:
+                  for chunk in iter(lambda:f.read(1024*1024),b''):h.update(chunk)
+              if name in existing:
+                  assert existing[name]['digest']=='sha256:'+h.hexdigest(), 'Existing draft asset differs: '+name
+                  continue
+              c=http.client.HTTPSConnection('uploads.github.com',timeout=120)
+              target='/repos/'+os.environ['REPOSITORY']+'/releases/'+os.environ['CIPHER_RELEASE_ID']+'/assets?name='+urllib.parse.quote(name)
+              c.putrequest('POST',target)
+              for k,v in {'Authorization':'Bearer '+os.environ['GH_TOKEN'],'User-Agent':'Cipher-release','Accept':'application/vnd.github+json','Content-Type':'application/octet-stream','Content-Length':str(p.stat().st_size)}.items():c.putheader(k,v)
+              c.endheaders()
+              with p.open('rb') as f:
+                  for chunk in iter(lambda:f.read(1024*1024),b''):c.send(chunk)
+              response=c.getresponse();result=json.loads(response.read());status=response.status;c.close()
+              assert status==201, (name,status,result.get('message'))
+              print('Uploaded '+name)
           PY
-          gh api "repos/$REPOSITORY/releases/tags/$tag" > /tmp/uploaded-release.json
+          gh api "repos/$REPOSITORY/releases/$CIPHER_RELEASE_ID" > /tmp/uploaded-release.json
           python3 - <<'PY'
           import hashlib,json,pathlib
           release=json.load(open('/tmp/uploaded-release.json'));assert release['draft']
@@ -113,4 +135,8 @@ jobs:
               assert a['digest']=='sha256:'+h.hexdigest(), name+' digest mismatch'
           print('PASS: all release assets match verified build bytes and checksums')
           PY
-          gh release edit "$tag" --repo "$REPOSITORY" --draft=false --latest --title "Cipher $version" --notes-file /tmp/release-notes.md
+          python3 - <<'PY'
+          import json,os,pathlib
+          pathlib.Path('/tmp/publish-request.json').write_text(json.dumps({'draft':False,'make_latest':'true','name':'Cipher '+os.environ['CIPHER_VERSION'],'body':pathlib.Path('/tmp/release-notes.md').read_text()}))
+          PY
+          gh api --method PATCH "repos/$REPOSITORY/releases/$CIPHER_RELEASE_ID" --input /tmp/publish-request.json --jq .html_url
