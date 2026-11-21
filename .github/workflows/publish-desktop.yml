@@ -1,0 +1,116 @@
+name: Publish verified desktop packages
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Successful Build and test run
+        required: true
+      source_sha:
+        description: Exact source commit built by that run
+        required: true
+      mac_sha256:
+        description: SHA256 of the notarized Mac image already attached to the draft
+        required: true
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPOSITORY: ${{ github.repository }}
+      CI_RUN: ${{ inputs.run_id }}
+      SOURCE_SHA: ${{ inputs.source_sha }}
+      MAC_SHA256: ${{ inputs.mac_sha256 }}
+    steps:
+      - name: Verify source build
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$CI_RUN" =~ ^[0-9]+$ ]]
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$MAC_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          gh api "repos/$REPOSITORY/actions/runs/$CI_RUN" > /tmp/source-build.json
+          python3 - <<'PY'
+          import json, os
+          run=json.load(open('/tmp/source-build.json'))
+          assert run['head_sha']==os.environ['SOURCE_SHA'], 'Source commit mismatch'
+          assert run['status']=='completed' and run['conclusion']=='success', 'Source build has not passed'
+          assert run['name']=='Build and test', 'Unexpected source workflow'
+          PY
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_sha }}
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.run_id }}
+          pattern: cipher-*
+          merge-multiple: true
+          path: release-files
+      - name: Prepare and verify release
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(node -p 'require("./package.json").version')
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          tag="v$version"
+          export CIPHER_VERSION="$version" CIPHER_TAG="$tag"
+          gh api "repos/$REPOSITORY/releases/tags/$tag" > /tmp/draft.json
+          python3 - <<'PY'
+          import json, os
+          release=json.load(open('/tmp/draft.json'))
+          assert release['draft'], 'Only an unpublished draft may be updated'
+          assert release['target_commitish']==os.environ['SOURCE_SHA'], 'Draft source does not match verified build'
+          PY
+          gh release download "$tag" --repo "$REPOSITORY" --pattern "Cipher-$version-mac-arm64.dmg" --dir release-files
+          printf '%s  %s\n' "$MAC_SHA256" "release-files/Cipher-$version-mac-arm64.dmg" | sha256sum -c -
+          cp install.sh install.ps1 docs/Cipher-Beginners-Handbook.pdf release-files/
+          git archive --format=zip --prefix=Cipher/ -o "release-files/Cipher-source-$version.zip" HEAD
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib
+          root=pathlib.Path('release-files');v=os.environ['CIPHER_VERSION']
+          names=[f'Cipher-{v}-x64-setup.exe',f'Cipher-{v}-x64-portable.exe',f'Cipher-{v}-amd64.deb',f'Cipher-{v}-x86_64.AppImage',f'Cipher-{v}-mac-arm64.dmg',f'Cipher-source-{v}.zip','install.sh','install.ps1','Cipher-Beginners-Handbook.pdf']
+          sums={}
+          for name in names:
+              p=root/name
+              assert p.is_file() and p.stat().st_size>0, 'Missing '+name
+              h=hashlib.sha256()
+              with p.open('rb') as f:
+                  for chunk in iter(lambda:f.read(1024*1024),b''):h.update(chunk)
+              sums[name]=h.hexdigest()
+          (root/'SHA256SUMS.txt').write_text(''.join(f'{digest}  {name}\n' for name,digest in sorted(sums.items())))
+          (pathlib.Path('/tmp/asset-names.json')).write_text(json.dumps(names+['SHA256SUMS.txt']))
+          notes=f'''All desktop platforms now include the context/loop recovery fixes, whole-app colours, full-window Coffee animation, Enter-to-send (Shift+Enter for a new line), and the folder Explorer with tabs, syntax colours, line numbers and width controls.
+
+          Coffee keeps the computer and display awake on Windows/Linux. On Mac it also prevents disk idle sleep, matching caffeinate -dim while Cipher is open. No AI model is included or downloaded.
+
+          Validation: Windows setup and portable installation, Linux package installation, packaged UI/native IPC checks for Coffee, colours, keyboard, file tabs and draft isolation, plus native computer-control fixtures and the shared test suite. Build: https://github.com/{os.environ['REPOSITORY']}/actions/runs/{os.environ['CI_RUN']} .
+
+          Signing: the Mac image is Developer ID signed and Apple-notarized. Windows installers are currently unsigned. SHA-256 checksums are provided for every download. Keep using your existing model and settings.
+
+          Source commit: {os.environ['SOURCE_SHA']}
+          '''
+          pathlib.Path('/tmp/release-notes.md').write_text(notes)
+          PY
+          python3 - <<'PY'
+          import json,os,subprocess
+          for name in json.load(open('/tmp/asset-names.json')):
+              subprocess.run(['gh','release','upload',os.environ['CIPHER_TAG'],'release-files/'+name,'--repo',os.environ['REPOSITORY'],'--clobber'],check=True)
+          PY
+          gh api "repos/$REPOSITORY/releases/tags/$tag" > /tmp/uploaded-release.json
+          python3 - <<'PY'
+          import hashlib,json,pathlib
+          release=json.load(open('/tmp/uploaded-release.json'));assert release['draft']
+          assets={a['name']:a for a in release['assets']}
+          for name in json.load(open('/tmp/asset-names.json')):
+              p=pathlib.Path('release-files')/name;h=hashlib.sha256()
+              with p.open('rb') as f:
+                  for chunk in iter(lambda:f.read(1024*1024),b''):h.update(chunk)
+              a=assets[name]
+              assert a['state']=='uploaded' and a['size']==p.stat().st_size, name+' size mismatch'
+              assert a['digest']=='sha256:'+h.hexdigest(), name+' digest mismatch'
+          print('PASS: all release assets match verified build bytes and checksums')
+          PY
+          gh release edit "$tag" --repo "$REPOSITORY" --draft=false --latest --title "Cipher $version" --notes-file /tmp/release-notes.md
