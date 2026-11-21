@@ -385,6 +385,7 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         try requireComputerAccess()
         executeCommand(id, args)
       case "configureAccess":
+        SecurePasswordPrompt.shared.cancel()
         policy.fullComputer = false
         policy.epoch += 1
         policy.grants = Set(args["grants"] as? [String] ?? [])
@@ -401,6 +402,10 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
       case "requestScreenRecording":
         _ = CGRequestScreenCaptureAccess()
         reply(id, computer.status())
+      case "fillPassword":
+        if args["target"] as? String == "browser" { browser.fillPassword(args) { self.advancedReply(id, $0) } }
+        else if args["target"] as? String == "computer" { computer.fillPassword(args) { self.advancedReply(id, $0) } }
+        else { throw Failure("Choose browser or computer for password entry.") }
       case "computerRead":
         reply(
           id,
@@ -420,6 +425,8 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         reply(id, ["status": "shown"])
       case "browserOpen": reply(id, try browser.open(args["url"] as? String ?? ""))
       case "browserScreenshot": browser.capture { result in self.advancedReply(id, result) }
+      case "browserPermissionDetails": reply(id, try browser.permissionDetails(args))
+      case "browserPermission": reply(id, try browser.permission(args))
       case "browserRead": browser.read { result in self.advancedReply(id, result) }
       case "browserAction": browser.action(args) { result in self.advancedReply(id, result) }
       case "importResource":
@@ -557,6 +564,7 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
     guard policy.fullComputer else { throw Failure("Turn on Computer access first.") }
   }
   func cancelWork() {
+    SecurePasswordPrompt.shared.cancel()
     policy.epoch += 1
     for task in tasks.values { task.cancel() }
     tasks.removeAll()
@@ -575,6 +583,7 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
     computer.elements = [:]
     computer.snapshotID = ""
     browser.snapshotID = ""
+    browser.denyPermissions()
     for process in processes.values {
       if kill(-process.processIdentifier, SIGTERM) != 0 { process.terminate() }
     }

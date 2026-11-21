@@ -10,6 +10,8 @@ for (const file of [
   "desktop/test-personal-files.cjs",
   "desktop/test-computer-access.cjs",
   "desktop/test-computer.cjs",
+  "desktop/test-password-entry.cjs",
+  "desktop/test-secure-prompt.cjs",
   "scripts/test-installers.mjs",
 ]) {
   const r = spawnSync(process.execPath, [file], { stdio: "inherit" });

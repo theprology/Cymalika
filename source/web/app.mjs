@@ -1485,7 +1485,7 @@ async function send() {
             content:
               "The requested computer task is not complete. Outstanding steps: " +
               desktopProgress.missing.join(" ") +
-              " Continue using the available tools. A target website not being open is not a blocker: navigate there yourself. Use browser_open then browser_read for a new Cipher Browser session. To use an existing signed-in browser, discover its ID then call computer_navigate to open the URL in a new tab; call computer_read afterward to verify. Do not retry rejected actions. For sensitive actions, include a clear per-action confirmation question and proceed only after explicit approval. Protected password fields and system dialogs may need direct user input. If you encountered an actual error or need a specific missing detail, explain that accurately.",
+              " Continue using the available tools. A target website not being open is not a blocker: navigate there yourself. Use browser_open then browser_read for a new Cipher Browser session. To use an existing signed-in browser, discover its ID then call computer_navigate to open the URL in a new tab; call computer_read afterward to verify. Do not retry rejected actions. For sensitive actions, include a clear per-action confirmation question and proceed only after explicit approval. Use password_fill for password fields and computer_permission for exposed permission controls; protected OS authentication still requires direct input. If you encountered an actual error or need a specific missing detail, explain that accurately.",
           });
           addActivity(
             "Continuing computer task",

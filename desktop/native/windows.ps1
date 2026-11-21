@@ -74,7 +74,7 @@ public static class CipherWindow {
                 $node = $queue.Dequeue(); $visited++
                 $current = Element-Locator $node
                 if ($current.runtime -eq $locator.runtime -and $current.name -eq $locator.name -and $current.role -eq $locator.role) {
-                    if ($node.Current.IsPassword -or $node.Current.ProcessId -ne $app.pid) { throw 'Secure or unrelated element.' }
+                    if (($node.Current.IsPassword -and $request.operation -ne 'fill_password') -or $node.Current.ProcessId -ne $app.pid) { throw 'Secure or unrelated element.' }
                     return $node
                 }
                 $child = $walker.GetFirstChild($node)
@@ -90,7 +90,7 @@ public static class CipherWindow {
             while ($queue.Count -gt 0 -and $visited -lt 350 -and $rows.Count -lt 120) {
                 $item = $queue.Dequeue(); $node=$item.node; $visited++
                 try {
-                    if ($node.Current.IsPassword) { $rows.Add(@{role='secure field';label='[redacted]'}); continue }
+                    if ($node.Current.IsPassword) { $rows.Add(@{id=[string]$rows.Count;role='secure field';label='Password';value='[redacted]';secure=$true;locator=(Element-Locator $node)}); continue }
                     $role=$node.Current.ControlType.ProgrammaticName
                     if (-not $request.include_menus -and $role -eq 'ControlType.MenuBar') { continue }
                     $value=''; $editable=$false; $actions=@(); $pattern=$null
@@ -98,6 +98,8 @@ public static class CipherWindow {
                         $value=$pattern.Current.Value; $editable=-not $pattern.Current.IsReadOnly
                     } elseif ($node.TryGetCurrentPattern([System.Windows.Automation.TextPattern]::Pattern,[ref]$pattern)) { $value=$pattern.DocumentRange.GetText(1200) }
                     if ($node.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern,[ref]$pattern)) { $actions=@('press') }
+                    $toggle=$null
+                    if ($node.TryGetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern,[ref]$toggle)) { $value=[string]$toggle.Current.ToggleState;$actions=@('press') }
                     $name=$node.Current.Name
                     $rect=$node.Current.BoundingRectangle
                     $bounds=@{x=$rect.X;y=$rect.Y;width=$rect.Width;height=$rect.Height}
@@ -116,9 +118,35 @@ public static class CipherWindow {
             [void][CipherWindow]::GetWindowRect($handle,[ref]$rect)
             $result=@{window=[string]$app.handle;bounds=@{x=$rect.Left;y=$rect.Top;width=$rect.Right-$rect.Left;height=$rect.Bottom-$rect.Top}}
         }
+        elseif ($operation -eq 'fill_password') {
+            $name=(Get-Process -Id $app.pid).ProcessName
+            if ($name -match '^(consent|CredentialUIBroker|LogonUI|winlogon)$') { throw 'Protected authentication requires direct input.' }
+            $element=Find-Element $request.locator
+            if (-not $element.Current.IsPassword) { throw 'Not a password field.' }
+            try {
+                $value=[string]$request.secret
+                if ($value.Length -eq 0 -or $value.Length -gt 4096 -or $value -match '[\x00-\x1f\x7f]') { throw 'Invalid secure entry.' }
+                $pattern=$null
+                if ($element.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern,[ref]$pattern) -and -not $pattern.Current.IsReadOnly) { $pattern.SetValue($value) }
+                else {
+                    [void][CipherWindow]::SetForegroundWindow($handle)
+                    $element.SetFocus()
+                    Start-Sleep -Milliseconds 120
+                    foreach ($character in $value.ToCharArray()) {
+                        $focused=[System.Windows.Automation.AutomationElement]::FocusedElement
+                        if ([CipherWindow]::GetForegroundWindow() -ne $handle -or -not $focused.Current.IsPassword -or (Element-Locator $focused).runtime -ne $request.locator.runtime) { throw 'Target focus changed.' }
+                        $text=[string]$character
+                        if ('+^%~()[]{}'.Contains($text)) { $text='{'+$text+'}' }
+                        [System.Windows.Forms.SendKeys]::SendWait($text)
+                    }
+                }
+                $value=$null
+            } catch { throw 'The app rejected secure entry or the target focus changed.' }
+            $result=@{status='filled';submitted=$false}
+        }
         elseif ($operation -in @('press','set_text')) {
             $element = Find-Element $request.locator
-            if ($operation -eq 'press') { $element.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke() }
+            if ($operation -eq 'press') { $pattern=$null;if($element.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern,[ref]$pattern)){$pattern.Invoke()}elseif($element.TryGetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern,[ref]$pattern)){$pattern.Toggle()}else{throw 'The control does not support activation.'} }
             else { $element.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue([string]$request.text) }
             $result=@{status='performed';operation=$operation;app=$request.app}
         } else {

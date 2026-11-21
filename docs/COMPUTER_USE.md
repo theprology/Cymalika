@@ -60,3 +60,13 @@ In **Build**, turn on **Computer access** and ask, for example:
 Create the destination folder first or choose an existing folder. Cipher can discover the running browser and propose one **Open website … (new tab)** review card, rather than asking you to navigate there yourself. It then inspects the loaded page and proposes the report save. Review the URL and file path before approving.
 
 For an existing signed-in website, request the named desktop browser. Cipher Browser is a separate session and does not inherit Chrome or Safari logins. If a site needs a sensitive action, Cipher should ask for explicit confirmation of that action and its consequences. Approve in the review card if you want it performed. Enter credentials directly when the field is protected or the tool does not support it. Merely finding a running browser does not establish production readiness.
+
+## Passwords and permissions after approval
+
+When the model finds a password field, it can request **password_fill**. Cipher opens a separate **Allow password entry?** window naming the actual website/app and field. Type the password there and choose **Approve & fill password**. Never put it in chat. Cancel performs no fill. Login submission remains a separate reviewed action; the website/app can react to input as it normally would.
+
+Password values stay in local session memory and the target field, outside model messages, saved chat and clipboard. Known plaintext reflections are redacted from text observations. Capture is disabled after secure entry for that session; use text observations instead. Closing Cipher Browser clears its secure session; restart Cipher to clear desktop secure-entry state.
+
+Pending website requests appear in **browser_read.permissions**. The **browser_permission** tool shows the real origin, requested permission and allow/deny decision before granting. The model can also request **computer_permission** for an inspected desktop permission button. Approve the specific request, then have the model inspect the resulting state. Use a normal reviewed computer action for a switch after reading its current state.
+
+macOS Touch ID, protected authentication, Windows UAC/secure desktop and protected Linux authentication cannot be bypassed. A website permission decision is separate from the OS's own privacy permission. If the OS or application rejects automation, Cipher reports that limit and you perform only that protected step directly. Some applications do not expose writable secure fields.

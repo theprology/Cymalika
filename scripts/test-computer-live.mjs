@@ -152,6 +152,48 @@ try {
     0,
     "Actual native window capture must succeed.",
   );
+  snapshot = await computer.read({ app: app.id });
+  const secureField = snapshot.elements.find((e) => e.secure);
+  assert(secureField?.id, "Password field has a redacted target reference.");
+  computer.passwordPrompt = async () => "cipher-public-password-fixture";
+  const filled = await computer.fillPassword({
+    app: app.id,
+    snapshot: snapshot.snapshot,
+    element: secureField.id,
+    reason: "Public fixture only",
+  });
+  assert.equal(filled.status, "filled");
+  snapshot = await computer.read({ app: app.id });
+  assert(!JSON.stringify(snapshot).includes("cipher-public-password-fixture"));
+  assert(
+    snapshot.elements.some(
+      (e) =>
+        e.label === "Password fixture filled" ||
+        e.value === "Password fixture filled",
+    ),
+    "The actual secure field received the fixture value without exposing it.",
+  );
+  const permission = snapshot.elements.find(
+    (e) => e.label === "Allow demo feature",
+  );
+  assert(permission?.id);
+  await computer.action({
+    app: app.id,
+    snapshot: snapshot.snapshot,
+    element: permission.id,
+    operation: "press",
+  });
+  snapshot = await computer.read({ app: app.id });
+  assert(
+    snapshot.elements.some(
+      (e) =>
+        e.label === "Demo permission: allowed" ||
+        e.value === "Demo permission: allowed",
+    ),
+  );
+  console.log(
+    "PASS: actual target-OS fixture password fill/redaction and permission checkbox invocation/readback.",
+  );
   console.log(
     "PASS: live target-OS app discovery, password redaction, text edit, button invocation, pointer click, key input and independent read-back.",
   );

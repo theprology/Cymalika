@@ -73,7 +73,7 @@ def main(a):
     def resolve(locator):
         e=app
         for index in locator['path']: e=e.get_child_at_index(index)
-        if secure(e) or e.get_role_name()!=locator['role'] or e.get_name()!=locator['name']: fail('The element changed. Inspect the app again.')
+        if (secure(e) and op!='fill_password') or e.get_role_name()!=locator['role'] or e.get_name()!=locator['name']: fail('The element changed. Inspect the app again.')
         return e
     if op=='read':
         rows=[]; visited=0; warnings=[]
@@ -81,7 +81,7 @@ def main(a):
             nonlocal visited
             if visited>=350 or len(rows)>=120 or depth>=14: return
             visited+=1
-            if secure(e): rows.append({'role':'secure field','label':'[redacted]'}); return
+            if secure(e): rows.append({'id':str(len(rows)),'role':'secure field','label':'Password','value':'[redacted]','secure':True,'locator':{'path':path,'role':e.get_role_name(),'name':e.get_name()}}); return
             if not a.get('include_menus') and e.get_role()==Atspi.Role.MENU_BAR: return
             name=e.get_name() or ''; role=e.get_role_name(); value=''; editable=False; actions=[]
             try:
@@ -101,12 +101,22 @@ def main(a):
                     rect=Atspi.Component.get_extents(e.get_component_iface(),Atspi.CoordType.SCREEN)
                     bounds={'x':rect.x,'y':rect.y,'width':rect.width,'height':rect.height}
                 except Exception: pass
-                rows.append({'id':str(len(rows)),'label':name[:220],'role':role,'value':value,'editable':editable,'actions':actions,'depth':depth,'bounds':bounds,'locator':{'path':path,'role':role,'name':name}})
+                rows.append({'id':str(len(rows)),'label':name[:220],'role':role,'value':value,'editable':editable,'actions':actions,'checked':e.get_state_set().contains(Atspi.StateType.CHECKED),'depth':depth,'bounds':bounds,'locator':{'path':path,'role':role,'name':name}})
             for i in range(min(e.get_child_count(),350)):
                 try: visit(e.get_child_at_index(i),path+[i],depth+1)
                 except Exception: pass
         visit(app,[],0)
         return {'app':a['app'],'elements':rows,'warnings':warnings,'truncated':visited>=350 or len(rows)>=120}
+    if op=='fill_password':
+        with open('/proc/%d/comm'%pid) as f: name=f.read().strip().lower()
+        if any(part in name for part in ('polkit','pinentry','gcr-prompter','gnome-keyring')): fail('Protected authentication requires direct input.')
+        e=resolve(a['locator'])
+        if not secure(e): fail('Not a password field.')
+        try:
+            editable=e.get_editable_text_iface()
+            if not editable or not editable.set_text_contents(a.get('secret','')): fail('Secure entry rejected.')
+        except Exception: fail('The app rejected secure entry.')
+        return {'status':'filled','submitted':False}
     if op=='window':
         wid=window()
         geometry=dict(line.split('=',1) for line in command(['xdotool','getwindowgeometry','--shell',str(wid)]).splitlines() if '=' in line)

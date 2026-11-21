@@ -138,6 +138,67 @@ export const ADVANCED_TOOLS = [
     },
   },
   {
+    name: "password_fill",
+    description:
+      "Ask the user to approve and enter a password in Cipher's separate secure native window, then fill ONE inspected password field. The AI never receives the password. Pass only the target snapshot and field ID; never ask for or put a password in chat/tool arguments. This does not submit login. Use a separate reviewed action to submit, then verify the page. Protected system authentication still requires direct input.",
+    parameters: {
+      type: "object",
+      properties: {
+        target: { type: "string", enum: ["browser", "computer"] },
+        app: {
+          type: "string",
+          description: "Required for a desktop app; use a discovered ID.",
+        },
+        snapshot: { type: "string" },
+        element: { type: "string" },
+        reason: { type: "string" },
+      },
+      required: ["target", "snapshot", "element", "reason"],
+    },
+  },
+  {
+    name: "browser_permission",
+    description:
+      "Ask the user whether to allow or deny a pending website permission from browser_read.permissions. Uses the actual requesting origin and permission in a review card. Approval is required before granting. This cannot bypass a separate OS privacy/authentication prompt. Read the page again to verify the outcome.",
+    parameters: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        snapshot: { type: "string" },
+        decision: { type: "string", enum: ["allow", "deny"] },
+        confirmation: { type: "string" },
+        reason: { type: "string" },
+      },
+      required: ["id", "snapshot", "decision", "confirmation", "reason"],
+    },
+  },
+  {
+    name: "computer_permission",
+    description:
+      "Request explicit user approval to press a visible permission-dialog button in a connected desktop app. Use its fresh snapshot/element ID, name the permission and scope in the confirmation question, and state allow or deny. Read the app again to verify; a click alone does not prove the permission was granted. Protected OS authentication, Touch ID and secure-desktop prompts require the user directly.",
+    parameters: {
+      type: "object",
+      properties: {
+        app: { type: "string" },
+        snapshot: { type: "string" },
+        element: { type: "string" },
+        permission: { type: "string" },
+        decision: { type: "string", enum: ["allow", "deny"] },
+        confirmation: { type: "string" },
+        reason: { type: "string" },
+      },
+      required: [
+        "app",
+        "snapshot",
+        "element",
+        "permission",
+        "decision",
+        "confirmation",
+        "reason",
+      ],
+    },
+  },
+  {
     name: "computer_files",
     description:
       "Browse folders or read UTF-8 text files in the user's home folder without selecting a coding project. Start with operation list and path empty. Paths can be relative to home or absolute inside home. Use returned paths and hashes. Hidden folders and credential stores are unavailable. Lists are bounded; browse relevant subfolders instead of reading the whole computer.",
@@ -301,7 +362,7 @@ export const ADVANCED_TOOLS = [
   {
     name: "browser_action",
     description:
-      "Request approval to click or fill a page element from a fresh browser snapshot. Password and file fields require manual entry.",
+      "Request approval to click or fill a page element from a fresh browser snapshot. For password fields use password_fill; file uploads require direct input.",
     parameters: {
       type: "object",
       properties: {
@@ -345,7 +406,7 @@ export const ADVANCED_TOOLS = [
   {
     name: "computer_action",
     description:
-      "Request approval for ONE action in an allowed app. Always pass snapshot from the latest computer_read response. After every action read again. For replacing text prefer set_text with an editable element ID and text; no select-all is needed. Coordinates are absolute desktop screen coordinates inside that app window. Inspect the result after each action. For credentials, permissions, purchases, agreements, CAPTCHA/security-warning interactions and permanent deletion, include a confirmation question naming the target and consequences. The user must approve the specific action before execution. Protected password fields and system dialogs may require direct entry; do not put secrets in tool arguments.",
+      "Request approval for ONE action in an allowed app. Always pass snapshot from the latest computer_read response. After every action read again. For replacing text prefer set_text with an editable element ID and text; no select-all is needed. Coordinates are absolute desktop screen coordinates inside that app window. Inspect the result after each action. For credentials, permissions, purchases, agreements, CAPTCHA/security-warning interactions and permanent deletion, include a confirmation question naming the target and consequences. The user must approve the specific action before execution. For password fields use password_fill and never put secrets in tool arguments. Use computer_permission for exposed permission controls. Protected OS authentication remains a direct user step.",
     parameters: {
       type: "object",
       properties: {
@@ -435,6 +496,9 @@ export function permittedTools(
   const write = new Set([
     "computer_open_app",
     "computer_navigate",
+    "password_fill",
+    "browser_permission",
+    "computer_permission",
     "computer_write_file",
     "computer_command",
     "request_edit",
@@ -453,6 +517,9 @@ export function permittedTools(
     computer_apps: "computerAccess",
     computer_open_app: "computerAccess",
     computer_navigate: "computerAccess",
+    password_fill: "passwordEntry",
+    browser_permission: "browser",
+    computer_permission: "computer",
     computer_files: "computerAccess",
     computer_write_file: "computerAccess",
     computer_command: "computerAccess",
@@ -482,7 +549,10 @@ export function permittedTools(
         !write.has(t.name) ||
         (access.computerAccess &&
           ["browser_open", "computer_read"].includes(t.name))) &&
-      (!required[t.name] || access[required[t.name]]) &&
+      (!required[t.name] ||
+        (required[t.name] === "passwordEntry"
+          ? access.browser || access.computer
+          : access[required[t.name]])) &&
       (!["computer_screenshot", "browser_screenshot"].includes(t.name) ||
         vision),
   );

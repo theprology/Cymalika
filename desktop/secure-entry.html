@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'"
+    />
+    <title>Secure password entry</title>
+    <style>
+      body {
+        font: 16px system-ui;
+        background: #121915;
+        color: #edf5ef;
+        padding: 24px;
+      }
+      h1 {
+        font-size: 24px;
+      }
+      p {
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+      }
+      input {
+        box-sizing: border-box;
+        width: 100%;
+        padding: 12px;
+        font-size: 18px;
+        background: #202d25;
+        color: white;
+        border: 1px solid #719a80;
+        border-radius: 8px;
+      }
+      footer {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        margin-top: 24px;
+      }
+      button {
+        padding: 10px 16px;
+        border-radius: 8px;
+        border: 0;
+        background: #9be3b2;
+        color: #122019;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Allow password entry?</h1>
+    <p id="target">Checking the target…</p>
+    <p>
+      Your password goes directly to this field. It is not sent to the AI, saved
+      in chat or placed on the clipboard. Cipher will not press Sign in; the
+      website/app can react to input.
+    </p>
+    <form id="form">
+      <input
+        id="secret"
+        type="password"
+        aria-label="Password"
+        autocomplete="off"
+        maxlength="4096"
+        required
+      />
+      <footer>
+        <button id="cancel" type="button">Cancel</button
+        ><button type="submit">Approve &amp; fill password</button>
+      </footer>
+    </form>
+    <script src="secure-entry.js"></script>
+  </body>
+</html>

@@ -1,5 +1,13 @@
 # Cipher 0.5.0 local candidate
 
+## 0.5.8
+
+- Adds secure password entry for inspected website/app password fields. The user approves and enters the value in a separate native window; the model receives only a field reference and filled/cancelled status. Passwords are not written to chat, disk, clipboard or model tool arguments. Filling does not click Sign in; the website/app can react to input.
+- Secret entry is bound to a fresh target and cancelled on Stop/access revocation or target changes. Known plaintext values are redacted from subsequent observations. Screenshots are disabled for a secure-entry session to avoid exposing reflected values.
+- Website permission requests are queued for explicit origin/permission review instead of being silently granted or denied. Supported requests depend on the platform; separate OS privacy/authentication may still need direct user approval.
+- Exposes ordinary desktop permission buttons through a fresh-snapshot, reviewed action, with actual control labels and readback required. Permission checkbox state is exposed on native desktop backends.
+- Touch ID, protected OS authentication/elevation and secure-desktop screens are not bypassed. Unsupported native password setters report a specific limitation.
+
 ## 0.5.7
 
 - Replaces blanket handoff instructions for sensitive actions with explicit, specific user confirmation before using an available reviewed tool.

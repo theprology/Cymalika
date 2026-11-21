@@ -9,6 +9,8 @@ const {
   globalShortcut,
   powerSaveBlocker,
 } = require("electron");
+const { SecureEntry } = require("./secure-entry.cjs");
+const secureEntry = new SecureEntry(() => win);
 const { CoffeeAwake } = require("./coffee.cjs");
 const coffee = new CoffeeAwake(powerSaveBlocker);
 const fs = require("node:fs/promises");
@@ -58,9 +60,11 @@ const reply = (id, result = null, error = null) => {
     win.webContents.send("cipher:reply", { id, result, error });
 };
 function cancel() {
+  secureEntry.cancel();
   workspace.cancel();
   personalFiles?.cancel();
   browser.snapshot = "";
+  browser.denyPermissions(false);
   computer?.cancel();
   for (const c of tasks.values()) c.abort();
   tasks.clear();
@@ -272,6 +276,10 @@ async function handle(action, a, id) {
       return computer.status();
     case "computerRead":
       return computer.read(a);
+    case "fillPassword":
+      if (a.target === "browser") return browser.fillPassword(a);
+      if (a.target === "computer") return computer.fillPassword(a);
+      throw Error("Choose browser or computer for password entry.");
     case "computerAction":
       return computer.action(a);
     case "computerScreenshot":
@@ -280,6 +288,10 @@ async function handle(action, a, id) {
       return browser.open(a.url);
     case "browserRead":
       return browser.read();
+    case "browserPermissionDetails":
+      return browser.permissionDetails(a);
+    case "browserPermission":
+      return browser.permission(a);
     case "browserAction":
       return browser.action(a);
     case "browserScreenshot":
@@ -382,6 +394,8 @@ async function createWindow() {
   );
   browser = new Browser(workspace, win);
   computer = new Computer(workspace, captureAllowedWindow);
+  browser.passwordPrompt = (target) => secureEntry.request(target);
+  computer.passwordPrompt = (target) => secureEntry.request(target);
   win.webContents.on("render-process-gone", () => {
     if (quitting || win.isDestroyed()) return;
     coffee.stop();

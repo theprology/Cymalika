@@ -5,6 +5,33 @@ import ScreenCaptureKit
 import WebKit
 
 // Native session capabilities are reset on restart. Models cannot grant themselves access.
+final class SecurePasswordPrompt {
+  static let shared = SecurePasswordPrompt()
+  private var active: NSAlert?
+  func cancel() { if let active { active.window.sheetParent?.endSheet(active.window, returnCode: .abort) } }
+  func request(_ target: String, completion: @escaping (String?) -> Void) {
+    guard active == nil,
+      let host = NSApp.windows.first(where: { $0.title.hasPrefix("Cipher —") }) else { completion(nil); return }
+    let alert = NSAlert()
+    alert.messageText = "Allow password entry?"
+    alert.informativeText = String(target.prefix(1000)) + "\n\nThe password goes directly to this field. It is not sent to the AI, saved in chat or placed on the clipboard. Cipher will not press Sign in; the website/app can react to input."
+    alert.addButton(withTitle: "Approve & fill password")
+    alert.addButton(withTitle: "Cancel")
+    let field = NSSecureTextField(frame: NSRect(x: 0, y: 0, width: 420, height: 28))
+    field.placeholderString = "Password (session only)"
+    alert.accessoryView = field
+    alert.window.initialFirstResponder = field
+    active = alert
+    host.makeKeyAndOrderFront(nil)
+    alert.beginSheetModal(for: host) { response in
+      let value = field.stringValue
+      field.stringValue = ""
+      self.active = nil
+      completion(response == .alertFirstButtonReturn && !value.isEmpty && value.count <= 4096 ? value : nil)
+    }
+  }
+}
+
 final class AccessPolicy {
   var grants: Set<String> = ["files", "edits", "commands", "git"]
   var apps: Set<String> = []
@@ -52,6 +79,7 @@ final class ComputerController {
   var snapshotID = ""
   var lastApp = ""
   var availableAppIDs: Set<String> = []
+  var secrets: Set<String> = []
   init(_ policy: AccessPolicy) { self.policy = policy }
   func status() -> [String: Any] {
     [
@@ -69,6 +97,7 @@ final class ComputerController {
   }
   func target(_ id: String) throws -> NSRunningApplication {
     try policy.require("computer")
+    guard !["com.apple.SecurityAgent", "com.apple.authorizationhost", "com.apple.loginwindow", "com.apple.LocalAuthentication.UIAgent"].contains(id) else { throw Failure("Protected system authentication requires direct input.") }
     guard id != Bundle.main.bundleIdentifier else {
       throw Failure("Cipher cannot control its own approval window.")
     }
@@ -125,7 +154,8 @@ final class ComputerController {
       guard visited < 350, depth < 14 else { return }
       visited += 1
       if secure(e) {
-        _ = budget.append(["role": "secure field", "label": "[redacted]"])
+        let key = String(budget.rows.count)
+        if budget.append(["id": key, "role": "secure field", "label": "Password", "value": "[redacted]", "secure": true]) { elements[key] = e }
         return
       }
       let role = attribute(e, kAXRoleAttribute) as? String ?? "element"
@@ -135,7 +165,8 @@ final class ComputerController {
       let label =
         attribute(e, kAXTitleAttribute) as? String ?? attribute(e, kAXDescriptionAttribute)
         as? String ?? ""
-      let value = attribute(e, kAXValueAttribute) as? String ?? ""
+      let rawValue = attribute(e, kAXValueAttribute)
+      let value = rawValue as? String ?? (rawValue as? NSNumber)?.stringValue ?? ""
       var actionNames: CFArray?
       AXUIElementCopyActionNames(e, &actionNames)
       let actions = actionNames as? [String] ?? []
@@ -144,8 +175,8 @@ final class ComputerController {
       if !label.isEmpty || !value.isEmpty || !actions.isEmpty || settable.boolValue {
         let key = String(budget.rows.count)
         if budget.append([
-          "id": key, "role": role, "label": String(label.prefix(220)),
-          "value": String(value.prefix(1200)), "actions": actions, "editable": settable.boolValue,
+          "id": key, "role": role, "label": redact(String(label.prefix(220))),
+          "value": redact(String(value.prefix(1200))), "actions": actions, "editable": settable.boolValue,
           "depth": depth,
         ]) {
           elements[key] = e
@@ -160,6 +191,45 @@ final class ComputerController {
       "app": id, "snapshot": snapshotID, "elements": budget.rows, "menus_omitted": !includeMenus,
       "truncated": visited >= 350 || budget.truncated,
     ]
+  }
+  func redact(_ value: String) -> String {
+    secrets.reduce(value) { text, secret in text.replacingOccurrences(of: secret, with: "[redacted]") }
+  }
+  func fieldContext(_ element: AXUIElement) -> String {
+    var current = element
+    var values: [String] = []
+    for _ in 0..<20 {
+      if let url = attribute(current, kAXURLAttribute) as? URL { values.append(url.absoluteString) }
+      if attribute(current, kAXRoleAttribute) as? String == kAXWindowRole,
+        let title = attribute(current, kAXTitleAttribute) as? String { values.append(title) }
+      guard let parent = attribute(current, kAXParentAttribute), CFGetTypeID(parent) == AXUIElementGetTypeID() else { break }
+      current = unsafeBitCast(parent, to: AXUIElement.self)
+    }
+    return values.joined(separator: "\n")
+  }
+  func fillPassword(_ args: [String: Any], completion: @escaping (Result<Any, Error>) -> Void) {
+    do {
+      let id = args["app"] as? String ?? ""
+      let app = try target(id)
+      guard AXIsProcessTrusted(), let token = args["snapshot"] as? String, token == snapshotID,
+        lastApp == id, let key = args["element"] as? String, let element = elements[key], secure(element)
+        else { throw Failure("Choose a password field from a fresh app snapshot.") }
+      let context = fieldContext(element)
+      let epoch = policy.epoch
+      SecurePasswordPrompt.shared.request("App: " + (app.localizedName ?? id) + "\nTarget: " + context + "\nField: Password") { secret in
+        guard let secret else { completion(.success(["status": "rejected"])); return }
+        guard self.policy.epoch == epoch, self.snapshotID == token, self.lastApp == id,
+          (try? self.target(id)) != nil, self.secure(element), self.fieldContext(element) == context else {
+          completion(.failure(Failure("Password target changed or access was revoked. Inspect the field again."))); return
+        }
+        self.snapshotID = ""
+        self.elements.removeAll()
+        self.secrets.insert(secret)
+        let result = AXUIElementSetAttributeValue(element, kAXValueAttribute as CFString, secret as CFString)
+        guard result == .success else { completion(.failure(Failure("This app rejected secure field entry. Use direct input for this field."))); return }
+        completion(.success(["status": "filled", "submitted": false]))
+      }
+    } catch { completion(.failure(error)) }
   }
   func window(_ app: NSRunningApplication) throws -> (CGWindowID, CGRect) {
     let windows =
@@ -202,6 +272,7 @@ final class ComputerController {
   }
   func capture(_ id: String, completion: @escaping (Result<Any, Error>) -> Void) {
     do {
+      guard secrets.isEmpty else { throw Failure("Use redacted text observations after password entry; restart Cipher before requesting images.") }
       let app = try target(id)
       guard CGPreflightScreenCaptureAccess() else {
         throw Failure("Enable Screen Recording for Cipher in macOS Settings first.")
@@ -379,7 +450,7 @@ final class ComputerController {
         throw Failure("Cannot inspect the focused field. Use a visible editable field instead.")
       }
       let focused = unsafeBitCast(focusedValue, to: AXUIElement.self)
-      guard !secure(focused) else { throw Failure("Passwords require manual entry.") }
+      guard !secure(focused) else { throw Failure("Use password_fill for secure entry without sending the password to the AI.") }
       let text = args["text"] as? String ?? ""
       guard text.count <= 2000 else {
         throw Failure("Typing is limited to 2,000 characters per approved action.")
@@ -449,16 +520,21 @@ final class ComputerController {
     ]
   }
 }
-final class BrowserController: NSObject, WKNavigationDelegate, NSToolbarDelegate {
+final class BrowserController: NSObject, WKNavigationDelegate, WKUIDelegate, NSToolbarDelegate {
   let policy: AccessPolicy
   var window: NSWindow?
   var view: WKWebView?
   var elements: [String: String] = [:]
   var snapshotID = ""
+  var secrets: Set<String> = []
+  struct PermissionRequest { let origin: String; let kind: String; let decide: (WKPermissionDecision) -> Void }
+  var pendingPermissions: [String: PermissionRequest] = [:]
   init(_ policy: AccessPolicy) { self.policy = policy }
   func close() {
+    denyPermissions()
     snapshotID = ""
     elements.removeAll()
+    secrets.removeAll()
     view?.stopLoading()
     view?.removeFromSuperview()
     window?.close()
@@ -473,6 +549,7 @@ final class BrowserController: NSObject, WKNavigationDelegate, NSToolbarDelegate
       config.websiteDataStore = .nonPersistent()
       let w = WKWebView(frame: .zero, configuration: config)
       w.navigationDelegate = self
+      w.uiDelegate = self
       view = w
       let win = NSWindow(
         contentRect: NSRect(x: 100, y: 100, width: 1100, height: 760),
@@ -495,6 +572,44 @@ final class BrowserController: NSObject, WKNavigationDelegate, NSToolbarDelegate
       "status": "loading", "url": u.absoluteString,
       "next": "Use browser_read after the page loads.",
     ]
+  }
+  func denyPermissions() {
+    let requests = Array(pendingPermissions.values)
+    pendingPermissions.removeAll()
+    for request in requests { request.decide(.deny) }
+  }
+  func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+    snapshotID = ""
+    denyPermissions()
+  }
+  func webView(_ webView: WKWebView, requestMediaCapturePermissionFor origin: WKSecurityOrigin,
+    initiatedByFrame frame: WKFrameInfo, type: WKMediaCaptureType,
+    decisionHandler: @escaping (WKPermissionDecision) -> Void) {
+    let requesting = origin.protocol + "://" + origin.host + (origin.port > 0 ? ":\(origin.port)" : "")
+    guard let url = webView.url, let requested = URL(string: requesting),
+      url.scheme == requested.scheme, url.host == requested.host,
+      (url.port ?? (url.scheme == "https" ? 443 : 80)) == (requested.port ?? (requested.scheme == "https" ? 443 : 80)),
+      (try? policy.checkURL(url.absoluteString)) != nil, pendingPermissions.count < 8 else { decisionHandler(.deny); return }
+    let kind: String
+    switch type { case .camera: kind = "camera"; case .microphone: kind = "microphone"; case .cameraAndMicrophone: kind = "camera and microphone"; @unknown default: decisionHandler(.deny); return }
+    pendingPermissions[UUID().uuidString] = PermissionRequest(origin: requesting, kind: kind, decide: decisionHandler)
+  }
+  func permissionDetails(_ args: [String: Any]) throws -> [String: Any] {
+    try policy.require("browser")
+    guard let url = view?.url, let id = args["id"] as? String, let request = pendingPermissions[id],
+      args["snapshot"] as? String == snapshotID, !snapshotID.isEmpty,
+      (try? policy.checkURL(url.absoluteString)) != nil else { throw Failure("Read the page and select a pending permission request.") }
+    return ["id": id, "origin": request.origin, "permission": request.kind]
+  }
+  func permission(_ args: [String: Any]) throws -> [String: Any] {
+    var result = try permissionDetails(args)
+    guard let id = args["id"] as? String, let allow = args["allow"] as? Bool,
+      let request = pendingPermissions.removeValue(forKey: id) else { throw Failure("Choose allow or deny for the pending request.") }
+    snapshotID = ""
+    request.decide(allow ? .grant : .deny)
+    result["status"] = "decision_sent"; result["allow"] = allow
+    result["next"] = "Read the page to check the outcome. macOS may still require direct user approval."
+    return result
   }
   func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
     [
@@ -552,6 +667,7 @@ final class BrowserController: NSObject, WKNavigationDelegate, NSToolbarDelegate
   }
   func capture(_ completion: @escaping (Result<Any, Error>) -> Void) {
     do {
+      guard secrets.isEmpty else { throw Failure("Use redacted text observations after password entry; close this browser session before requesting images.") }
       try policy.require("browser")
       guard let view, let url = view.url else { throw Failure("Open a browser page first.") }
       _ = try policy.checkURL(url.absoluteString)
@@ -589,10 +705,49 @@ final class BrowserController: NSObject, WKNavigationDelegate, NSToolbarDelegate
       snapshotID = token
       view.evaluateJavaScript(
         """
-        (()=>{const candidates=[...document.querySelectorAll('a[href],button,input:not([type=password]):not([type=hidden]),textarea,select')].slice(0,180); const items=candidates.map((e,i)=>{e.setAttribute('data-cipher-ref','\(token)-'+i);return {id:String(i),tag:e.tagName.toLowerCase(),label:(e.innerText||e.getAttribute('aria-label')||e.placeholder||'').slice(0,180),type:e.type||'',value:e.type==='password'?'[redacted]':(e.value||'').slice(0,200)}});return {url:location.href,title:document.title,text:document.body.innerText.slice(0,28000),elements:items,snapshot:'\(token)'}})()
+        (()=>{const candidates=[...document.querySelectorAll('a[href],button,input:not([type=hidden]),textarea,select')].slice(0,180); const items=candidates.map((e,i)=>{e.setAttribute('data-cipher-ref','\(token)-'+i);return {id:String(i),tag:e.tagName.toLowerCase(),label:(e.innerText||e.getAttribute('aria-label')||e.placeholder||'').slice(0,180),type:e.type||'',secure:e.type==='password',filled:e.type==='password'?!!e.value:undefined,value:e.type==='password'?'[redacted]':(e.value||'').slice(0,200)}});return {url:location.href,title:document.title,text:document.body.innerText.slice(0,28000),elements:items,snapshot:'\(token)'}})()
         """
       ) { result, error in
-        if let error { completion(.failure(error)) } else { completion(.success(result ?? [:])) }
+        if let error { completion(.failure(error)) } else {
+          func redact(_ value: Any) -> Any {
+            if let text = value as? String { return self.secrets.reduce(text) { $0.replacingOccurrences(of: $1, with: "[redacted]") } }
+            if let rows = value as? [Any] { return rows.map(redact) }
+            if let fields = value as? [String: Any] { return fields.mapValues(redact) }
+            return value
+          }
+          var response = redact(result ?? [:]) as? [String: Any] ?? [:]
+          response["permissions"] = self.pendingPermissions.map { ["id": $0.key, "origin": $0.value.origin, "permission": $0.value.kind] }
+          completion(.success(response))
+        }
+      }
+    } catch { completion(.failure(error)) }
+  }
+  func fillPassword(_ args: [String: Any], completion: @escaping (Result<Any, Error>) -> Void) {
+    do {
+      try policy.require("browser")
+      guard let view, let url = view.url, let token = args["snapshot"] as? String,
+        token == snapshotID, !token.isEmpty, let id = args["element"] as? String, Int(id) != nil
+      else { throw Failure("Choose a password field from a fresh browser snapshot.") }
+      _ = try policy.checkURL(url.absoluteString)
+      let ref = token + "-" + id
+      let keyData = try JSONSerialization.data(withJSONObject: [ref])
+      let keyJSON = String(data: keyData, encoding: .utf8)!
+      let epoch = policy.epoch
+      view.evaluateJavaScript("(()=>{const e=document.querySelector('[data-cipher-ref=\"'+\(keyJSON)[0]+'\"]');return !!(e&&e.type==='password'&&e.getClientRects().length)})()") { value, error in
+        guard error == nil, value as? Bool == true, self.snapshotID == token else { completion(.failure(Failure("Choose a visible password field."))); return }
+        SecurePasswordPrompt.shared.request("Website: " + url.absoluteString + "\nField: Password") { secret in
+          guard let secret else { completion(.success(["status": "rejected"])); return }
+          guard self.policy.epoch == epoch, self.snapshotID == token, self.view === view, self.window?.isVisible == true, view.url == url,
+            (try? self.policy.checkURL(url.absoluteString)) != nil else { completion(.failure(Failure("Password target changed or access was revoked."))); return }
+          self.snapshotID = ""
+          self.secrets.insert(secret)
+          guard let data = try? JSONSerialization.data(withJSONObject: [ref, secret, url.absoluteString]),
+            let json = String(data: data, encoding: .utf8) else { completion(.failure(Failure("Secure entry encoding failed."))); return }
+          view.evaluateJavaScript("(()=>{const [key,value,url]=\(json);if(location.href!==url)throw Error('Target changed');const e=document.querySelector('[data-cipher-ref=\"'+key+'\"]');if(!e||e.type!=='password'||!e.getClientRects().length)throw Error('Field changed');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,value);e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));return {status:'filled',submitted:false}})()") { _, error in
+            if error != nil { completion(.failure(Failure("Password entry failed: the field or page changed. Inspect it again."))) }
+            else { completion(.success(["status": "filled", "submitted": false])) }
+          }
+        }
       }
     } catch { completion(.failure(error)) }
   }
@@ -616,7 +771,7 @@ final class BrowserController: NSObject, WKNavigationDelegate, NSToolbarDelegate
       snapshotID = ""
       view.evaluateJavaScript(
         """
-        (()=>{const [key,op,text]=\(json);const e=document.querySelector('[data-cipher-ref="'+key+'"]');if(!e)throw Error('Element changed; read the page again.');if(e.type==='password'||e.type==='file')throw Error('Password and file fields require manual entry.');if(op==='click'){e.click()}else{if(!['INPUT','TEXTAREA','SELECT'].includes(e.tagName))throw Error('This element is not editable.');const proto=e.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:e.tagName==='SELECT'?HTMLSelectElement.prototype:HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(proto,'value').set.call(e,text);e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}))}return {status:'performed',operation:op,next:'Read the page again to verify.'}})()
+        (()=>{const [key,op,text]=\(json);const e=document.querySelector('[data-cipher-ref="'+key+'"]');if(!e)throw Error('Element changed; read the page again.');if(e.type==='password'||e.type==='file')throw Error('Use password_fill for passwords; file fields require direct input.');if(op==='click'){e.click()}else{if(!['INPUT','TEXTAREA','SELECT'].includes(e.tagName))throw Error('This element is not editable.');const proto=e.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:e.tagName==='SELECT'?HTMLSelectElement.prototype:HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(proto,'value').set.call(e,text);e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}))}return {status:'performed',operation:op,next:'Read the page again to verify.'}})()
         """
       ) { result, error in
         if let error { completion(.failure(error)) } else { completion(.success(result ?? [:])) }

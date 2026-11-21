@@ -11,6 +11,7 @@ class Computer {
     this.snapshot = null;
     this.children = new Set();
     this.epoch = 0;
+    this.secrets = new Set();
   }
   kill(child) {
     try {
@@ -143,7 +144,8 @@ class Computer {
       include_menus: !!a.include_menus,
     });
     if (epoch !== this.epoch) throw Error("Read cancelled.");
-    const elements = new Map();
+    const elements = new Map(),
+      secureElements = new Map();
     let bytes = 0;
     const rows = [];
     for (const row of (result.elements || []).slice(0, 120)) {
@@ -151,16 +153,90 @@ class Computer {
       bytes += Buffer.byteLength(JSON.stringify(visible));
       if (bytes > 16000) break;
       rows.push(visible);
-      if (locator) elements.set(visible.id, locator);
+      if (locator && row.secure)
+        secureElements.set(visible.id, { locator, label: visible.label });
+      else if (locator) elements.set(visible.id, locator);
     }
     const id = randomUUID();
-    this.snapshot = { id, app: a.app, elements, created: Date.now() };
+    this.snapshot = {
+      id,
+      app: a.app,
+      elements,
+      secureElements,
+      context: this.context(result.elements),
+      created: Date.now(),
+    };
     return {
-      ...result,
+      ...this.redact(result),
       snapshot: id,
-      elements: rows,
+      elements: this.redact(rows),
       truncated: result.truncated || rows.length !== result.elements.length,
     };
+  }
+  context(rows) {
+    return JSON.stringify(rows, (_, v) =>
+      v && typeof v === "object" && !Array.isArray(v)
+        ? Object.fromEntries(
+            Object.entries(v).sort(([a], [b]) => a.localeCompare(b)),
+          )
+        : v,
+    );
+  }
+  redact(value) {
+    return JSON.parse(
+      JSON.stringify(value, (_k, v) =>
+        typeof v === "string"
+          ? [...this.secrets].reduce((s, p) => s.split(p).join("[redacted]"), v)
+          : v,
+      ),
+    );
+  }
+  async fillPassword(a) {
+    this.require(a.app);
+    const state = this.snapshot,
+      epoch = this.epoch;
+    const target = state?.secureElements?.get(a.element);
+    if (
+      !target ||
+      state.id !== a.snapshot ||
+      state.app !== a.app ||
+      Date.now() - state.created > 60000
+    )
+      throw Error("Choose a password field from a fresh app snapshot.");
+    let secret = await this.passwordPrompt?.(
+      "App: " + a.app + "\nField: " + target.label + "\n" + (a.reason || ""),
+    );
+    if (secret === null || secret === undefined) return { status: "rejected" };
+    try {
+      this.require(a.app);
+      if (epoch !== this.epoch || state !== this.snapshot)
+        throw Error("cancelled");
+      const fresh = await this.call({ operation: "read", app: a.app });
+      if (
+        this.context(fresh.elements) !== state.context ||
+        epoch !== this.epoch ||
+        state !== this.snapshot
+      )
+        throw Error("changed");
+      this.snapshot = null;
+      this.secrets.add(secret);
+      const result = await this.call({
+        operation: "fill_password",
+        app: a.app,
+        locator: target.locator,
+        secret,
+      });
+      if (epoch !== this.epoch || result?.status !== "filled")
+        throw Error("rejected");
+      this.secrets.add(secret);
+      return { status: "filled", submitted: false };
+    } catch {
+      throw Error(
+        "Password was not filled: target changed, access was revoked, or the app rejected secure entry. Protected authentication dialogs require direct input.",
+      );
+    } finally {
+      secret = null;
+    }
   }
   async action(a) {
     this.require(a.app);
@@ -211,6 +287,10 @@ class Computer {
     });
   }
   async screenshot(a) {
+    if (this.secrets.size)
+      throw Error(
+        "Use redacted text snapshots after password entry; restart Cipher before requesting images.",
+      );
     this.require(a.app);
     const epoch = this.epoch;
     const target = await this.call({ operation: "window", app: a.app });

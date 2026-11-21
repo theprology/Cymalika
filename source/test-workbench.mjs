@@ -631,6 +631,93 @@ function descendantsForReview(node) {
   return [node, ...node.children.flatMap(descendantsForReview)];
 }
 
+vm.runInContext(
+  "access.computerAccess=true;access.computer=true;access.browser=true;cancelled=false;",
+  context,
+);
+let secretRequest;
+api.setNative(async (action, args) => {
+  secretRequest = { action, args };
+  return { status: "filled", submitted: false };
+});
+assert(api.allTools("build").some((t) => t.name === "password_fill"));
+assert(!api.allTools("ask").some((t) => t.name === "password_fill"));
+assert(!api.allTools("plan").some((t) => t.name === "computer_permission"));
+await assert.rejects(
+  api.tool(
+    {
+      name: "password_fill",
+      args: {
+        target: "browser",
+        snapshot: "s",
+        element: "0",
+        password: "never-send",
+      },
+    },
+    "build",
+  ),
+  /field reference/,
+);
+const secureResult = await api.tool(
+  {
+    name: "password_fill",
+    args: { target: "browser", snapshot: "s", element: "0", reason: "fixture" },
+  },
+  "build",
+);
+assert.equal(secretRequest.action, "fillPassword");
+assert.equal(secureResult.status, "filled");
+assert(!JSON.stringify(secretRequest.args).includes("never-send"));
+let permissionReview;
+api.setReview(async (title, args, execute) => {
+  permissionReview = { title, args, execute };
+  return { status: "waiting" };
+});
+api.setNative(async (action, args) => {
+  secretRequest = { action, args };
+  if (action === "computerRead")
+    return {
+      snapshot: "s",
+      elements: [{ id: "2", role: "button", label: "Allow demo feature" }],
+    };
+  return { status: "performed" };
+});
+await api.tool(
+  {
+    name: "computer_read",
+    args: { app: "fixture", reason: "Inspect demo permission" },
+  },
+  "build",
+);
+secretRequest = null;
+await api.tool(
+  {
+    name: "computer_permission",
+    args: {
+      app: "fixture",
+      snapshot: "s",
+      element: "2",
+      permission: "Demo feature",
+      decision: "allow",
+      confirmation: "Allow the demo feature in this fixture?",
+      reason: "fixture",
+    },
+  },
+  "build",
+);
+assert.equal(secretRequest, null);
+const permissionResult = await permissionReview.execute();
+assert.equal(secretRequest.action, "computerAction");
+assert.equal(secretRequest.args.operation, "press");
+assert.equal(permissionResult.verified, false);
+vm.runInContext(
+  "access.computerAccess=false;access.computer=false;access.browser=false;",
+  context,
+);
+console.log(
+  "PASS: password entry is Build-only and contains field references rather than values; permission controls wait for explicit review and require result verification.",
+);
+
 // Reproduce a question that loops over identical discovery calls, then demand a conclusion.
 vm.runInContext(
   `
