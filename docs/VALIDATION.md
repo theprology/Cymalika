@@ -1,5 +1,11 @@
 # Validation
 
+## 0.5.7 explicit action confirmation — November 21, 2026
+
+- In the installed Mac app, the existing local model proposed a benign Chrome navigation with the exact confirmation question requested for the test. The card displayed the question and waited. After approval, the native browser navigation returned successfully and the model inspected the actual Example Domain page. The test used only app discovery, browser navigation and app reading; no purchase, credential entry, agreement, permission change or deletion was performed.
+- Actual-renderer regression checks verify that the supplied question is visible before execution, Reject runs no callback, approval runs its specific callback once, and malformed confirmation questions cannot execute. Previously tested cancellation, revoked access and rejected-action recovery boundaries remain in place.
+- This changes instructions and confirmation presentation, not the operating system or protected-field capabilities. Current password-field and system-dialog limitations still apply. The tests do not establish automated handling of every sensitive transaction or third-party challenge.
+
 ## 0.5.6 desktop browser and report — November 21, 2026
 
 - In the installed, Developer ID signed and Apple-notarized Mac app, the existing `CyberCrew/notmythos-8b:3.8-27b-uncensored` model discovered Google Chrome, requested opening `https://example.com`, and inspected the actual Chrome accessibility output. It contained the correct Example Domain title, URL, and documentation-example purpose. No project or file attachment was provided.
