@@ -88,7 +88,7 @@ jobs:
               sums[name]=h.hexdigest()
           (root/'SHA256SUMS.txt').write_text(''.join(f'{digest}  {name}\n' for name,digest in sorted(sums.items())))
           (pathlib.Path('/tmp/asset-names.json')).write_text(json.dumps(names+['SHA256SUMS.txt']))
-          notes=f'''All desktop platforms now include the context/loop recovery fixes, whole-app colours, full-window Coffee animation, Enter-to-send (Shift+Enter for a new line), and the folder Explorer with tabs, syntax colours, line numbers and width controls.
+          notes=pathlib.Path('docs/RELEASE_NOTES.md').read_text().split('## '+v+'\n',1)[1].split('\n## ',1)[0].strip()+f'''
 
           Coffee keeps the computer and display awake on Windows/Linux. On Mac it also prevents disk idle sleep, matching caffeinate -dim while Cipher is open. No AI model is included or downloaded.
 
