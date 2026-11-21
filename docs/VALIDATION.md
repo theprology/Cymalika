@@ -1,5 +1,14 @@
 # Validation
 
+## 0.6.0 model library and assistant names — November 21, 2026
+
+- In the installed, signed/notarized Mac app, the model shelf read the existing Ollama model’s ID, disk size, parameter/quantization details and actual loaded-memory state. The original selected model remained unchanged.
+- The in-app Hugging Face search returned live GGUF repositories and license metadata. A selected model produced the expected ID/source/license/disk/RAM review. Cancelling the review performed no download. The runtime review fetched the official Ollama version, package size and SHA-256 digest without installing or changing the existing runtime.
+- A temporary assistant name, Atlas, appeared in the sidebar and reply labels. The existing local model answered the name question with Atlas. The default Cipher name was restored after the test, alongside the existing red palette and Coffee-on state.
+- Targeted backend checks use a disposable HTTP server and inert runtime archive: fragmented progress, incomplete/error responses, cancellation, installed-list verification, local endpoint/name validation, real extraction, checksum rejection and preservation of an existing runtime. Native Swift also passed the stream/progress/error fixture. No real AI model was downloaded and no production service was changed for these tests.
+- Shared profile tests exercise actual switching: identity/theme/instructions survive, endpoint keys do not cross to another endpoint, same-endpoint keys are session-only, and persistence excludes them. Packaged startup checks cover the model-library bridge and new screens.
+- A complete official-runtime download/start on a fresh physical Windows/Linux/Mac machine was not exercised. Private/gated models, optional GPU runtimes/drivers, arbitrary model architectures and simultaneous multi-agent inference remain outside this validation. See [model library setup](MODEL_LIBRARY.md).
+
 ## 0.5.8 secure entry and permission review — November 21, 2026
 
 - In the installed, Developer ID signed and Apple-notarized Mac app, the existing `CyberCrew/notmythos-8b:3.8-27b-uncensored` model opened a disposable local page, inspected its password field, and called `password_fill` using only the snapshot and field reference. The native secure window displayed the actual local origin and field. After approval with a public fixture value, the model read back `filled: true`, a redacted value, and the page status “Password fixture filled correctly”. No login or network submission occurred. Computer access was turned off afterward and Cipher closed the temporary browser.

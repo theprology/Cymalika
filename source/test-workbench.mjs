@@ -1020,3 +1020,41 @@ assert.equal(JSON.stringify(api.persisted()).includes("session-key"), false);
 console.log(
   "PASS: custom assistant names render as text, reject control characters, and stay independent of model profiles and session-only keys.",
 );
+vm.runInContext(
+  `
+ busy=false;settings.provider='openai';settings.endpoint='https://first.example/v1';settings.apiKey='first-session-key';settings.assistantName='Nova';settings.theme='hacker';settings.instructions='Keep my conventions';
+ native=async (action,args)=> action==='request'?{data:[{id:'fixture-model'}]}:true;
+`,
+  context,
+);
+await vm.runInContext(
+  `useConnection({id:'second',name:'Second model',settings:{provider:'openai',endpoint:'https://second.example/v1',model:'fixture-model',assistantName:'Wrong name',theme:'light',apiKey:'must-never-use'}})`,
+  context,
+);
+assert.equal(
+  vm.runInContext("settings.apiKey", context),
+  "",
+  "The old endpoint key must not cross to another provider endpoint",
+);
+assert.equal(vm.runInContext("settings.assistantName", context), "Nova");
+assert.equal(vm.runInContext("settings.theme", context), "hacker");
+assert.equal(
+  vm.runInContext("settings.instructions", context),
+  "Keep my conventions",
+);
+await vm.runInContext(
+  `useConnection({id:'first',name:'First model',settings:{provider:'openai',endpoint:'https://first.example/v1',model:'fixture-model'}})`,
+  context,
+);
+assert.equal(
+  vm.runInContext("settings.apiKey", context),
+  "first-session-key",
+  "Returning to the same endpoint can reuse its session-only key",
+);
+assert.equal(
+  JSON.stringify(api.persisted()).includes("first-session-key"),
+  false,
+);
+console.log(
+  "PASS: actual saved-connection switching preserves identity/theme/instructions, isolates endpoint keys and reuses them only in session.",
+);
