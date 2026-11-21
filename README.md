@@ -4,9 +4,11 @@
 
 ### Your models. Your workspace.
 
-A calm, open-source desktop workspace for reading, writing, and improving code with the models you choose.
+A free, open-source desktop coding agent for **Ollama and compatible model APIs**, on **macOS, Windows, and Linux**. Chat with your model, explore a project, review file edits, and run checks in one app.
 
-**Local Ollama · Compatible APIs · Computer access · Reviewed actions · Three themes**
+**Bring your own model · Ask, Plan & Build · Project Explorer · Computer access**
+
+[**Download the latest Cipher**](https://github.com/theprology/cipher/releases/latest) · [Report a bug](https://github.com/theprology/cipher/issues/new) · [Read the walkthrough](docs/WALKTHROUGH.md)
 
 [Beginner walkthrough](docs/WALKTHROUGH.md) · [Getting started](#get-started) · [Features](#a-workspace-that-does-more) · [Build](#build-from-source) · [Roadmap](docs/ROADMAP.md) · [MIT license](LICENSE)
 
@@ -16,9 +18,17 @@ A calm, open-source desktop workspace for reading, writing, and improving code w
 
 Cipher brings conversations, project files, plans, and tools into one desktop app. Open your project, choose an installed model, and describe what you want to build. Cipher gives the model tools to find relevant files, propose edits, and request checks. You review actions before they run.
 
-In Cipher 0.5.4 desktop releases, **Computer access** is one session switch for app discovery, web browsing and user-folder files. Turn it on and describe a task; the model chooses the tools it needs. Review proposed actions in chat, use Stop to interrupt, and turn access off to disconnect. [How to use computer access](docs/COMPUTER_USE.md).
+In Cipher, **Computer access** is one session switch for app discovery, web browsing and user-folder files. Turn it on and describe a task; the model chooses the tools it needs. Review proposed actions in chat, use Stop to interrupt, and turn access off to disconnect. [How to use computer access](docs/COMPUTER_USE.md).
 
 No Cipher account, subscription, or model download is required. Cloud providers may charge for their APIs. Cipher never downloads or silently switches models.
+
+## What can I ask Cipher to do?
+
+- “Find where sign-in errors are handled and explain how it works.”
+- “Plan a fix, then show me the changes before saving.”
+- “Add a setting, find the relevant files, and run the project checks.”
+
+Use your existing model. Tool use and task quality depend on that model; Cipher does not promise the same reasoning ability as a hosted coding service.
 
 ## Get started
 
@@ -78,7 +88,7 @@ The scripts download Cipher from Releases and verify its SHA-256 checksum. They 
 | Windows x64             | Electron `.exe` installer and portable app | Built and tested on Windows CI, including packaged startup and tool bridge |
 | Linux x64               | Electron AppImage and Debian package       | Installed and started on Linux CI, with backend and bridge checks          |
 
-The Windows and Linux versions share the interface, model adapters, and agent loop. Their backend provides coding, Git, streaming, and browser tools. **Cipher 0.4 adds desktop tools on Windows and Linux.** The backends use Windows UI Automation and Linux AT-SPI; see [computer use](docs/COMPUTER_USE.md) and [signing](docs/SIGNING.md) for current setup and limits. Do not assume desktop automation parity between platforms. Mac 0.5.4 downloads are Developer ID signed and Apple-notarized. Windows 0.5.4 downloads are currently unsigned. Linux 0.5.4 downloads include SHA-256 checksums and a linked, verified CI build. Signature and attestation status is recorded per release. Linux Wayland does not yet support pointer/key/capture sessions; use X11 for those tools.
+The Windows and Linux versions share the interface, model adapters, and agent loop. Their backend provides coding, Git, streaming, and browser tools. **Cipher 0.4 adds desktop tools on Windows and Linux.** The backends use Windows UI Automation and Linux AT-SPI; see [computer use](docs/COMPUTER_USE.md) and [signing](docs/SIGNING.md) for current setup and limits. Do not assume desktop automation parity between platforms. Mac 0.5.5 downloads are Developer ID signed and Apple-notarized. Windows 0.5.5 downloads are currently unsigned. Linux 0.5.5 downloads include SHA-256 checksums and a linked, verified CI build. Signature and attestation status is recorded per release. Linux Wayland does not yet support pointer/key/capture sessions; use X11 for those tools.
 
 ## Bring your own model
 
@@ -129,7 +139,11 @@ npm run dist:win
 npm run dist:linux
 ```
 
-Installers appear in `dist/`. GitHub Actions runs tests and produces platform artifacts. Tagged builds prepare a draft release after all configured platform jobs succeed. Existing releases are left unchanged.
+Installers appear in `dist/`. GitHub Actions runs tests and produces platform artifacts. Tagged builds prepare a draft release after all configured platform jobs succeed. Only the latest verified public release is kept available for download. Older release downloads are removed after the replacement is published and verified; Git history remains available.
+
+## Help more people find Cipher
+
+If Cipher helps you, star this repository, share its link with a real example of your workflow, and report reproducible issues. Start with the [beginner walkthrough](docs/WALKTHROUGH.md) when introducing someone new. Contributions and platform testing are welcome.
 
 ## Contribute
 

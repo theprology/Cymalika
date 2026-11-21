@@ -17,6 +17,9 @@ on:
 permissions:
   contents: write
   actions: read
+concurrency:
+  group: cipher-desktop-publish
+  cancel-in-progress: false
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -140,3 +143,22 @@ jobs:
           pathlib.Path('/tmp/publish-request.json').write_text(json.dumps({'draft':False,'make_latest':'true','name':'Cipher '+os.environ['CIPHER_VERSION'],'body':pathlib.Path('/tmp/release-notes.md').read_text()}))
           PY
           gh api --method PATCH "repos/$REPOSITORY/releases/$CIPHER_RELEASE_ID" --input /tmp/publish-request.json --jq .html_url
+      - name: Keep only the latest verified public release
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api "repos/$REPOSITORY/releases/latest" > /tmp/latest-release.json
+          python3 - <<'PYCODE'
+          import json,os,subprocess
+          latest=json.load(open('/tmp/latest-release.json'))
+          assert str(latest['id'])==os.environ['CIPHER_RELEASE_ID'], 'Another release is latest; no cleanup performed'
+          assert not latest['draft'] and not latest['prerelease']
+          expected=set(json.load(open('/tmp/asset-names.json')))
+          assert expected=={a['name'] for a in latest['assets']}, 'Latest assets differ; no cleanup performed'
+          pages=json.loads(subprocess.check_output(['gh','api','--paginate','--slurp','repos/'+os.environ['REPOSITORY']+'/releases?per_page=100']))
+          for release in [r for page in pages for r in page]:
+              if release['id']==latest['id'] or release['draft']:continue
+              assert release['created_at']<=latest['created_at'], 'Newer release exists; no cleanup performed'
+              subprocess.run(['gh','api','--method','DELETE','repos/'+os.environ['REPOSITORY']+'/releases/'+str(release['id'])],check=True)
+              print('Removed superseded release '+release['tag_name'])
+          PYCODE
