@@ -1,4 +1,11 @@
-# CyMalika 0.5.0 local candidate
+# CyMalika release notes
+
+## 0.6.2
+
+- Malformed tool calls now trigger bounded correction with the same selected model instead of terminating the task with a parser error.
+- Ollama text compatibility uses an action-specific JSON schema, including the selected tool's required arguments.
+- Explicit function/name envelopes are recognized without guessing actions from prose. Invalid arguments never execute.
+- Recovery retains earlier tool results and approval requirements. If three correction attempts fail, the task reports verified progress and an incomplete outcome.
 
 ## 0.6.1
 

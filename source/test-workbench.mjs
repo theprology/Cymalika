@@ -733,7 +733,7 @@ vm.runInContext(
       summarySeen = true;
       return {message:{content:"The search found src/scanner.py, but I did not inspect its callers or run checks. I cannot confirm runtime readiness."}};
     }
-    if (request.body.format === "json") return {message:{content:JSON.stringify({action:"search_project",arguments:{query:"scanner"},message:"Let me look at the source files."})}};
+    if (request.body.format) return {message:{content:JSON.stringify({action:"search_project",arguments:{query:"scanner"},message:"Let me look at the source files."})}};
     return {message:{content:"Let me look at the source files.",tool_calls:[{function:{name:"search_project",arguments:{query:"scanner"}}}]}};
   };
   current = {id:"loop-question",mode:"build",messages:[],display:[],created:Date.now()};
@@ -787,6 +787,59 @@ assert(
 );
 console.log(
   "PASS: repeated discovery is bounded, compatibility recovery uses the same model, duplicate progress is hidden, and questions conclude with evidence or a clear unresolved result.",
+);
+
+// A malformed text action must be corrected inside the task, not escape to the fatal handler.
+vm.runInContext(
+  `
+  access.files = true; imageAttachments = []; attachments = []; cancelled = false; busy = false;
+  settings = {...defaults, model:"existing-fixture-model", protocol:"text", streaming:false, rounds:3};
+  project = {path:"/fixture", name:"fixture"}; files=["src/scanner.py"];
+  globalThis.repairCalls=0; globalThis.repairReads=0; globalThis.repairModels=[];
+  native = async action => { if(action==="readFile") { repairReads++; return {path:"src/scanner.py",content:"def scan(): return []",hash:"fixture-hash"}; } return {}; };
+  modelRequest = async request => {
+    repairModels.push(request.body.model); repairCalls++;
+    if(repairCalls===1) return {message:{content:'{"response":"Let me read the file"}'}};
+    if(repairCalls===2) return {message:{content:'{"action":"read_file","arguments":{"path":"src/scanner.py"}}'}};
+    return {message:{content:'{"action":"finish","message":"The inspected file defines scan and returns an empty list."}'}};
+  };
+  current={id:"repair",mode:"ask",messages:[],display:[],created:Date.now()};
+  $("prompt").value="Read src/scanner.py and explain its behavior.";
+`,
+  context,
+);
+await api.sendReal();
+assert.equal(context.repairReads, 1);
+assert.equal(context.repairCalls, 3);
+assert(context.repairModels.every((x) => x === "existing-fixture-model"));
+assert(!api.getCurrent().display.some((x) => x.role === "error"));
+assert(
+  api.getCurrent().display.some((x) => x.content.includes("defines scan")),
+);
+
+// Exhaustion remains bounded and returns an honest outcome without executing malformed actions.
+vm.runInContext(
+  `
+  globalThis.badCalls=0; globalThis.badReads=0;
+  settings.rounds=2;
+  native=async action=>{if(action==="readFile")badReads++;return {};};
+  modelRequest=async request=>{badCalls++;return {message:{content:request.body.format?'{"response":"not an action"}':'The task is incomplete because tool-call formatting could not be repaired.'}};};
+  current={id:"bad-format",mode:"ask",messages:[],display:[],created:Date.now()};
+  $("prompt").value="Read src/scanner.py.";
+`,
+  context,
+);
+await api.sendReal();
+assert.equal(context.badCalls, 5);
+assert.equal(context.badReads, 0);
+assert(!api.getCurrent().display.some((x) => x.role === "error"));
+assert(
+  api
+    .getCurrent()
+    .display.some((x) => x.content.includes("task is incomplete")),
+);
+console.log(
+  "PASS: malformed tool responses recover using the same model, execute a valid read once, and conclude honestly after bounded correction failures.",
 );
 
 vm.runInContext(

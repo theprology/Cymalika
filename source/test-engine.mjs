@@ -62,7 +62,7 @@ r = requestFor(
 assert.equal(r.body.messages.at(-1).content[0].tool_use_id, "call_1");
 assert.equal(r.body.system, "system");
 r = requestFor(s, messages, TOOLS, true);
-assert.equal(r.body.format, "json");
+assert.equal(r.body.format.anyOf[0].properties.action.const, "list_files");
 assert.equal(r.body.tools, undefined);
 assert(r.body.messages.at(-1).content.includes("ACTUAL TOOL RESULT"));
 assert.equal(
@@ -395,4 +395,39 @@ assert.deepEqual(
 );
 console.log(
   "PASS: desktop completion distinguishes discovery, navigation, verification, file saves and matching readback; rejected actions stop recovery.",
+);
+
+for (const content of [
+  "null",
+  "[]",
+  '{"action":"read_file","arguments":[]}',
+  '{"response":"reading now"}',
+  "not JSON",
+]) {
+  assert.throws(
+    () => responseFrom("ollama", { message: { content } }, true),
+    (e) => e.code === "MODEL_ACTION_FORMAT",
+  );
+}
+for (const call of [
+  { name: "read_file", arguments: { path: "x.py" } },
+  { function: { name: "read_file", arguments: '{"path":"x.py"}' } },
+]) {
+  assert.equal(
+    responseFrom("ollama", { message: { content: JSON.stringify(call) } }, true)
+      .toolCalls[0].args.path,
+    "x.py",
+  );
+}
+assert.throws(
+  () =>
+    responseFrom("ollama", {
+      message: {
+        tool_calls: [{ function: { name: "read_file", arguments: "{" } }],
+      },
+    }),
+  (e) => e.code === "MODEL_ACTION_FORMAT",
+);
+console.log(
+  "PASS: action decoding accepts explicit function envelopes, rejects non-object arguments, and classifies malformed native/text calls for safe recovery.",
 );

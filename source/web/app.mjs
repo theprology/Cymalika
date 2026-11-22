@@ -1519,6 +1519,8 @@ async function send() {
   const tools = allTools(mode);
   let completed = false;
   let actionRecovery = 0;
+  let formatRecovery = 0;
+  let formatExhausted = false;
   let contextCompactionReported = false;
   const readAttempts = new Map();
   const progressReplies = new Set();
@@ -1630,7 +1632,43 @@ async function send() {
         throw e;
       }
       if (cancelled) break;
-      const answer = responseFrom(settings.provider, raw, textMode);
+      let answer;
+      try {
+        answer = responseFrom(settings.provider, raw, textMode);
+      } catch (error) {
+        if (error.code !== "MODEL_ACTION_FORMAT") throw error;
+        if (formatRecovery >= 3) {
+          formatExhausted = true;
+          addActivity(
+            "Tool response could not be repaired",
+            "Three correction attempts failed. No malformed call was executed.",
+            true,
+          );
+          break;
+        }
+        formatRecovery++;
+        if (settings.protocol === "auto") textMode = true;
+        current.messages.push({
+          role: "user",
+          internal: true,
+          content:
+            "Your last response could not be used and NO action from it was executed: " +
+            error.message +
+            " Continue the original task using the actual earlier tool results. Return one valid tool call with its exact name and required argument fields. " +
+            (textMode
+              ? 'Use exactly {"action":"tool_name","arguments":{...},"message":"optional explanation"}, or {"action":"finish","message":"evidence-based answer"} only when finished or genuinely blocked. No other response envelope or prose outside JSON.'
+              : "Use the provider's native function-call structure.") +
+            " Do not repeat completed actions or any rejected action. Pending edits and commands still require approval.",
+        });
+        addActivity(
+          "Repairing tool response",
+          "Asking the same model to correct its tool-call format (" +
+            formatRecovery +
+            "/3). No invalid action was executed.",
+        );
+        round--;
+        continue;
+      }
       if (
         answer.content &&
         answer.toolCalls.length &&
@@ -1848,6 +1886,9 @@ async function send() {
     else if (!completed) {
       $("busyText").textContent = "Summarizing inspected evidence…";
       const finalSystem =
+        (formatExhausted
+          ? "Tool-call formatting could not be repaired after three retries. Explain that limitation and report only verified progress; do not claim the requested task is complete. "
+          : "") +
         (desktopTaskProgress(text, mode, access.computerAccess, taskTools)
           .active
           ? "This was a computer action task. Report the actions actually performed, what was verified, and outstanding steps or real errors. Do not declare production readiness from an app list or browser snapshot. The task may still be incomplete. "
@@ -1923,6 +1964,11 @@ async function send() {
           progressOnly(finalText)
         )
           finalText = `I could not complete this investigation. I read ${readCount} source file(s), but the model ${stalledRounds ? "repeated the same discovery calls without making progress" : "used its investigation steps before reaching a conclusion"}. I cannot confirm that the project is working from this evidence. See Activity for the actual results and errors.`;
+        if (formatExhausted)
+          record(
+            "notice",
+            "The model could not produce a usable tool call after three correction attempts. Earlier verified work is preserved; the task is incomplete.",
+          );
         record("assistant", finalText);
         current.messages.push({ role: "assistant", content: finalText });
         completed = true;

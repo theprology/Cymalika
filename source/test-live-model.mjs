@@ -106,6 +106,7 @@ for (const file of [
   "advanced-engine.mjs",
   "app.mjs",
   "features.mjs",
+  "model-library.mjs",
 ]) {
   let text = fs.readFileSync(new URL(file, web), "utf8");
   text = text
@@ -162,6 +163,13 @@ context.liveBridge = async (action, args = {}) => {
       "Compacted for context",
     );
     console.log("MODEL request", request.messages.length, "messages");
+    if (
+      process.env.CYMALIKA_TEST_MALFORMED === "1" &&
+      !events.some((e) => e.action === "injectedMalformed")
+    ) {
+      events.push({ action: "injectedMalformed" });
+      return { message: { content: '{"response":"Let me read the files"}' } };
+    }
     const response = await fetch(args.url, {
       method: args.method || "POST",
       headers: args.headers,
@@ -232,6 +240,8 @@ vm.runInContext(
 `,
   context,
 );
+if (process.env.CYMALIKA_TEST_MALFORMED === "1")
+  vm.runInContext('settings.protocol="text";', context);
 if (process.env.CYMALIKA_TEST_QUESTION === "1")
   vm.runInContext(
     `

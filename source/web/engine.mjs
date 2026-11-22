@@ -98,6 +98,43 @@ export function parseJSON(text) {
     return JSON.parse(clean.slice(start, end + 1));
   }
 }
+function actionFormatError(message) {
+  return Object.assign(new Error(message), { code: "MODEL_ACTION_FORMAT" });
+}
+function actionArguments(value) {
+  try {
+    const args = typeof value === "string" ? parseJSON(value) : value;
+    if (!args || typeof args !== "object" || Array.isArray(args)) throw Error();
+    return args;
+  } catch {
+    throw actionFormatError("The tool arguments must be a JSON object.");
+  }
+}
+export function actionResponseSchema(tools) {
+  return {
+    anyOf: [
+      ...tools.map((t) => ({
+        type: "object",
+        properties: {
+          action: { const: t.name },
+          arguments: t.parameters,
+          message: { type: "string" },
+        },
+        required: ["action", "arguments"],
+        additionalProperties: false,
+      })),
+      {
+        type: "object",
+        properties: {
+          action: { const: "finish" },
+          message: { type: "string" },
+        },
+        required: ["action", "message"],
+        additionalProperties: false,
+      },
+    ],
+  };
+}
 export function requestFor(settings, messages, tools, textMode = false) {
   const headers = {};
   const base = settings.endpoint;
@@ -145,7 +182,7 @@ export function requestFor(settings, messages, tools, textMode = false) {
           : ["5m", "30m"].includes(settings.keepAlive)
             ? settings.keepAlive
             : "5m";
-    if (textMode) body.format = "json";
+    if (textMode) body.format = actionResponseSchema(tools);
     if (settings.apiKey) headers.Authorization = "Bearer " + settings.apiKey;
   } else if (settings.provider === "anthropic") {
     url = endpoint(base, "v1/messages");
@@ -260,19 +297,33 @@ export function responseFrom(provider, data, textMode = false) {
               .map((c) => c.text)
               .join("\n")
           : data.choices?.[0]?.message?.content;
-    const p = parseJSON(visibleModelText(text, provider === "ollama"));
+    let p;
+    try {
+      p = parseJSON(visibleModelText(text, provider === "ollama"));
+    } catch {
+      throw actionFormatError(
+        "The model response was not a valid tool action JSON object.",
+      );
+    }
+    if (!p || typeof p !== "object" || Array.isArray(p))
+      throw actionFormatError("Expected one tool action JSON object.");
     if (p.action === "finish" && typeof p.message === "string")
       return { content: p.message, toolCalls: [] };
-    if (
-      typeof p.action !== "string" ||
-      !p.arguments ||
-      typeof p.arguments !== "object"
-    )
-      throw Error("Expected an action and arguments from the model.");
+    // Accept explicit function envelopes; never derive actions from ordinary prose.
+    const call = p.function && typeof p.function === "object" ? p.function : p;
+    const name = p.action ?? call.name;
+    if (typeof name !== "string" || !name.trim())
+      throw actionFormatError(
+        "Expected an action name and arguments from the model.",
+      );
     return {
-      content: p.message || "",
+      content: typeof p.message === "string" ? p.message : "",
       toolCalls: [
-        { id: crypto.randomUUID(), name: p.action, args: p.arguments },
+        {
+          id: crypto.randomUUID(),
+          name,
+          args: actionArguments(call.arguments ?? call.args),
+        },
       ],
     };
   }
@@ -283,11 +334,8 @@ export function responseFrom(provider, data, textMode = false) {
     content = data.message.content || "";
     toolCalls = (data.message.tool_calls || []).map((t) => ({
       id: crypto.randomUUID(),
-      name: t.function.name,
-      args:
-        typeof t.function.arguments === "string"
-          ? parseJSON(t.function.arguments)
-          : t.function.arguments,
+      name: t.function?.name,
+      args: actionArguments(t.function?.arguments),
     }));
   } else if (provider === "anthropic") {
     content = (data.content || [])
@@ -303,9 +351,14 @@ export function responseFrom(provider, data, textMode = false) {
     content = m.content || "";
     toolCalls = (m.tool_calls || []).map((t) => ({
       id: t.id || crypto.randomUUID(),
-      name: t.function.name,
-      args: parseJSON(t.function.arguments),
+      name: t.function?.name,
+      args: actionArguments(t.function?.arguments),
     }));
+  }
+  for (const call of toolCalls) {
+    if (typeof call.name !== "string" || !call.name.trim())
+      throw actionFormatError("A tool call is missing its function name.");
+    call.args = actionArguments(call.args);
   }
   return {
     content: visibleModelText(content, provider === "ollama"),

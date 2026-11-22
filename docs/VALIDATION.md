@@ -1,5 +1,12 @@
 # Validation
 
+## 0.6.2 tool-response recovery — November 22, 2026
+
+- Shared parser and actual-agent-loop regressions cover malformed JSON/envelopes, invalid argument types, recovery with the same model, no execution before a valid call, and an honest incomplete outcome after three correction attempts.
+- Using the existing `CyberCrew/notmythos-8b:3.8-27b-uncensored` model, the actual agent-loop harness independently found a faulty implementation in a disposable project, saved the fix and ran two passing tests.
+- A second live run used structured text compatibility and deliberately injected the invalid `{response: ...}` envelope at the transport boundary. The agent corrected the format, read the relevant file, saved one edit and ran both tests successfully. No model was downloaded or switched. Harness approvals were restricted to disposable fixture edits and its fixed test command; this was not a production deployment test.
+- The Mac native build/self-test passes. Existing approvals, rejected-action handling and cancellation boundaries remain in place. Model reasoning and arbitrary task success are not guaranteed by this recovery.
+
 ## 0.6.1 CyMalika rename — November 21, 2026
 
 - Renamed the public repository, app UI, native bridge, documentation, installer names and tutorial assets. The native OS application identifiers remain stable for upgrade compatibility. Legacy names appear only in profile/default-name migration and those stable identifiers.
