@@ -1066,7 +1066,12 @@ function stop() {
     approval = null;
   }
   addActivity("Stop requested", "Pending approvals were cancelled.");
-  $("busyText").textContent = "Stopping…";
+  record(
+    "notice",
+    "Task stopped. Already approved actions remain in place; pending actions were cancelled.",
+  );
+  busyState(false);
+  scheduleSave();
 }
 async function refreshModels() {
   if (busy) return;
@@ -1414,6 +1419,7 @@ async function approveCommand(args) {
   });
 }
 async function tool(t, mode) {
+  const epoch = taskEpoch;
   if (!allTools(mode).some((x) => x.name === t.name))
     throw Error("This tool is not available in " + mode + " mode.");
   audit("Tool requested", t.name);
@@ -1423,6 +1429,7 @@ async function tool(t, mode) {
   switch (t.name) {
     case "list_files": {
       const result = await native("listFiles", { excludes: exclusions() });
+      if (epoch !== taskEpoch) return { status: "stopped" };
       const selected = a.query
         ? result.filter((path) =>
             path.toLowerCase().includes(String(a.query).toLowerCase()),
@@ -1440,6 +1447,7 @@ async function tool(t, mode) {
         path_contains: a.path_contains || "",
         excludes: exclusions(),
       });
+      if (epoch !== taskEpoch) return { status: "stopped" };
       addActivity(
         "Searched project",
         a.query + " · " + result.length + " matches",
@@ -1448,12 +1456,61 @@ async function tool(t, mode) {
     }
     case "read_file": {
       const result = await native("readFile", { path: a.path });
-      if (result.content.length > 45000)
-        throw Error(
-          "File is too large for a single model read (45,000 characters). Choose a smaller file or use search_project.",
+      if (epoch !== taskEpoch) return { status: "stopped" };
+      const lines = result.content.split("\n");
+      const rangeRequested =
+        a.start_line !== undefined || a.line_count !== undefined;
+      if (rangeRequested || result.content.length > 45000) {
+        const start = a.start_line === undefined ? 1 : Number(a.start_line);
+        const count = a.line_count === undefined ? 150 : Number(a.line_count);
+        if (
+          !Number.isInteger(start) ||
+          start < 1 ||
+          !Number.isInteger(count) ||
+          count < 1 ||
+          count > 300
+        )
+          throw Error(
+            "File ranges need start_line >= 1 and line_count between 1 and 300.",
+          );
+        if (start > lines.length)
+          throw Error(
+            "Requested line is beyond this file; total lines: " + lines.length,
+          );
+        let selected = [],
+          chars = 0;
+        for (const line of lines.slice(start - 1, start - 1 + count)) {
+          if (chars + line.length > 20000) {
+            if (!selected.length)
+              throw Error(
+                "This single line is too large. Use search_project or a reviewed extraction command.",
+              );
+            break;
+          }
+          selected.push(line);
+          chars += line.length + 1;
+        }
+        const end = start - 1 + selected.length;
+        const partial = start > 1 || end < lines.length;
+        addActivity(
+          "Read file range",
+          a.path + " · lines " + start + "–" + end,
         );
+        return {
+          ...result,
+          content: selected.join("\n"),
+          partial,
+          start_line: start,
+          end_line: end,
+          total_lines: lines.length,
+          next_line: end < lines.length ? end + 1 : null,
+          notice: partial
+            ? "Partial file evidence. Follow next_line only if needed. Preserve omitted content; do not replace the full file from this excerpt."
+            : undefined,
+        };
+      }
       addActivity("Read file", a.path);
-      return result;
+      return { ...result, partial: false, total_lines: lines.length };
     }
     case "request_edit":
       return approveEdit(a);
@@ -1515,6 +1572,12 @@ async function send() {
   updateAttachmentHint();
   $("prompt").value = "";
   busyState(true);
+  const epoch = taskEpoch;
+  const progress = createProgressGuard();
+  const answerOnly =
+    /no more tool calls|without tools|do not use tools|answer now using only/i.test(
+      text,
+    );
   let textMode = settings.protocol === "text";
   const tools = allTools(mode);
   let completed = false;
@@ -1522,7 +1585,6 @@ async function send() {
   let formatRecovery = 0;
   let formatExhausted = false;
   let contextCompactionReported = false;
-  const readAttempts = new Map();
   const progressReplies = new Set();
   let stalledRounds = 0;
   let readCount = 0;
@@ -1560,13 +1622,15 @@ async function send() {
     );
   try {
     for (let round = 0; round < Number(settings.rounds); round++) {
+      if (epoch !== taskEpoch) return;
       if (cancelled) break;
+      const offeredTools = answerOnly ? [] : progress.tools(tools);
       let system = systemPrompt(
         mode,
         project?.path,
         access.files ? files : [],
         textMode,
-        tools,
+        offeredTools,
         settings.context,
       );
       system = system.replace(
@@ -1574,11 +1638,14 @@ async function send() {
         "You are " + JSON.stringify(assistantName()) + ",",
       );
       system += extraSystem();
+      system += progress.prompt();
       if (settings.instructions)
         system += "\nUser project instructions:\n" + settings.instructions;
       const reservedTokens =
         Math.ceil(
-          (system.length + (textMode ? 0 : JSON.stringify(tools).length)) / 2.5,
+          (system.length +
+            (textMode ? 0 : JSON.stringify(offeredTools).length)) /
+            2.5,
         ) +
         Math.min(
           Number(settings.maxTokens) || 2048,
@@ -1604,13 +1671,14 @@ async function send() {
           requestFor(
             settings,
             [{ role: "system", content: system }, ...history.messages],
-            tools,
+            offeredTools,
             textMode,
           ),
           settings.provider,
           textMode,
         );
       } catch (e) {
+        if (epoch !== taskEpoch) return;
         if (
           settings.protocol === "auto" &&
           !textMode &&
@@ -1631,6 +1699,7 @@ async function send() {
         }
         throw e;
       }
+      if (epoch !== taskEpoch) return;
       if (cancelled) break;
       let answer;
       try {
@@ -1712,6 +1781,8 @@ async function send() {
         }
         if (
           needsEvidence &&
+          !progress.hasBlocker &&
+          !answerOnly &&
           readCount === 0 &&
           !/\?\s*$/.test(answer.content.trim())
         ) {
@@ -1726,6 +1797,8 @@ async function send() {
           continue;
         }
         if (
+          !answerOnly &&
+          !progress.hasBlocker &&
           (project || access.computerAccess) &&
           progressOnly(answer.content.trim())
         ) {
@@ -1741,6 +1814,8 @@ async function send() {
         }
         if (
           needsAction &&
+          !answerOnly &&
+          !progress.hasBlocker &&
           taskEdits + taskCommands + taskOtherActions === 0 &&
           actionRecovery < 2 &&
           !actionAttempted &&
@@ -1759,6 +1834,8 @@ async function send() {
         }
         if (
           needsAction &&
+          !answerOnly &&
+          !progress.hasBlocker &&
           !actionAttempted &&
           actionRecovery >= 2 &&
           taskEdits + taskCommands + taskOtherActions === 0 &&
@@ -1786,7 +1863,6 @@ async function send() {
         content: answer.content,
         toolCalls: answer.toolCalls,
       });
-      let blockedThisRound = false;
       for (const t of answer.toolCalls) {
         if (
           [
@@ -1803,41 +1879,49 @@ async function send() {
           ].includes(t.name)
         )
           actionAttempted = true;
+        if (epoch !== taskEpoch) return;
         if (cancelled) break;
         let result;
         try {
-          const repeatable = ["search_project", "list_files"].includes(t.name);
-          const key = t.name + ":" + canonical(t.args || {});
-          const count = readAttempts.get(key) || 0;
-          if (repeatable && count >= 2) {
-            blockedThisRound = true;
+          if (!offeredTools.some((x) => x.name === t.name)) {
             result = {
               error:
-                "This identical discovery request already ran twice. Its previous result is in the history. Do not repeat it. Read a relevant source file, use list_files with a filename query, or search_project with a different query and path_contains filter. If evidence is insufficient, answer with what is known and what remains unverified.",
+                "This tool is not offered on this focused turn. Follow the current recovery instruction instead of repeating discovery.",
+              repeated: true,
             };
+            progress.observe(t, result);
           } else {
-            result = await tool(t, mode);
-            if (repeatable) readAttempts.set(key, count + 1);
-            if (
-              t.name === "read_file" &&
-              !result?.error &&
-              !/\.(md|txt|rst)$/i.test(t.args?.path || "")
-            )
-              readCount++;
-            if (
-              [
-                "request_edit",
-                "request_command",
-                "computer_write_file",
-                "computer_command",
-              ].includes(t.name) &&
-              !result?.error &&
-              !["rejected", "stopped"].includes(result?.status)
-            )
-              readAttempts.clear();
+            const reused = progress.before(t);
+            if (reused) {
+              result = reused;
+              addActivity(
+                "Repeated action avoided",
+                t.name + " · reused earlier evidence; no duplicate execution.",
+              );
+            } else {
+              try {
+                result = await tool(t, mode);
+              } catch (e) {
+                result = { error: e.message };
+                addActivity(
+                  "Tool needs attention",
+                  t.name + ": " + e.message,
+                  true,
+                );
+              }
+              if (epoch !== taskEpoch) return;
+              progress.observe(t, result);
+              if (
+                t.name === "read_file" &&
+                !result?.error &&
+                !/\.(md|txt|rst)$/i.test(t.args?.path || "")
+              )
+                readCount++;
+            }
           }
         } catch (e) {
           result = { error: e.message };
+          progress.observe(t, result);
           addActivity("Tool needs attention", t.name + ": " + e.message, true);
         }
         taskTools.push({ name: t.name, args: t.args || {}, result });
@@ -1847,24 +1931,30 @@ async function send() {
           callId: t.id,
           content: JSON.stringify(result),
         });
+        if (epoch !== taskEpoch) return;
         if (cancelled) break;
       }
-      if (blockedThisRound) {
+      const recovery = progress.recover();
+      if (recovery) {
         stalledRounds++;
         current.messages.push({
           role: "user",
           internal: true,
-          content:
-            "Your discovery calls are repeating without new evidence. Change approach now: locate filenames with list_files(query), then read relevant source files, or use a scoped search. Answer the user's question from inspected evidence; distinguish wired source from verified runtime readiness. Do not send another promise to investigate.",
+          content: progress.prompt(),
         });
-        if (settings.protocol === "auto" && !textMode) {
-          textMode = true;
-          addActivity(
-            "Recovering repeated searches",
-            "Trying text-action compatibility with the same model; repeated searches will not be executed again.",
+        if (recovery.attempt === 1)
+          record(
+            "notice",
+            "Repeated actions detected. I’m guiding the same model toward the next unfinished step; completed work and approvals are preserved.",
           );
-        }
-        if (stalledRounds >= 2) break;
+        addActivity(
+          "Changing approach",
+          "Repeated or unproductive tool calls detected. Steering the same model toward an unfinished step (" +
+            Math.min(recovery.attempt, 2) +
+            "/2).",
+        );
+        if (settings.protocol === "auto") textMode = true;
+        if (recovery.exhausted) break;
       }
       if (pendingComputerImages.length && !cancelled) {
         current.messages.push({
@@ -1878,6 +1968,7 @@ async function send() {
       }
       scheduleSave();
     }
+    if (epoch !== taskEpoch) return;
     if (cancelled)
       record(
         "notice",
@@ -1948,6 +2039,7 @@ async function send() {
           settings.provider,
           false,
         );
+        if (epoch !== taskEpoch) return;
         if (!cancelled)
           finalText = responseFrom(
             settings.provider,
@@ -1955,15 +2047,17 @@ async function send() {
             false,
           ).content.trim();
       } catch (error) {
+        if (epoch !== taskEpoch) return;
         addActivity("Summary unavailable", error.message, true);
       }
+      if (epoch !== taskEpoch) return;
       if (!cancelled) {
         if (
           (needsEvidence && readCount === 0) ||
           !finalText ||
           progressOnly(finalText)
         )
-          finalText = `I could not complete this investigation. I read ${readCount} source file(s), but the model ${stalledRounds ? "repeated the same discovery calls without making progress" : "used its investigation steps before reaching a conclusion"}. I cannot confirm that the project is working from this evidence. See Activity for the actual results and errors.`;
+          finalText = `I could not complete this investigation. I read ${readCount} source file(s), but the model ${stalledRounds ? "repeated actions without making progress" : "used its investigation steps before reaching a conclusion"}. I cannot confirm that the project is working from this evidence. See Activity for the actual results and errors.`;
         if (formatExhausted)
           record(
             "notice",
@@ -1994,6 +2088,7 @@ async function send() {
         "No changes were saved and no commands were run during this task.",
       );
   } catch (e) {
+    if (epoch !== taskEpoch) return;
     if (cancelled) record("notice", "Task stopped.");
     else {
       record(
@@ -2005,9 +2100,11 @@ async function send() {
       addActivity("Task paused", e.message, true);
     }
   } finally {
-    approval = null;
-    busyState(false);
-    await save();
+    if (epoch === taskEpoch) {
+      approval = null;
+      busyState(false);
+      await save();
+    }
   }
 }
 async function testCompatibility() {

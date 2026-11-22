@@ -164,6 +164,25 @@ context.liveBridge = async (action, args = {}) => {
     );
     console.log("MODEL request", request.messages.length, "messages");
     if (
+      process.env.CYMALIKA_TEST_REPEAT === "1" &&
+      events.filter((e) => e.action === "injectedRepeat").length < 3
+    ) {
+      events.push({ action: "injectedRepeat" });
+      return {
+        message: {
+          content: "Checking the implementation.",
+          tool_calls: [
+            {
+              function: {
+                name: "read_file",
+                arguments: { path: "src/prices.py" },
+              },
+            },
+          ],
+        },
+      };
+    }
+    if (
       process.env.CYMALIKA_TEST_MALFORMED === "1" &&
       !events.some((e) => e.action === "injectedMalformed")
     ) {

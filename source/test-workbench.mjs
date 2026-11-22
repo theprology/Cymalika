@@ -111,7 +111,7 @@ for (const file of [
   script += "\n" + text;
 }
 script +=
-  "\nconst actualSendForTest=send; const actualReviewForTest=reviewAction;globalThis.api={reviewReal:actualReviewForTest,sendReal:actualSendForTest,queueImage,init:featureInit,tool:advancedTool,persisted,runGoal,getDesk:()=>desk,getCurrent:()=>current,setCurrent:c=>current=c,setProject:p=>project=p,setSettings:s=>settings={...settings,...s},setReview:fn=>reviewAction=fn,setSend:fn=>send=fn,setNative:fn=>native=fn,nextEpoch:()=>taskEpoch++,pendingImages:()=>pendingComputerImages,extraSystem,allTools,openTour,getTourStep:()=>tourStep,tourCount:()=>tourSteps.length};";
+  "\nconst actualSendForTest=send; const actualReviewForTest=reviewAction;globalThis.api={coreTool:tool,reviewReal:actualReviewForTest,sendReal:actualSendForTest,queueImage,init:featureInit,tool:advancedTool,persisted,runGoal,getDesk:()=>desk,getCurrent:()=>current,setCurrent:c=>current=c,setProject:p=>project=p,setSettings:s=>settings={...settings,...s},setReview:fn=>reviewAction=fn,setSend:fn=>send=fn,setNative:fn=>native=fn,nextEpoch:()=>taskEpoch++,pendingImages:()=>pendingComputerImages,extraSystem,allTools,openTour,getTourStep:()=>tourStep,tourCount:()=>tourSteps.length};";
 vm.runInContext(script, context);
 const api = context.api;
 api.init({});
@@ -744,7 +744,7 @@ vm.runInContext(
 await api.sendReal();
 assert.equal(
   context.loopSearchCalls,
-  2,
+  1,
   "Do not execute the same discovery indefinitely",
 );
 assert(
@@ -787,6 +787,142 @@ assert(
 );
 console.log(
   "PASS: repeated discovery is bounded, compatibility recovery uses the same model, duplicate progress is hidden, and questions conclude with evidence or a clear unresolved result.",
+);
+
+// Large sources are available as real bounded ranges rather than repeated size errors.
+vm.runInContext(
+  `native=async()=>({path:"large.py",hash:"full-file-hash",content:Array.from({length:500},(_,i)=>"line "+(i+1)+" "+"x".repeat(100)).join("\\n")});`,
+  context,
+);
+const range = await api.coreTool(
+  { name: "read_file", args: { path: "large.py" } },
+  "ask",
+);
+assert.equal(range.partial, true);
+assert.equal(range.start_line, 1);
+assert.equal(range.end_line, 150);
+assert.equal(range.next_line, 151);
+const nextRange = await api.coreTool(
+  {
+    name: "read_file",
+    args: { path: "large.py", start_line: 151, line_count: 100 },
+  },
+  "ask",
+);
+assert(nextRange.content.startsWith("line 151 "));
+assert.equal(nextRange.end_line, 250);
+assert.equal(nextRange.hash, "full-file-hash");
+console.log(
+  "PASS: real file tool returns correct bounded ranges and full-file revision hashes for large sources.",
+);
+
+// Recovery must turn repeated reads into a verified action, without replaying the reads.
+vm.runInContext(
+  `
+  cancelled=false;busy=false;access.files=true;imageAttachments=[];attachments=[];
+  settings={...defaults,model:"same-model",streaming:false,rounds:10};
+  project={path:"/fixture",name:"fixture"};files=["src/app.py"];
+  globalThis.progressRequests=0;globalThis.actualReads=0;globalThis.actualChecks=0;globalThis.focusSeen=false;
+  native=async action=>{if(action==="readFile"){actualReads++;return {path:"src/app.py",content:"def check(): return False",hash:"original"};}return {};};
+  approveCommand=async args=>{actualChecks++;taskCommands++;return {exit_code:0,output:"2 checks passed"};};
+  modelRequest=async request=>{
+    progressRequests++;
+    if(progressRequests<=3)return {message:{content:"",tool_calls:[{function:{name:"read_file",arguments:{path:"src/app.py"}}}]}};
+    const format=request.body.format;
+    if(format && !format.anyOf.some(x=>x.properties.action.const==="read_file"))focusSeen=true;
+    if(progressRequests===4)return {message:{content:JSON.stringify({action:"request_command",arguments:{command:"python3 -m unittest",reason:"Validate the inspected behavior"}})}};
+    return {message:{content:JSON.stringify({action:"finish",message:"The requested validation finished: the actual command returned two passing checks."})}};
+  };
+  current={id:"progress",mode:"build",messages:[],display:[],created:Date.now()};
+  $("prompt").value="Inspect the implementation and run the existing checks.";
+`,
+  context,
+);
+await api.sendReal();
+assert.equal(context.actualReads, 1, "Repeated reads must not execute again");
+assert.equal(
+  context.actualChecks,
+  1,
+  "Recovery should reach the requested validation",
+);
+assert(context.focusSeen, "Recovery must offer a concrete different next step");
+assert(!api.getCurrent().display.some((m) => m.role === "error"));
+assert(
+  api
+    .getCurrent()
+    .display.some((m) => m.content.includes("two passing checks")),
+);
+
+// A configuration blocker plus repeated inspection should lead to an accurate handoff.
+vm.runInContext(
+  `
+  globalThis.blockerRequests=0;globalThis.blockerChecks=0;globalThis.blockerReads=0;
+  settings={...defaults,model:"same-model",streaming:false,rounds:12};
+  native=async action=>{if(action==="readFile"){blockerReads++;return {path:"src/app.py",content:"def check(): return False",hash:"same"};}return {};};
+  approveCommand=async()=>{blockerChecks++;taskCommands++;return {exit_code:2,output:JSON.stringify({state:"not_configured",missing_configuration:["DATABASE_URL","MANIFEST_PATH"],workers_started:false})};};
+  modelRequest=async request=>{
+    blockerRequests++;
+    const format=request.body.format;
+    if(format?.anyOf.length===1)return {message:{content:JSON.stringify({action:"finish",message:"The local check is blocked by DATABASE_URL and MANIFEST_PATH. No live deployment was verified. Which deployment and existing configuration paths should be used?"})}};
+    if(blockerRequests===4)return {message:{content:JSON.stringify({action:"request_command",arguments:{command:"python check.py",reason:"Check readiness"}})}};
+    if(format)return {message:{content:JSON.stringify({action:"read_file",arguments:{path:"src/app.py"}})}};
+    return {message:{tool_calls:[{function:{name:"read_file",arguments:{path:"src/app.py"}}}]}};
+  };
+  current={id:"configuration-blocker",mode:"build",messages:[],display:[],created:Date.now()};
+  $("prompt").value="Check readiness and finish setup.";
+`,
+  context,
+);
+await api.sendReal();
+assert.equal(context.blockerChecks, 1);
+assert.equal(context.blockerReads, 1);
+assert(context.blockerRequests < 12);
+assert(
+  api
+    .getCurrent()
+    .display.some((m) => m.content.includes("No live deployment was verified")),
+);
+assert(!api.getCurrent().display.some((m) => m.role === "error"));
+console.log(
+  "PASS: actual loop concludes from a verified configuration blocker rather than rereading indefinitely or inventing production readiness.",
+);
+
+// Stop/new task must isolate late model replies from the current conversation.
+vm.runInContext(
+  `
+  settings={...defaults,model:"same-model",streaming:false,rounds:3};
+  globalThis.staleReads=0;
+  native=async action=>{if(action==="readFile")staleReads++;return {};};
+  current={id:"old-task",mode:"ask",messages:[],display:[],created:Date.now()};
+  modelRequest=()=>new Promise(resolve=>globalThis.resolveOld=resolve);
+  $("prompt").value="Explain this folder.";
+`,
+  context,
+);
+const oldTask = api.sendReal();
+vm.runInContext(
+  `stop(); current={id:"new-task",mode:"ask",messages:[],display:[],created:Date.now()}; modelRequest=async()=>({message:{content:"New task answer."}}); $("prompt").value="Hello.";`,
+  context,
+);
+await api.sendReal();
+context.resolveOld({
+  message: {
+    content: "",
+    tool_calls: [
+      { function: { name: "read_file", arguments: { path: "old.py" } } },
+    ],
+  },
+});
+await oldTask;
+assert.equal(
+  context.staleReads,
+  0,
+  "Stopped task must not execute late tool calls",
+);
+assert.equal(api.getCurrent().id, "new-task");
+assert(!api.getCurrent().display.some((m) => m.content.includes("old.py")));
+console.log(
+  "PASS: actual agent loop avoids duplicate reads, reaches a verification command, and isolates late replies after Stop/new task.",
 );
 
 // A malformed text action must be corrected inside the task, not escape to the fatal handler.

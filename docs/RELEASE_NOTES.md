@@ -1,5 +1,13 @@
 # CyMalika release notes
 
+## 0.6.3
+
+- Detects repeated reads, searches, failed calls and unchanged actions. Reuses actual earlier file evidence instead of executing duplicate reads/searches.
+- Keeps a bounded task progress ledger visible after context compaction and switches to a focused recovery turn when calls stop producing new evidence. Edits and commands still require review.
+- Recognizes configuration blockers from actual check results and asks for the missing deployment/configuration detail instead of claiming readiness or endlessly rereading.
+- Large files can be inspected in bounded line ranges. Partial excerpts cannot silently become full-file replacements.
+- Preserves action arguments in text compatibility history. Stop isolates late responses so a stopped task cannot continue tools in a newer conversation.
+
 ## 0.6.2
 
 - Malformed tool calls now trigger bounded correction with the same selected model instead of terminating the task with a parser error.

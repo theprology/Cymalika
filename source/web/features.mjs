@@ -2285,6 +2285,7 @@ function updateAttachmentHint() {
       " · " + imageAttachments.length + " image(s) attached";
 }
 async function modelRequest(req, provider, textMode) {
+  const epoch = taskEpoch;
   if (settings.streaming === false) return native("request", req);
   req.body.stream = true;
   const s = newStream(provider),
@@ -2301,6 +2302,7 @@ async function modelRequest(req, provider, textMode) {
   let streamError = null,
     last = 0;
   const paint = () => {
+    if (epoch !== taskEpoch) return;
     body.replaceChildren();
     if (textMode) body.textContent = "Receiving model action…";
     else if (provider === "ollama" && settings.thinking !== "off")
@@ -2309,6 +2311,7 @@ async function modelRequest(req, provider, textMode) {
     $("conversation").scrollTop = $("conversation").scrollHeight;
   };
   streamCallbacks.set(id, (line) => {
+    if (epoch !== taskEpoch) return;
     try {
       streamLine(s, line);
       if (s.text && !row.isConnected) {
@@ -2336,7 +2339,7 @@ async function modelRequest(req, provider, textMode) {
     if (streamError) throw streamError;
     return streamResult(s);
   } catch (e) {
-    if (s.text && !cancelled)
+    if (epoch === taskEpoch && s.text && !cancelled)
       record(
         "notice",
         "The response stopped before completion. Partial text was not treated as a completed answer.",

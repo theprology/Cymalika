@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 for (const file of [
   "source/test-engine.mjs",
+  "source/test-progress.mjs",
   "source/test-markdown.mjs",
   "source/test-advanced.mjs",
   "source/test-workbench.mjs",
