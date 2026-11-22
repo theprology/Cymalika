@@ -853,6 +853,53 @@ assert(
     .display.some((m) => m.content.includes("two passing checks")),
 );
 
+// Unique exploration also needs to reach the requested verification, not wander forever.
+vm.runInContext(
+  `
+  settings={...defaults,model:"same-model",streaming:false,rounds:8};
+  globalThis.uniqueRounds=0;globalThis.uniqueReads=0;globalThis.uniqueChecks=0;
+  native=async action=>{if(action==="readFile"){uniqueReads++;return {content:"source "+uniqueReads,hash:"h"+uniqueReads};}return {};};
+  approveCommand=async()=>{uniqueChecks++;taskCommands++;return {exit_code:0,output:"All checks passed"};};
+  modelRequest=async request=>{
+    uniqueRounds++;
+    if(uniqueRounds===1)return {message:{tool_calls:Array.from({length:6},(_,i)=>({function:{name:"read_file",arguments:{path:"src/module"+i+".py"}}}))}};
+    if(uniqueRounds===2){if(request.body.format.anyOf.some(x=>x.properties.action.const==="read_file"))throw Error("Exploration not bounded");return {message:{content:JSON.stringify({action:"request_command",arguments:{command:"python checks.py",reason:"Run verification"}})}};}
+    return {message:{content:JSON.stringify({action:"finish",message:"The actual verification command passed."})}};
+  };
+  current={id:"unique-discovery",mode:"build",messages:[],display:[],created:Date.now()};$("prompt").value="Inspect the modules and run the existing checks.";
+`,
+  context,
+);
+await api.sendReal();
+assert.equal(context.uniqueReads, 6);
+assert.equal(context.uniqueChecks, 1);
+assert.equal(context.uniqueRounds, 3);
+vm.runInContext(
+  `
+  globalThis.falseClaimCalls=0;
+  modelRequest=async request=>{falseClaimCalls++;return {message:{content:request.body.format?JSON.stringify({action:"finish",message:"All checks passed."}):"All checks passed."}};};
+  current={id:"false-verification",mode:"build",messages:[],display:[],created:Date.now()};$("prompt").value="Run the existing tests and verify readiness.";
+`,
+  context,
+);
+await api.sendReal();
+assert(context.falseClaimCalls <= 4);
+assert(
+  api
+    .getCurrent()
+    .display.some((m) => m.content.includes("verification has not run")),
+);
+assert(
+  !api
+    .getCurrent()
+    .display.some(
+      (m) => m.role === "assistant" && m.content.includes("All checks passed"),
+    ),
+);
+console.log(
+  "PASS: bounded unique exploration reaches validation, and source-only/unsupported claims cannot satisfy a fresh verification request.",
+);
+
 // A configuration blocker plus repeated inspection should lead to an accurate handoff.
 vm.runInContext(
   `

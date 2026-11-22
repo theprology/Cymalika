@@ -1573,15 +1573,27 @@ async function send() {
   $("prompt").value = "";
   busyState(true);
   const epoch = taskEpoch;
-  const progress = createProgressGuard();
   const answerOnly =
     /no more tool calls|without tools|do not use tools|answer now using only/i.test(
       text,
     );
+  const progress = createProgressGuard({
+    requireValidation:
+      !answerOnly &&
+      mode === "build" &&
+      !!project &&
+      /\b(readiness|validation)\b|\b(run|execute)\b.{0,50}\b(tests?|checks?)\b|\bverify\b.{0,50}\b(runtime|tests?|checks?)\b/i.test(
+        text,
+      ) &&
+      !/\b(do not|don't|don’t|never)\b[^.!?\n]*(run|execute)[^.!?\n]*(commands|tests|checks)/i.test(
+        text,
+      ),
+  });
   let textMode = settings.protocol === "text";
   const tools = allTools(mode);
   let completed = false;
   let actionRecovery = 0;
+  let verificationRecovery = 0;
   let formatRecovery = 0;
   let formatExhausted = false;
   let contextCompactionReported = false;
@@ -1747,6 +1759,28 @@ async function send() {
         record("assistant", answer.content);
       }
       if (!answer.toolCalls.length) {
+        if (
+          progress.verificationPending &&
+          !answerOnly &&
+          !/\?\s*$/.test(answer.content.trim())
+        ) {
+          current.messages.push({ role: "assistant", content: answer.content });
+          if (verificationRecovery++ >= 2) break;
+          progress.focusVerification();
+          if (settings.protocol === "auto") textMode = true;
+          current.messages.push({
+            role: "user",
+            internal: true,
+            content:
+              "The requested verification has not run during this task. Earlier chat results are historical. Request the existing relevant check through tools now, or ask one specific missing detail if that is genuinely impossible. Source reads alone do not verify runtime readiness. Do not claim completion or repeat discovery.",
+          });
+          addActivity(
+            "Verification still needed",
+            "Guiding the same model to an actual check rather than a source-only completion claim.",
+          );
+          continue;
+        }
+
         const desktopProgress = desktopTaskProgress(
           text,
           mode,
@@ -2053,11 +2087,14 @@ async function send() {
       if (epoch !== taskEpoch) return;
       if (!cancelled) {
         if (
+          progress.verificationPending ||
           (needsEvidence && readCount === 0) ||
           !finalText ||
           progressOnly(finalText)
         )
-          finalText = `I could not complete this investigation. I read ${readCount} source file(s), but the model ${stalledRounds ? "repeated actions without making progress" : "used its investigation steps before reaching a conclusion"}. I cannot confirm that the project is working from this evidence. See Activity for the actual results and errors.`;
+          finalText = progress.verificationPending
+            ? "The requested verification has not run during this task. Source inspection is preserved, but readiness or test success has not been established. A relevant check and any required missing configuration are still needed; see Activity for actual results."
+            : `I could not complete this investigation. I read ${readCount} source file(s), but the model ${stalledRounds ? "repeated actions without making progress" : "used its investigation steps before reaching a conclusion"}. I cannot confirm that the project is working from this evidence. See Activity for the actual results and errors.`;
         if (formatExhausted)
           record(
             "notice",

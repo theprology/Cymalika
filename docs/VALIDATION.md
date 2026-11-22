@@ -2,7 +2,7 @@
 
 ## 0.6.3 progress recovery — November 22, 2026
 
-- Actual-loop regressions cover repeated reads reaching a verification command, configuration blockers reaching an accurate handoff, and late model replies after Stop/new task executing no stale tools. Guard tests cover rejection persistence, invalidation after approved edits, rerunning tests after a fix, fresh browser snapshots, and partial-read replacement protection.
+- Actual-loop regressions cover bounded unique exploration, rejection of verification claims without a fresh command result, repeated reads reaching a verification command, configuration blockers reaching an accurate handoff, and late model replies after Stop/new task executing no stale tools. Guard tests cover rejection persistence, invalidation after approved edits, rerunning tests after a fix, fresh browser snapshots, and partial-read replacement protection.
 - With the existing `CyberCrew/notmythos-8b:3.8-27b-uncensored` model, a live disposable-project run deliberately began with three identical read requests. Only one read executed. Focused recovery then led the same model to save one correct implementation edit, run the unchanged tests (two passed), and finish with an accurate answer. No model download or switch occurred. Harness approval was limited to that fixture edit and its fixed test command; no production deployment was attempted.
 - Large-file tool checks verify the exact returned line ranges, continuation line and full-file revision hash. Shared safeguards still apply; the feature does not guarantee arbitrary model reasoning or production readiness.
 

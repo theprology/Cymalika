@@ -191,3 +191,23 @@ assert(cycle.recover(), "Alternating repeated files must trigger recovery too");
 console.log(
   "PASS: alternating file-read cycles are detected, not just adjacent duplicates.",
 );
+
+const exploration = createProgressGuard({ requireValidation: true });
+for (let i = 0; i < 6; i++)
+  exploration.observe(
+    { name: "read_file", args: { path: "module" + i + ".py" } },
+    { content: "source" + i, hash: "hash" + i },
+  );
+assert(
+  exploration.recover(),
+  "Verification tasks need a bounded exploration phase even when every file differs",
+);
+assert(
+  !exploration
+    .tools([{ name: "read_file" }, { name: "request_command" }])
+    .some((t) => t.name === "read_file"),
+);
+assert.match(exploration.prompt(), /source inspection alone/);
+console.log(
+  "PASS: prolonged unique discovery is redirected toward requested validation.",
+);
