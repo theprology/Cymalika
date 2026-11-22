@@ -394,7 +394,65 @@ export function responseFrom(provider, data, textMode = false) {
     },
   };
 }
-export function createProgressGuard({ requireValidation = false } = {}) {
+export function isVerificationResult(call, result) {
+  if (
+    !["request_command", "computer_command"].includes(call.name) ||
+    result?.error ||
+    result?.exit_code === undefined ||
+    ["rejected", "stopped", "cancelled"].includes(result.status)
+  )
+    return false;
+  const command = String(call.args?.command || ""),
+    output = String(result.output || "");
+  if (
+    /(?:^|\s)--?(?:help|version|h)(?:\s|$)/i.test(command) ||
+    [126, 127].includes(Number(result.exit_code))
+  )
+    return false;
+  if (
+    /command not found|can't open file|No module named|invalid choice|unrecognized arguments/i.test(
+      output,
+    )
+  )
+    return false;
+  return /(?:^|[\s\/_.-])(?:check|checks|test|tests|pytest|unittest|readiness|preflight|verify|validate|validation|health|status|inspect|lint|typecheck|build)(?:[\s\/_.-]|$)/i.test(
+    command,
+  );
+}
+export function previousVerificationCommands(messages) {
+  const calls = new Map(),
+    commands = [];
+  for (const message of messages) {
+    for (const call of message.toolCalls || []) calls.set(call.id, call);
+    if (message.role !== "tool") continue;
+    const call = calls.get(message.callId);
+    if (!call) continue;
+    let result;
+    try {
+      result = JSON.parse(message.content);
+    } catch {
+      continue;
+    }
+    const command = String(call.args?.command || "");
+    if (
+      isVerificationResult(call, result) &&
+      command.length <= 1000 &&
+      !/--?(?:password|token|api-key|secret)\b|\b[A-Z][A-Z0-9_]*=|:\/\/\S+@/.test(
+        command,
+      )
+    ) {
+      const index = commands.indexOf(command);
+      if (index >= 0) commands.splice(index, 1);
+      commands.push(command);
+    }
+  }
+  return commands.slice(-3);
+}
+
+export function createProgressGuard({
+  requireValidation = false,
+  history = [],
+} = {}) {
   const observations = new Set(["read_file", "list_files", "search_project"]);
   const effects = new Set([
     "request_edit",
@@ -417,6 +475,7 @@ export function createProgressGuard({ requireValidation = false } = {}) {
     rejected = new Set(),
     evidence = new Set();
   const ledger = [];
+  const knownChecks = previousVerificationCommands(history);
   const coverage = new Map();
   const fileKey = (p) =>
     String(p || "")
@@ -552,12 +611,7 @@ export function createProgressGuard({ requireValidation = false } = {}) {
     },
     observe(call, result) {
       const key = keyFor(call);
-      if (
-        ["request_command", "computer_command"].includes(call.name) &&
-        result?.exit_code !== undefined &&
-        !failed(result)
-      )
-        verificationPending = false;
+      if (isVerificationResult(call, result)) verificationPending = false;
       if (
         ["request_edit", "computer_write_file"].includes(call.name) &&
         !failed(result)
@@ -704,11 +758,16 @@ export function createProgressGuard({ requireValidation = false } = {}) {
       );
     },
     prompt() {
-      if (!ledger.length) return "";
+      if (!ledger.length && !knownChecks.length) return "";
       const notes = [...ledger];
       while (notes.length > 1 && JSON.stringify(notes).length > 6000)
         notes.shift();
       return (
+        (knownChecks.length
+          ? "\nPreviously executed verification commands in this conversation (historical invocation references only, not fresh results or approval): " +
+            JSON.stringify(knownChecks) +
+            ". If relevant to this task, prefer the exact existing invocation and request review before executing it again.\n"
+          : "") +
         (requireValidation
           ? "\nThe requested verification is not established by source inspection alone. After bounded exploration, choose an existing relevant check from the actual inspected evidence and request its approval; do not invent paths, start external jobs, or override the user's restrictions.\n"
           : "") +

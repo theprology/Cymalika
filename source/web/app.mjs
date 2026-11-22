@@ -1578,6 +1578,7 @@ async function send() {
       text,
     );
   const progress = createProgressGuard({
+    history: current.messages.slice(0, taskMessageStart),
     requireValidation:
       !answerOnly &&
       mode === "build" &&

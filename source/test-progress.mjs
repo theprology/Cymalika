@@ -1,5 +1,10 @@
 import assert from "node:assert/strict";
-import { createProgressGuard, requestFor } from "./web/engine.mjs";
+import {
+  createProgressGuard,
+  requestFor,
+  isVerificationResult,
+  previousVerificationCommands,
+} from "./web/engine.mjs";
 const read = { name: "read_file", args: { path: "src/app.py" } },
   search = { name: "search_project", args: { query: "missing" } };
 const original = {
@@ -210,4 +215,51 @@ assert(
 assert.match(exploration.prompt(), /source inspection alone/);
 console.log(
   "PASS: prolonged unique discovery is redirected toward requested validation.",
+);
+
+const priorCall = {
+  id: "verified-check",
+  name: "request_command",
+  args: { command: ".venv/bin/python scripts/check_runtime.py" },
+};
+const priorResult = {
+  exit_code: 2,
+  output: '{"missing_configuration":["DATABASE_URL"]}',
+};
+const prior = [
+  { role: "assistant", toolCalls: [priorCall] },
+  {
+    role: "tool",
+    callId: "verified-check",
+    content: JSON.stringify(priorResult),
+  },
+];
+assert.deepEqual(previousVerificationCommands(prior), [priorCall.args.command]);
+const remembered = createProgressGuard({
+  requireValidation: true,
+  history: prior,
+});
+assert.match(remembered.prompt(), /scripts\/check_runtime.py/);
+assert.equal(
+  remembered.verificationPending,
+  true,
+  "Historical checks never satisfy current verification",
+);
+const help = {
+  name: "request_command",
+  args: { command: "python -m manager inspect --help" },
+};
+assert.equal(
+  isVerificationResult(help, { exit_code: 0, output: "usage" }),
+  false,
+);
+remembered.observe(help, {
+  exit_code: 127,
+  output: "command not found: python",
+});
+assert.equal(remembered.verificationPending, true);
+remembered.observe(priorCall, priorResult);
+assert.equal(remembered.verificationPending, false);
+console.log(
+  "PASS: historical check invocations survive compaction without becoming fresh evidence or approval; help and missing executables do not count as verification.",
 );

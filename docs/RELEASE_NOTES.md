@@ -7,6 +7,7 @@
 - Keeps a bounded task progress ledger visible after context compaction and switches to a focused recovery turn when calls stop producing new evidence. Edits and commands still require review.
 - Recognizes configuration blockers from actual check results and asks for the missing deployment/configuration detail instead of claiming readiness or endlessly rereading.
 - Large files can be inspected in bounded line ranges. Partial excerpts cannot silently become full-file replacements.
+- Preserves historical checker invocations as references through compaction, without treating their results or approvals as current. Help requests and missing executables do not satisfy validation.
 - Preserves action arguments in text compatibility history. Stop isolates late responses so a stopped task cannot continue tools in a newer conversation.
 
 ## 0.6.2
