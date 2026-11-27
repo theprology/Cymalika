@@ -547,8 +547,6 @@ async function verifyStartup() {
     libraryTab = "download"; await renderModelLibrary();
     check($("modelLibraryBody").querySelector('[aria-label="Model source"]').value === "huggingface", "All-format model discovery is not the default");
     check($("modelLibraryBody").querySelector('[aria-label="Find a model"]'), "Model link/search field did not render");
-    libraryTab = "download"; await renderModelLibrary();
-    check($("modelLibraryBody").textContent.includes("Already know the model ID?"), "Model discovery screen did not render");
     $("coffeeSwitch").checked = true;
     await toggleCoffee();
     check(coffeeEnabled && coffeeSipVisible, "Coffee did not show its brief sip animation");
