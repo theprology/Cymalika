@@ -1,5 +1,13 @@
 # CyMalika release notes
 
+## 0.6.4
+
+- Searches Hugging Face across all formats and resolves exact model IDs and links. Non-GGUF models are visible instead of being filtered out.
+- Shows model format, task, architecture, quantization, reported weight sizes, local hardware and runtime/access requirements before a download. Unknown metadata and architecture support are explicit.
+- Adds guided connections for LM Studio, llama.cpp, MLX-LM, vLLM, SGLang, TGI and other OpenAI-compatible chat APIs, with server model listing and explicit profile selection.
+- Keeps the active model when saving a connection. API keys stay session-only and clear when the new connection URL or runtime changes.
+- Lists models from the active non-Ollama API. Other runtimes are connected rather than installed/launched automatically; the managed runtime installer remains Ollama-only.
+
 ## 0.6.3
 
 - Detects repeated reads, searches, failed calls and unchanged actions. Reuses actual earlier file evidence instead of executing duplicate reads/searches.

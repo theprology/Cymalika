@@ -1,5 +1,12 @@
 # Validation
 
+## 0.6.4 model discovery and runtime connections — November 27, 2026
+
+- Shared regression suite and formatting pass. The catalog test covers all-format queries, exact Hugging Face URLs, reported/unknown file sizes, architecture and adapter requirements, host-memory warnings, endpoint validation and preservation of the active model.
+- A local HTTP fixture tests model discovery for all seven connection presets and actual OpenAI-compatible chat/function-call request and response handling. It verifies session-only API keys and key clearing on URL changes. No AI model is downloaded or loaded. This does not prove every runtime version or model architecture is supported.
+- Signed/notarized native Mac app installed and checked with the real Hugging Face link for MoonMath-ai/DeepSeek-V4.1-Flash-1017-uncensored: Safetensors, FP8, DeepseekV41ForCausalLM and 475.3 GiB reported weight files appeared, along with the measured 24 GiB system RAM and runtime guidance. The connection wizard and seven runtime choices rendered. No download or model selection was made; saved model/provider/endpoint/name were preserved.
+- Runtime installation beyond Ollama, automatic conversion, hardware provisioning and running this large checkpoint are not part of this release. Native Windows/Linux execution of the new connection UI requires their platform checks; the implementation is shared.
+
 ## 0.6.3 progress recovery — November 22, 2026
 
 - Actual-loop regressions cover bounded unique exploration, rejection of verification claims without a fresh command result, repeated reads reaching a verification command, configuration blockers reaching an accurate handoff, and late model replies after Stop/new task executing no stale tools. Guard tests cover rejection persistence, invalidation after approved edits, rerunning tests after a fix, fresh browser snapshots, and partial-read replacement protection.

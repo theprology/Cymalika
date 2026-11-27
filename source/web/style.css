@@ -3208,3 +3208,20 @@ body[data-app-colour][data-theme="hacker"] {
 .library-status.error {
   color: #ef9191;
 }
+
+.library-connection-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+.library-connection-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.library-connection-form input,
+.library-connection-form select {
+  width: 100%;
+  min-width: 0;
+}

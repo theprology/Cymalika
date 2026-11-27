@@ -1,3 +1,182 @@
+const libraryRuntimes = [
+  {
+    id: "lmstudio",
+    name: "LM Studio",
+    endpoint: "http://localhost:1234/v1",
+    help: "Start LM Studio’s local server with a supported GGUF or MLX chat model. CyMalika connects to its OpenAI-compatible API.",
+  },
+  {
+    id: "llamacpp",
+    name: "llama.cpp",
+    endpoint: "http://localhost:8080/v1",
+    help: "Run llama-server with a GGUF model supported by your llama.cpp version. CPU, Metal and GPU support depend on that build.",
+  },
+  {
+    id: "mlx",
+    name: "MLX-LM · Apple silicon",
+    endpoint: "http://localhost:8080/v1",
+    help: "Start mlx_lm.server on your Apple-silicon Mac with a supported MLX model. MLX-format Safetensors are different from arbitrary GPU checkpoints.",
+  },
+  {
+    id: "vllm",
+    name: "vLLM · local or GPU server",
+    endpoint: "http://localhost:8000/v1",
+    help: "Start vLLM on hardware that supports the model’s architecture and quantization. Large checkpoints usually need a Linux GPU server.",
+  },
+  {
+    id: "sglang",
+    name: "SGLang · local or GPU server",
+    endpoint: "http://localhost:30000/v1",
+    help: "Start SGLang with the publisher’s supported architecture, reasoning parser and tool parser. Hardware and runtime version matter.",
+  },
+  {
+    id: "tgi",
+    name: "Hugging Face TGI",
+    endpoint: "http://localhost:8080/v1",
+    help: "Connect a running Text Generation Inference server that supports chat completions for your chosen model.",
+  },
+  {
+    id: "compatible",
+    name: "Other / hosted OpenAI-compatible API",
+    endpoint: "",
+    help: "Enter the API base URL ending in /v1 and the model ID your server exposes. Remote connections use HTTPS; SSH tunnels can use localhost HTTP.",
+  },
+];
+function hfModelId(raw) {
+  let value = String(raw || "").trim();
+  if (/^https?:\/\//i.test(value)) {
+    let url;
+    try {
+      url = new URL(value);
+    } catch {
+      throw Error("Enter a Hugging Face model link or owner/model ID.");
+    }
+    if (
+      url.protocol !== "https:" ||
+      url.hostname !== "huggingface.co" ||
+      url.username ||
+      url.password
+    )
+      throw Error(
+        "Use a model link on https://huggingface.co, without credentials.",
+      );
+    value = url.pathname.replace(/^\/+|\/+$/g, "");
+    if (value.split("/").length > 2) {
+      const parts = value.split("/");
+      if (!["tree", "blob", "resolve"].includes(parts[2]))
+        throw Error("Enter the model’s repository link.");
+      value = parts.slice(0, 2).join("/");
+    }
+  }
+  value = value.replace(/^hf\.co\//, "");
+  if (
+    /^[\w.-]+\/[\w.-]+$/.test(value) &&
+    !value.split("/").some((x) => x === "." || x === "..")
+  )
+    return value;
+  if (value.includes("://") || value.includes("/") || value.includes(".."))
+    throw Error("Enter an owner/model ID or a Hugging Face model link.");
+  return "";
+}
+function modelCatalogURL(raw, limit = 20) {
+  const id = hfModelId(raw);
+  return id
+    ? "https://huggingface.co/api/models/" + id + "?blobs=true"
+    : "https://huggingface.co/api/models?limit=" +
+        Math.max(20, Math.min(100, limit)) +
+        "&full=true&cardData=true&search=" +
+        encodeURIComponent(String(raw || "").trim());
+}
+function modelRequirements(model, hardware = {}) {
+  const files = Array.isArray(model.siblings) ? model.siblings : [];
+  const tags = Array.isArray(model.tags) ? model.tags : [];
+  const gguf = files.filter((f) => /\.gguf$/i.test(f.rfilename || ""));
+  const weights = files.filter((f) =>
+    /\.(safetensors|bin|pt|pth|onnx|h5|msgpack)$/i.test(f.rfilename || ""),
+  );
+  const mlx =
+    tags.some((t) => /^mlx$/i.test(t)) ||
+    model.library_name === "mlx" ||
+    /^mlx-community\//i.test(model.id || "");
+  const adapter =
+    files.some((f) => /(^|\/)adapter_config\.json$/.test(f.rfilename || "")) ||
+    tags.includes("peft");
+  const formats = [];
+  if (gguf.length || tags.includes("gguf")) formats.push("GGUF");
+  if (weights.some((f) => /\.safetensors$/i.test(f.rfilename)))
+    formats.push(mlx ? "MLX Safetensors" : "Safetensors");
+  if (weights.some((f) => /\.(bin|pt|pth)$/i.test(f.rfilename)))
+    formats.push("PyTorch");
+  if (weights.some((f) => /\.onnx$/i.test(f.rfilename))) formats.push("ONNX");
+  if (adapter) formats.push("Adapter · needs base model");
+  const known = weights.filter((f) => Number(f.size || f.lfs?.size) > 0);
+  const weightBytes = known.reduce(
+    (n, f) => n + Number(f.size || f.lfs?.size),
+    0,
+  );
+  const completeSize = weights.length > 0 && known.length === weights.length;
+  const task = model.pipeline_tag || "Not reported";
+  const chatCandidate = [
+    "text-generation",
+    "image-text-to-text",
+    "text2text-generation",
+  ].includes(task);
+  const runtime = adapter
+    ? "Load with a compatible base model and adapter-aware runtime; this is not a standalone model."
+    : mlx
+      ? "MLX-LM or LM Studio on Apple silicon, if this architecture is supported."
+      : gguf.length
+        ? "Ollama, llama.cpp or LM Studio, if their installed version supports this architecture and file layout."
+        : formats.some((x) => ["Safetensors", "PyTorch"].includes(x))
+          ? "A matching Transformers-based runtime, such as vLLM, SGLang or TGI, with explicit support for this architecture and quantization. These files do not install through CyMalika’s Ollama downloader."
+          : "Runtime not established from metadata. Check the publisher’s model card; an OpenAI-compatible chat server is needed to use it in CyMalika.";
+  const ram = Number(hardware.ram) || 0;
+  const memory =
+    weightBytes && ram && weightBytes > ram
+      ? "Reported repository weight files exceed this computer’s total RAM. If these files form one checkpoint, it cannot fit fully in memory here. Repositories with alternative variants need comparison per variant. Offloading, conversion and architecture support require separate assessment."
+      : "File size is not a RAM/VRAM requirement. Leave room for the operating system, runtime and context cache. Metadata alone cannot confirm this model will run on this computer.";
+  return {
+    formats,
+    gguf,
+    weightBytes,
+    completeSize,
+    task,
+    chatCandidate,
+    runtime,
+    memory,
+    adapter,
+    mlx,
+    architecture:
+      (model.config?.architectures || []).join(", ") ||
+      model.config?.model_type ||
+      "Not reported",
+    quantization:
+      model.config?.quantization_config?.quant_method || "See model card",
+  };
+}
+function runtimeConnection(raw) {
+  const url = new URL(String(raw || "").trim());
+  if (
+    !["http:", "https:"].includes(url.protocol) ||
+    url.username ||
+    url.password ||
+    url.search ||
+    url.hash ||
+    (url.protocol === "http:" &&
+      !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname))
+  )
+    throw Error(
+      "Use HTTPS for a remote server, or localhost HTTP. Keep credentials in the API key field.",
+    );
+  let base = url.href.replace(/\/+$/, "");
+  if (/\/(models|chat\/completions|completions)$/.test(url.pathname))
+    throw Error(
+      "Enter the API base URL (usually ending in /v1), not a models or completions URL.",
+    );
+  if (url.pathname === "/") base += "/v1";
+  return base;
+}
+
 function libraryButton(text, cls, fn) {
   return button(text, cls, async (event) => {
     try {
@@ -80,7 +259,7 @@ function readableBytes(n) {
   const value = Number(n) || 0;
   if (!value) return "Not reported";
   const scale = value >= 1024 ** 3 ? 1024 ** 3 : 1024 ** 2;
-  return (value / scale).toFixed(1) + (scale === 1024 ** 3 ? " GB" : " MB");
+  return (value / scale).toFixed(1) + (scale === 1024 ** 3 ? " GiB" : " MiB");
 }
 function localLibraryEndpoint() {
   const u = new URL(libraryEndpoint);
@@ -134,11 +313,18 @@ async function openModelLibrary(tab = "installed") {
       }
     } catch {}
     libraryEndpoint = libraryEndpoint || libraryRuntime.endpoint || "";
-    if (!libraryEndpoint && tab === "download") libraryTab = "engine";
     await renderModelLibrary();
     pollLibraryJobs();
   } catch (e) {
-    libraryMessage(e.message, true);
+    if (["download", "connections"].includes(libraryTab)) {
+      libraryRuntime = null;
+      await renderModelLibrary();
+      libraryMessage(
+        "Local engine status unavailable. Model search and API connections are still available. " +
+          e.message,
+        true,
+      );
+    } else libraryMessage(e.message, true);
   }
 }
 async function renderModelLibrary() {
@@ -160,6 +346,58 @@ async function renderModelLibrary() {
   }
   if (libraryTab === "download") {
     renderLibraryDownloads();
+    return;
+  }
+  if (settings.provider !== "ollama") {
+    libraryMessage("Reading models from your active API connection…");
+    try {
+      const anthropic = settings.provider === "anthropic";
+      const data = await native("request", {
+        url: endpoint(settings.endpoint, anthropic ? "v1/models" : "models"),
+        method: "GET",
+        headers: anthropic
+          ? { "x-api-key": settings.apiKey, "anthropic-version": "2023-06-01" }
+          : settings.apiKey
+            ? { Authorization: "Bearer " + settings.apiKey }
+            : {},
+      });
+      if (viewEpoch !== libraryViewEpoch) return;
+      if (!Array.isArray(data.data))
+        throw Error("The server did not return a compatible model list.");
+      libraryMessage(
+        `${data.data.length} model(s) reported by ${settings.endpoint}. Server availability does not prove model/tool compatibility.`,
+      );
+      for (const m of data.data) {
+        if (typeof m.id !== "string") continue;
+        const c = libraryCard(
+          m.id,
+          "Available through your current API connection · managed by that runtime",
+        );
+        libraryActions(c).append(
+          libraryButton(
+            settings.model === m.id ? "Selected" : "Use this model",
+            "button primary",
+            async () => {
+              if (busy) return;
+              settings.model = m.id;
+              settings.activeProfile = "";
+              capability = "Untested";
+              scheduleSave();
+              paintConnections();
+              await refreshModels();
+              await renderModelLibrary();
+            },
+          ),
+        );
+      }
+      if (!data.data.length)
+        libraryCard(
+          "No models reported",
+          "Start or load a model in the runtime, or use its exact server model ID in Connections. CyMalika does not download a replacement.",
+        );
+    } catch (e) {
+      if (viewEpoch === libraryViewEpoch) libraryMessage(e.message, true);
+    }
     return;
   }
   if (!libraryEndpoint) {
@@ -293,84 +531,85 @@ function reviewModelRemoval(name) {
   );
   review.scrollIntoView?.({ block: "nearest" });
 }
+let catalogSearchEpoch = 0;
+let catalogRequirementsEpoch = 0;
+let catalogModel = "";
 function renderLibraryDownloads() {
   libraryMessage(
-    "Downloads begin only after you review and confirm. Model formats, licenses, hardware and tool support vary.",
+    "Browse all model formats. Viewing requirements downloads metadata only; model downloads always need confirmation.",
   );
-  const search = elem("div", "library-search");
-  const source = elem("select");
+  const search = elem("div", "library-search"),
+    source = elem("select");
   source.setAttribute("aria-label", "Model source");
   for (const [v, t] of [
+    ["huggingface", "Hugging Face · all formats"],
     ["ollama", "Ollama model ID"],
-    ["huggingface", "Hugging Face · public GGUF"],
   ])
     source.append(new Option(t, v));
+  source.value = "huggingface";
   const query = elem("input");
-  query.placeholder = "Model ID, or search Hugging Face…";
+  query.placeholder =
+    "Search models, owner/model, or paste a Hugging Face link…";
   query.setAttribute("aria-label", "Find a model");
-  const go = libraryButton("Find model", "button primary", async () => {
+  const results = elem("div");
+  results.id = "modelSearchResults";
+  let limit = 20;
+  const run = async () => {
+    if (!query.value.trim())
+      throw Error("Enter a model name or Hugging Face link.");
     if (source.value === "ollama")
       return reviewModelDownload(query.value, "Ollama registry");
-    const searchEpoch = libraryViewEpoch;
-    libraryMessage("Searching Hugging Face GGUF repositories…");
-    const results = await native("request", {
-      url:
-        "https://huggingface.co/api/models?filter=gguf&limit=12&full=true&cardData=true&search=" +
-        encodeURIComponent(query.value.trim()),
+    const searchEpoch = ++catalogSearchEpoch,
+      viewEpoch = libraryViewEpoch;
+    libraryMessage("Searching Hugging Face across all formats…");
+    results.replaceChildren();
+    $("modelLibraryReview").replaceChildren();
+    ++catalogRequirementsEpoch;
+    const data = await native("request", {
+      url: modelCatalogURL(query.value, limit),
       method: "GET",
     });
-    if (searchEpoch !== libraryViewEpoch) return;
-    if (!Array.isArray(results))
-      throw Error("The model directory returned an invalid response.");
-    $("modelSearchResults").replaceChildren();
-    for (const m of results) {
+    if (searchEpoch !== catalogSearchEpoch || viewEpoch !== libraryViewEpoch)
+      return;
+    const rows = Array.isArray(data) ? data : data?.id ? [data] : null;
+    if (!rows) throw Error("The model directory returned an invalid response.");
+    for (const m of rows) {
       if (!/^[\w.-]+\/[\w.-]+$/.test(m.id || "")) continue;
+      const requirements = modelRequirements(m);
       const c = elem("article", "library-model-card");
       c.append(
         elem("strong", "", m.id),
         elem(
           "p",
           "muted",
-          `${Number(m.downloads || 0).toLocaleString()} downloads · License: ${String(m.cardData?.license || "see model card")} ${m.gated ? "· Gated model" : ""}`,
+          `${requirements.formats.join(" · ") || "Format not reported"} · Task: ${requirements.task} · License: ${String(m.cardData?.license || "see model card")}${m.gated ? " · Access approval required" : ""}`,
         ),
       );
-      const quant = elem("input");
-      quant.value = "Q4_K_M";
-      quant.placeholder = "Quantization (for example Q4_K_M)";
-      quant.setAttribute("aria-label", "Quantization for " + m.id);
-      const a = libraryActions(c);
-      a.append(
-        libraryButton("Read model card", "button", async () => {
-          const data = await native("request", {
-            url: "https://huggingface.co/" + m.id + "/raw/main/README.md",
-            method: "GET",
-          });
-          const cardText = elem(
-            "pre",
-            "library-model-readme",
-            String(data.text || "No model card text returned.").slice(0, 40000),
-          );
-          c.append(cardText);
-        }),
-        quant,
-        libraryButton(
-          m.gated ? "Requires Hugging Face access" : "Review download",
-          "button primary",
-          () =>
-            reviewModelDownload(
-              "hf.co/" + m.id + ":" + (quant.value.trim() || "Q4_K_M"),
-              "Hugging Face · " + m.id,
-              String(m.cardData?.license || "See the model card"),
-            ),
+      libraryActions(c).append(
+        libraryButton("Requirements & ways to run", "button primary", () =>
+          inspectCatalogModel(m.id),
         ),
       );
-      $("modelSearchResults").append(c);
+      results.append(c);
     }
+    if (Array.isArray(data) && rows.length === limit && limit < 100)
+      results.append(
+        libraryButton("Show more results", "button", async () => {
+          limit += 20;
+          await run();
+        }),
+      );
     libraryMessage(
-      results.length
-        ? "Choose a quantization supported by the repository. Public GGUF models can be downloaded through Ollama."
-        : "No matching public GGUF repositories found.",
+      rows.length
+        ? `${rows.length} result(s) · all formats included. Inspect a model before choosing a runtime.`
+        : "No matching public models found. Try the exact owner/model ID. Private or gated repositories may need access on Hugging Face.",
     );
+    if (!Array.isArray(data) && rows.length === 1)
+      await inspectCatalogModel(rows[0].id, data);
+  };
+  const go = libraryButton("Find model", "button primary", async () => {
+    limit = 20;
+    await run();
   });
   query.onkeydown = (e) => {
     if (e.key === "Enter") {
@@ -382,25 +621,172 @@ function renderLibraryDownloads() {
   $("modelLibraryBody").append(
     search,
     elem(
-      "div",
+      "p",
       "library-help",
-      "Ollama accepts model IDs such as qwen3:8b. Hugging Face downloads use hf.co/owner/GGUF-repository:quantization. Private/gated repositories need access configured with the provider; arbitrary Safetensors files cannot run directly in Ollama.",
+      "Search includes GGUF, Safetensors, MLX, adapters and other formats. Search results are not a compatibility guarantee. Existing runtimes and models are kept until you explicitly choose another connection.",
     ),
-  );
-  const results = elem("div");
-  results.id = "modelSearchResults";
-  $("modelLibraryBody").append(results);
-  const prompt = libraryCard(
-    "Already know the model ID?",
-    "Choose Ollama model ID above, enter the exact ID, and review the download. There is no automatic model replacement.",
-  );
-  libraryActions(prompt).append(
-    libraryButton("Open Hugging Face search", "button", () => {
-      source.value = "huggingface";
-      query.focus();
-    }),
+    results,
   );
 }
+async function inspectCatalogModel(id, metadata) {
+  const searchEpoch = catalogSearchEpoch,
+    viewEpoch = libraryViewEpoch,
+    requirementsEpoch = ++catalogRequirementsEpoch;
+  libraryMessage("Reading model requirements…");
+  const m =
+    metadata ||
+    (await native("request", { url: modelCatalogURL(id), method: "GET" }));
+  if (
+    searchEpoch !== catalogSearchEpoch ||
+    viewEpoch !== libraryViewEpoch ||
+    requirementsEpoch !== catalogRequirementsEpoch
+  )
+    return;
+  if (m.id !== id)
+    throw Error("Model metadata did not match the requested repository.");
+  const r = modelRequirements(m, libraryRuntime || {}),
+    review = $("modelLibraryReview");
+  review.replaceChildren();
+  const row = (label, text) => {
+    const p = elem("p");
+    p.append(elem("strong", "", label + ": "), elem("span", "", text));
+    review.append(p);
+  };
+  review.append(elem("h3", "", id));
+  row("Format", r.formats.join(" · ") || "Not reported");
+  row(
+    "Task",
+    r.task +
+      (r.chatCandidate
+        ? " · chat template and tool support still need testing"
+        : " · not established as a chat model; it may need a separate task-specific app"),
+  );
+  row("Architecture", r.architecture);
+  row("Quantization", String(r.quantization));
+  row(
+    "Weight files",
+    r.weightBytes
+      ? readableBytes(r.weightBytes) +
+          (r.completeSize
+            ? " total reported checkpoint files"
+            : " known files only; metadata is incomplete") +
+          ". Alternative checkpoints, if present, are included in this repository total."
+      : "Size not reported. Inspect the publisher’s files before installing.",
+  );
+  if (r.gguf.length) {
+    const fileList = elem("details");
+    fileList.append(
+      elem("summary", "", `${r.gguf.length} GGUF file(s) · sizes and variants`),
+    );
+    for (const f of r.gguf.slice(0, 30))
+      fileList.append(
+        elem(
+          "p",
+          "library-help",
+          f.rfilename + " · " + readableBytes(f.size || f.lfs?.size),
+        ),
+      );
+    if (r.gguf.length > 30)
+      fileList.append(
+        elem(
+          "p",
+          "library-help",
+          "First 30 files shown. See the model card for all variants. Split files must be combined as the runtime requires; alternative quantizations are separate choices.",
+        ),
+      );
+    review.append(fileList);
+  }
+  row(
+    "This computer",
+    readableBytes(libraryRuntime?.ram) +
+      " system RAM · " +
+      readableBytes(libraryRuntime?.freeDisk) +
+      " free disk. GPU capacity is not measured here.",
+  );
+  row("Memory", r.memory);
+  row("Ways to run", r.runtime);
+  row(
+    "Remote server",
+    "A normal CPU VPS is not equivalent to a GPU inference server. Check architecture support, total weight memory, extra context memory, GPU type/count and storage before renting hardware. CyMalika can connect to a compatible chat API over HTTPS or a localhost SSH tunnel.",
+  );
+  row(
+    "Access & license",
+    (m.gated
+      ? "Hugging Face approval/authentication required. "
+      : "Public metadata. ") +
+      String(m.cardData?.license || "Read the publisher’s license."),
+  );
+  const a = libraryActions(review);
+  a.append(
+    libraryButton("Read model card", "button", async () => {
+      const data = await native("request", {
+        url: "https://huggingface.co/" + id + "/raw/main/README.md",
+        method: "GET",
+      });
+      if (
+        viewEpoch !== libraryViewEpoch ||
+        requirementsEpoch !== catalogRequirementsEpoch ||
+        !review.children.length
+      )
+        return;
+      const pre = elem(
+        "pre",
+        "library-model-readme",
+        String(data.text || "No model card returned.").slice(0, 40000),
+      );
+      review.append(pre);
+    }),
+    libraryButton("Set up a runtime connection", "button primary", async () => {
+      catalogModel = id;
+      libraryTab = "connections";
+      await renderModelLibrary();
+    }),
+  );
+  if (r.gguf.length && !r.adapter) {
+    const quant = elem("select");
+    quant.setAttribute("aria-label", "GGUF quantization");
+    const choices = [
+      ...new Set(
+        r.gguf
+          .map((f) =>
+            (f.rfilename.match(
+              /(?:^|[-_.])((?:IQ|Q|F|BF)\d[A-Z0-9_]*)(?=[-.]|$)/i,
+            ) || [])[1]?.toUpperCase(),
+          )
+          .filter(Boolean),
+      ),
+    ];
+    if (choices.length) {
+      choices.forEach((q) => quant.append(new Option(q, q)));
+      const q4 = choices.find((q) => q === "Q4_K_M");
+      if (q4) quant.value = q4;
+      a.append(
+        quant,
+        libraryButton("Review Ollama download", "button", () =>
+          reviewModelDownload(
+            "hf.co/" + id + ":" + quant.value,
+            "Hugging Face GGUF · architecture support must be checked",
+            String(m.cardData?.license || "See model card"),
+          ),
+        ),
+      );
+    } else
+      row(
+        "GGUF download",
+        "GGUF files exist, but a supported quantization tag could not be identified. Use the publisher’s instructions with llama.cpp / LM Studio, or configure a running server.",
+      );
+  }
+  a.append(
+    libraryButton("Close requirements", "button", () =>
+      review.replaceChildren(),
+    ),
+  );
+  libraryMessage(
+    "Requirements loaded. No model files downloaded and your active model is unchanged.",
+  );
+  review.scrollIntoView?.({ block: "nearest" });
+}
+
 function reviewModelDownload(
   raw,
   source,
@@ -443,23 +829,137 @@ function reviewModelDownload(
   review.scrollIntoView?.({ block: "nearest" });
 }
 function renderLibraryConnections() {
-  const body = $("modelLibraryBody");
-  const info = libraryCard(
-    "Your models, your connections",
-    "Keep local models, LM Studio/llama.cpp/vLLM servers, OpenAI-compatible services and Anthropic connections side by side. A compatible API is required; model capabilities still determine available features.",
+  const c = libraryCard(
+    "Connect another runtime",
+    "Ollama is optional. Connect LM Studio, llama.cpp, MLX-LM, vLLM, SGLang, TGI or a hosted chat API. This connects an existing server; it does not install or start a runtime or download a model.",
   );
-  const name = elem("input");
-  name.placeholder = "Connection name";
-  name.setAttribute("aria-label", "Connection name");
-  libraryActions(info).append(
-    name,
-    libraryButton("Save current connection", "button primary", () => {
-      if (busy) return toast("Wait for the current task.");
-      if (!name.value.trim())
-        return libraryMessage("Give this connection a name.", true);
+  const form = elem("div", "library-connection-form");
+  const input = (label, type = "input") => {
+    const wrap = elem("label"),
+      control = elem(type);
+    wrap.append(elem("span", "", label), control);
+    control.setAttribute("aria-label", label);
+    form.append(wrap);
+    return control;
+  };
+  const runtime = input("Runtime", "select");
+  libraryRuntimes.forEach((r) => runtime.append(new Option(r.name, r.id)));
+  runtime.value = "lmstudio";
+  const help = elem("p", "library-help");
+  const name = input("Connection name"),
+    base = input("API base URL"),
+    model = input("Server model ID"),
+    key = input("API key (optional, session only)");
+  key.type = "password";
+  key.autocomplete = "off";
+  const models = input("Models reported by server", "select");
+  models.append(new Option("Check connection to list models", ""));
+  const status = elem("p", "library-help");
+  status.setAttribute("role", "status");
+  let connectionEpoch = 0;
+  const resetConnection = () => {
+    ++connectionEpoch;
+    key.value = "";
+    models.replaceChildren(new Option("Check connection to list models", ""));
+    status.textContent = "";
+  };
+  base.oninput = resetConnection;
+  const selectedPreset = () =>
+    libraryRuntimes.find((r) => r.id === runtime.value) || libraryRuntimes[0];
+  const apply = () => {
+    const r = selectedPreset();
+    base.value = r.endpoint;
+    name.value = r.name;
+    help.textContent = r.help;
+    resetConnection();
+  };
+  runtime.onchange = apply;
+  apply();
+  model.value = catalogModel;
+  models.onchange = () => {
+    if (models.value) model.value = models.value;
+  };
+  c.append(help, form, status);
+  libraryActions(c).append(
+    libraryButton("Check connection & list models", "button", async () => {
+      const url = runtimeConnection(base.value),
+        suppliedKey = key.value,
+        connectionRequest = connectionEpoch,
+        viewEpoch = libraryViewEpoch;
+      const data = await native("request", {
+        url: endpoint(url, "models"),
+        method: "GET",
+        headers: suppliedKey ? { Authorization: "Bearer " + suppliedKey } : {},
+      });
+      if (
+        connectionRequest !== connectionEpoch ||
+        viewEpoch !== libraryViewEpoch
+      )
+        return;
+      if (
+        !Array.isArray(data.data) ||
+        !data.data.every((m) => typeof m.id === "string")
+      )
+        throw Error(
+          "This server did not return an OpenAI-compatible model list. Check its API base URL.",
+        );
+      models.replaceChildren(
+        new Option("Choose a server model", ""),
+        ...data.data.map((m) => new Option(m.id, m.id)),
+      );
+      status.textContent =
+        "Connected · " +
+        data.data.length +
+        " model(s) reported. This checks the API, not model loading or tool capability. Nothing downloaded.";
+    }),
+    libraryButton("Save connection", "button primary", async () => {
+      if (busy)
+        throw Error("Wait for the current task before saving a connection.");
+      const url = runtimeConnection(base.value);
+      if (!name.value.trim() || !model.value.trim())
+        throw Error("Enter a connection name and the server’s model ID.");
       const p = {
         id: crypto.randomUUID(),
         name: name.value.trim().slice(0, 80),
+        settings: {
+          ...connectionSettings(defaults),
+          provider: "openai",
+          endpoint: url,
+          model: model.value.trim(),
+          protocol: "auto",
+        },
+      };
+      desk.profiles.push(p);
+      if (key.value) connectionKeys.set(connectionKey(p.settings), key.value);
+      catalogModel = "";
+      paintConnections();
+      scheduleSave();
+      await renderModelLibrary();
+      libraryMessage(
+        "Connection saved. Your active model is unchanged; select Use connection when you are ready.",
+      );
+    }),
+    libraryButton("Advanced connection settings", "button", () => {
+      $("modelLibraryDialog").close();
+      settingsOpen();
+    }),
+  );
+  const current = libraryCard(
+    "Keep your current setup",
+    "Save your current settings as another connection without changing models.",
+  );
+  const currentName = elem("input");
+  currentName.setAttribute("aria-label", "Current connection name");
+  currentName.placeholder = "Connection name";
+  libraryActions(current).append(
+    currentName,
+    libraryButton("Save current connection", "button", () => {
+      if (busy) return;
+      if (!currentName.value.trim())
+        throw Error("Give this connection a name.");
+      const p = {
+        id: crypto.randomUUID(),
+        name: currentName.value.trim().slice(0, 80),
         settings: connectionSettings(settings),
       };
       desk.profiles.push(p);
@@ -470,17 +970,13 @@ function renderLibraryConnections() {
       scheduleSave();
       renderModelLibrary();
     }),
-    libraryButton("Add / edit connection", "button", () => {
-      $("modelLibraryDialog").close();
-      settingsOpen();
-    }),
   );
   for (const p of desk.profiles) {
-    const c = libraryCard(
+    const card = libraryCard(
       p.name,
       `${p.settings.model} · ${p.settings.provider} · ${p.settings.endpoint}`,
     );
-    libraryActions(c).append(
+    libraryActions(card).append(
       libraryButton("Use connection", "button primary", async () => {
         await useConnection(p);
         libraryMessage("Selected " + p.name);
@@ -495,14 +991,15 @@ function renderLibraryConnections() {
       }),
     );
   }
-  body.append(
+  $("modelLibraryBody").append(
     elem(
       "p",
-      "muted",
-      "Connection keys stay in memory for this app session. They are never saved in connection profiles or chat history.",
+      "library-help",
+      "API keys remain in memory for this app session and are never saved in profiles or chat history. Saving a connection does not send chat content. Each runtime must support the model architecture and chat API; tool use needs a separate test.",
     ),
   );
 }
+
 function renderLibraryEngine() {
   const c = libraryCard(
     "Local engine",

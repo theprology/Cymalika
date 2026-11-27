@@ -24,7 +24,7 @@ CyMalika itself needs no account or subscription. For local use, keep your exist
 
 ## Models without leaving the app
 
-Open **Models & downloads** to reuse your existing Ollama, install a checksum-verified local runtime, download Ollama IDs or public Hugging Face GGUF models, and manage your installed model shelf. Keep several models loaded when memory permits, or unload them to free RAM/VRAM. Save local and cloud API connections and switch from the chat header. API keys stay in memory.
+Open **Models & downloads** to reuse your existing Ollama, install a checksum-verified local runtime, browse all Hugging Face model formats with runtime/hardware requirements, download supported Ollama/GGUF models only after confirmation, and manage your installed model shelf. Keep several models loaded when memory permits, or unload them to free RAM/VRAM. Save local and cloud API connections and switch from the chat header. API keys stay in memory.
 
 In **Settings → Appearance**, give your assistant a name. That name appears in the sidebar and replies, independently of the model you select. See the [model library guide](docs/MODEL_LIBRARY.md). Model format, hardware, licensing and tool capabilities determine compatibility; a model host is not itself an inference runtime.
 
@@ -58,7 +58,7 @@ Use your existing model. Tool use and task quality depend on that model; CyMalik
 4. Choose **Ask** and send a simple question.
 5. Open a practice folder, choose **Build**, and ask it to create a small text file. Review the proposed contents, choose **Approve & save**, and open the saved file.
 
-You do not need to install Ollama separately: CyMalika can install an internal copy. Local models still need that engine. Cloud APIs are an alternative under Settings; providers may charge for usage.
+You do not need to install Ollama separately: CyMalika can install an internal copy. Local models need a compatible runtime: the internal Ollama engine is one option; LM Studio, llama.cpp, MLX-LM and GPU servers can be connected under Connections. Providers may charge for hosted usage.
 
 [Watch the narrated walkthrough](docs/DEMO.md) · [Read the steps](docs/WALKTHROUGH.md) · [Printable handbook](docs/CyMalika-Beginners-Handbook.pdf) · [Optional practice project ZIP](docs/tutorial-project.zip)
 

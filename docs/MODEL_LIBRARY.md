@@ -21,11 +21,18 @@ CyMalika installs the official runtime in its own data folder and starts it on `
 
 The current managed Ollama runtime requires macOS 14 or newer. CyMalika can still connect to an existing compatible API on macOS 13. Windows currently packages the x64 runtime. Linux extraction needs `tar` and `zstd`; the Debian package declares zstd. GPU drivers, optional AMD runtime packages and unsupported OS architectures are not installed automatically. Existing external runtimes or compatible APIs can be used instead.
 
-## Hugging Face
+## Find a model and understand its requirements
 
-Choose **Hugging Face · public GGUF** under **Get models**, search, and open a model card. Choose a quantization the repository actually provides, then review the download. You can also enter `hf.co/owner/repository-GGUF:Q4_K_M` as an Ollama model ID.
+1. Open **Get models → Hugging Face · all formats**.
+2. Search a name, enter `owner/model`, or paste the model’s Hugging Face URL. Search is not restricted to GGUF; use **Show more results** or a more specific name to narrow the public directory.
+3. Choose **Requirements & ways to run**. Exact repository links open requirements directly.
+4. Review the format, task, architecture, quantization, reported weight size, local RAM/disk and access/license requirements. Unknown metadata is shown as unknown. File sizes are not promises about usable RAM/VRAM, speed, architecture or tool support. Multiple checkpoint variants may inflate the repository total.
+5. For a public GGUF repository with an identifiable quantization, choose **Review Ollama download**. No download starts until you confirm the separate review. Gated/private models need provider-side authentication and license approval.
+6. For Safetensors, MLX, adapters or another format, read the model card and choose **Set up a runtime connection**. An adapter needs its compatible base model. An image, embedding or audio model is not automatically a chat agent.
 
-Only formats supported by the selected runtime work locally. This path supports GGUF repositories, not arbitrary Safetensors weights, Python model code or every Hugging Face architecture. Gated/private repositories require the account access configured with Ollama/Hugging Face; CyMalika does not accept terms or bypass gates. Review the publisher’s license yourself. See [Hugging Face’s Ollama integration](https://huggingface.co/docs/hub/en/ollama) and [Ollama’s pull API](https://docs.ollama.com/api/pull).
+Browsing requirements reads metadata and, when requested, the model card only. It never downloads weights, executes repository code, replaces a model or starts a runtime. Repository availability does not guarantee an installed runtime supports its architecture. The Ollama downloader still handles Ollama IDs and supported GGUF repositories; it does not convert arbitrary checkpoints.
+
+A model larger than your Mac’s total RAM may require another checkpoint or remote hardware. For example, a roughly 510 GB FP8 checkpoint cannot fit in a 24 GiB Mac’s memory. A normal CPU VPS is not a practical substitute for a suitable GPU inference server. Check architecture/quantization support, GPU memory, context overhead and disk capacity before renting anything. A publisher’s example GPU count is not a capacity guarantee for arbitrary GPU sizes.
 
 ## Several models
 
@@ -33,11 +40,18 @@ Install as many models as disk space permits. **Use this model** switches the ac
 
 For engines started by CyMalika, **Maximum loaded models** is set before starting. Existing external engines keep their own settings. In **Settings → Agent controls**, choose how long Ollama should keep a model loaded after a response. Separate model files, process memory and GPU memory are different measurements. A larger context also uses more memory. CyMalika does not run a multi-agent ensemble automatically.
 
-## Other engines and cloud APIs
+## Connect another runtime or a remote model server
 
-Under **Connections**, save the current provider, endpoint, model and generation settings. Edit a connection in Settings, then save another name. Switch saved connections from the chat header. LM Studio, llama.cpp and vLLM can be connected when they expose an OpenAI-compatible API. Anthropic and other compatible hosted services remain available. These engines/services are not automatically installed by the Ollama runtime installer.
+1. Start your chosen runtime separately with a compatible chat model. CyMalika’s built-in runtime installer manages Ollama only; the other runtimes are connected, not installed or launched automatically.
+2. Open **Connections** and select **LM Studio**, **llama.cpp**, **MLX-LM**, **vLLM**, **SGLang**, **Hugging Face TGI**, or **Other / hosted OpenAI-compatible API**.
+3. Enter the API base URL (usually ending in `/v1`) and optional API key. Preset ports are examples, not automatic discovery. Use the actual port your server reports. Use HTTPS for remote servers or a private SSH tunnel ending on localhost; do not publish an unauthenticated inference port.
+4. Choose **Check connection & list models**. This sends only a model-list request. It does not load/download weights or send your project/chat. It verifies the API response, not chat, tool calls or full model readiness.
+5. Select a model reported by the server, or type its exact served ID. Give the connection a name and choose **Save connection**. This preserves the active model.
+6. Choose **Use connection** when ready. Test a small chat and a disposable coding task with review before trusting tool use. Runtime versions, parsers and model capabilities determine reliability. API providers may charge for usage.
 
-API keys are session-only and associated with provider/endpoint. Changing a URL clears the key field so a credential is not accidentally sent to another server. Keys are not included in saved profiles, chat exports or model downloads. Remote APIs receive the context you send them and may charge for usage.
+The **Installed models** tab lists models reported by the active non-Ollama API. Loading, unloading, downloading and GPU scheduling for those models remain with their runtime. Ollama’s own installed shelf retains its local controls. Anthropic configurations remain available through **Advanced connection settings**.
+
+API keys are session-only and associated with provider/endpoint. Editing the connection URL or choosing another runtime clears the new-connection key field. Keys are not included in saved profiles, chat exports or model downloads. Saving a profile does not switch the selected model, assistant name, theme or project. Remote APIs receive context only when you use them for a task.
 
 ## Name your assistant
 
