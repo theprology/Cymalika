@@ -542,7 +542,11 @@ async function verifyStartup() {
     settings.assistantName = originalName; paintIdentity();
     check(Array.isArray(await native("modelLibrary",{operation:"jobs"})), "Native model-library bridge unavailable");
     libraryTab = "connections"; await renderModelLibrary();
-    check($("modelLibraryBody").textContent.includes("Your models, your connections"), "Model connections screen did not render");
+    check($("modelLibraryBody").querySelector('[aria-label="Runtime"]').options.length === 7, "Runtime connection choices did not render");
+    check($("modelLibraryBody").querySelector('[aria-label="API key (optional, session only)"]').type === "password", "Runtime key field is not protected");
+    libraryTab = "download"; await renderModelLibrary();
+    check($("modelLibraryBody").querySelector('[aria-label="Model source"]').value === "huggingface", "All-format model discovery is not the default");
+    check($("modelLibraryBody").querySelector('[aria-label="Find a model"]'), "Model link/search field did not render");
     libraryTab = "download"; await renderModelLibrary();
     check($("modelLibraryBody").textContent.includes("Already know the model ID?"), "Model discovery screen did not render");
     $("coffeeSwitch").checked = true;
